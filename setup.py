@@ -23,6 +23,6 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Communications :: File Sharing', 
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Topic :: System :: File Systems',
+        'Topic :: System :: Filesystems',
     ],
 )

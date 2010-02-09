@@ -1,5 +1,7 @@
 This package can be used to create BagIt style packages programmatically
-in Python or from the command line. 
+in Python or from the command line.  More about BagIt can be found at:
+
+  http://tools.ietf.org/html/draft-kunze-bagit 
 
 At the moment the code assumes you are on a Unix system that has the
 md5deep command available <http://md5deep.sourceforge.net/>.
