@@ -1,31 +1,9 @@
 #!/usr/bin/env python
 
-"""
-A command line tool for creating BagIt bags on Unix systems with md5deep 
-installed.
-
-Basic usage is to give bag a directory to bag up:
-
-    % bag my_directory
-
-You can bag multiple directories if you wish:
-
-    % bag directory1 directory2
-
-Optionally you can pass metadata intended for the bag-info.txt:
-
-    % bag --source-organization "Library of Congress" directory
-
-For more help see:
-
-    % bag --help 
-"""
-
 import os
 import logging
 
 from datetime import date
-from optparse import OptionParser
 
 # command line options will be created for these bag-info.txt headers 
 
@@ -81,23 +59,3 @@ def make_bag(bag_dir, bag_info=None):
 
     finally:
         os.chdir(old_dir)
-
-def bag_info_store(option, opt, value, parser):
-    opt = opt.lstrip('--')
-    opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
-    if not hasattr(parser, 'bag_info'):
-        parser.bag_info = {}
-    parser.bag_info[opt_caps] = value
-
-def make_opt_parser():
-    parser = OptionParser(usage='usage: %prog [options] dir1 dir2 ...')
-    for header in bag_info_headers:
-        parser.add_option('--%s' % header.lower(), type="string", 
-                          action='callback', callback=bag_info_store)
-    return parser
-
-if __name__ == '__main__':
-    opt_parser = make_opt_parser()
-    opts, args = opt_parser.parse_args()
-    for bag_dir in args:
-        make_bag(bag_dir, bag_info=opt_parser.bag_info)
