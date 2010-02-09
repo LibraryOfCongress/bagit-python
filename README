@@ -2,7 +2,7 @@ This package can be used to create BagIt style packages programmatically
 in Python or from the command line. 
 
 At the moment the code assumes you are on a Unix system that has the
-md5deep command available.
+md5deep command available <http://md5deep.sourceforge.net/>.
 
 For example if Callimachus at the Library of Alexandria wanted to 
 create a bag out of a directory of tiff images called 'pinakes' he could:
@@ -34,6 +34,11 @@ Development
   % git clone git@github.com:edsu/bagit.git 
   % cd bagit 
   % python test.py
+
+TODO:
+
+  * remove unix dependency 
+  * remove md5deep dependency
 
 Contact
 
