@@ -24,7 +24,7 @@ def make_bag(bag_dir, bag_info=None):
         os.system('md5deep -rl data > manifest-md5.txt')
 
         logging.info("writing bagit.txt")
-        txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8"""
+        txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
         open("bagit.txt", "w").write(txt)
 
         logging.info("writing bag-info.txt")
