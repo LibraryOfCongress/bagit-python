@@ -61,4 +61,4 @@ if __name__ == '__main__':
     opt_parser = make_opt_parser()
     opts, args = opt_parser.parse_args()
     for bag_dir in args:
-        bag.make_bag(bag_dir, bag_info=opt_parser.bag_info)
+        bagit.make_bag(bag_dir, bag_info=opt_parser.bag_info)
