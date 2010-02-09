@@ -6,7 +6,10 @@ import logging
 from datetime import date
 
 def make_bag(bag_dir, bag_info=None):
+    logging.info("creating bag for directory %s" % bag_dir)
+
     if not os.path.isdir(bag_dir):
+        logging.error("no such bag directory %s" % bag_dir)
         raise RuntimeError("no such bag directory %s" % bag_dir)
 
     old_dir = os.path.abspath(os.path.curdir)
