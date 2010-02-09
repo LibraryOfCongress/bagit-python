@@ -6,7 +6,6 @@ import logging
 from datetime import date
 
 # command line options will be created for these bag-info.txt headers 
-
 bag_info_headers = [
     'Source-Organization', 
     'Organization-Address', 
