@@ -1,0 +1,44 @@
+This package can be used to create BagIt style packages programmatically
+in Python or from the command line. 
+
+At the moment the code assumes you are on a Unix system that has the
+md5deep command available.
+
+For example if Callimachus at the Library of Alexandria wanted to 
+create a bag out of a directory of tiff images called 'pinakes' he could:
+
+  bag --source-organization "Library of Alexandria" \
+      --contact-name Callimachus \
+      --contact-email callimachus@example.org \
+      pinakes
+
+Or from python:
+
+  import bagit
+  bag_info = {
+           'Source-Organization': 'Library of Alexandria',
+           'Contact-Name': 'Callimachus',
+           'Contact-Email': 'callimachus@example.org'
+         }
+  bagit.make_bag('pinakes', bag_info=bag_info)
+
+This assumes Callimachus had a Unix system with md5deep installed of course.
+bag --help will give the full set of options.
+
+Installation
+
+    % easy_install bagit
+
+Development
+
+  % git clone git@github.com:edsu/bagit.git 
+  % cd bagit 
+  % python test.py
+
+Contact
+
+Ed Summers <ehs@pobox.com>
+
+License
+
+Public Domain <http://creativecommons.org/licenses/publicdomain/>
