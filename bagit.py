@@ -8,6 +8,11 @@ import multiprocessing
 from datetime import date
 
 def make_bag(bag_dir, bag_info=None, processes=1):
+    """
+    Convert a given directory into a bag. You can pass in arbitrary 
+    key/value pairs to put into the bag-info.txt metadata file as 
+    the bag_info dictionary.
+    """
     logging.info("creating bag for directory %s" % bag_dir)
 
     if not os.path.isdir(bag_dir):

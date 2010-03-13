@@ -3,18 +3,15 @@ in Python or from the command line.  More about BagIt can be found at:
 
   http://tools.ietf.org/html/draft-kunze-bagit 
 
-At the moment the code assumes you are on a Unix system that has the
-md5deep command available <http://md5deep.sourceforge.net/>.
-
 For example if Callimachus at the Library of Alexandria wanted to 
-create a bag out of a directory of tiff images called 'pinakes' he could:
+create a bag out of a directory of images called 'pinakes' he could:
 
   bag --source-organization "Library of Alexandria" \
       --contact-name Callimachus \
       --contact-email callimachus@example.org \
       pinakes
 
-Or from python:
+or from python:
 
   import bagit
   bag_info = {
@@ -24,7 +21,15 @@ Or from python:
          }
   bagit.make_bag('pinakes', bag_info=bag_info)
 
-This assumes Callimachus had a Unix system with md5deep installed of course.
+If you'd like to generate the checksums using parallel system processes, 
+instead of single process use the --processes flag:
+
+  bag --processes 4 pinakes
+
+or, from python:
+
+  bagit.make_bag('pinakes', bag_info=bag_info, processes=4) 
+
 bag --help will give the full set of options.
 
 Installation
@@ -45,9 +50,13 @@ Development
 
 TODO:
 
-  * remove unix dependency 
-  * remove md5deep dependency
+  * define the return value of make_bag
+  * auto-generate Payload-Oxum
+  * remove unix dependency on 'mv'
   * add validation
+  * write manifest to tmp file first before moving stuff around, so that 
+    if the manifest generation throws an exception the bag directory
+    will be left untouched
 
 Contact
 
