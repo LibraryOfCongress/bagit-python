@@ -16,7 +16,6 @@ setup(
     py_modules = ['bagit',],
     scripts = ['scripts/bag'],
     description = description,
-    test_suite = 'test',
     platforms = ['POSIX'],
     classifiers = [
         'License :: Public Domain',

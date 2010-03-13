@@ -42,7 +42,7 @@ class TestBag(unittest.TestCase):
         today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
 
-    def tearDown(self):
+    def atearDown(self):
         if os.path.isdir('test-data-tmp'):
             shutil.rmtree('test-data-tmp')
 
