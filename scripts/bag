@@ -57,11 +57,12 @@ def bag_info_store(option, opt, value, parser):
 
 def make_opt_parser():
     parser = BagOptionParser(usage='usage: %prog [options] dir1 dir2 ...')
-    parser.add_option('--log', action='store', dest='log')
-    parser.add_option('--quiet', action='store_true', dest='quiet')
     parser.add_option('--processes', action='store', type="int", 
                       dest='processes', default=1, 
                       help='parallelize checksums generation')
+    parser.add_option('--log', action='store', dest='log')
+    parser.add_option('--quiet', action='store_true', dest='quiet')
+
     for header in bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string", 
                           action='callback', callback=bag_info_store)
