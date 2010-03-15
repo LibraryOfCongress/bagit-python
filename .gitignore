@@ -1,4 +1,5 @@
 *.pyc
+bench-data
 build
 dist
 MANIFEST
