@@ -68,7 +68,7 @@ def _manifest_line(filename):
     fh = open(filename)
     m = hashlib.md5()
     while True:
-        bytes = fh.read(1024)
+        bytes = fh.read(16384)
         if not bytes: break
         m.update(bytes)
     fh.close()
