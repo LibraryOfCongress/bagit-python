@@ -41,6 +41,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
+        self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
 
     def tearDown(self):
         if os.path.isdir('test-data-tmp'):

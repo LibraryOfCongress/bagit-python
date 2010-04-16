@@ -3,44 +3,29 @@ in Python or from the command line.  More about BagIt can be found at:
 
   http://tools.ietf.org/html/draft-kunze-bagit 
 
-For example if Callimachus at the Library of Alexandria wanted to 
-create a bag out of a directory of images called 'pinakes' he could:
+bagit.py is a standalone python module that you can drop into your 
+project as needed or you can install globally with:
 
-  bag --source-organization "Library of Alexandria" \
-      --contact-name Callimachus \
-      --contact-email callimachus@example.org \
-      pinakes
+  python setup.py install
 
-or from python:
+From python you can use the bagit module like this:
 
-  import bagit
-  bag_info = {
-           'Source-Organization': 'Library of Alexandria',
-           'Contact-Name': 'Callimachus',
-           'Contact-Email': 'callimachus@example.org'
-         }
-  bagit.make_bag('pinakes', bag_info=bag_info)
+  bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+
+Or from the command line:
+
+  bagit.py --contact-name 'Ed Summers' mydir
 
 If you'd like to generate the checksums using parallel system processes, 
-instead of single process use the --processes flag:
+instead of single process:
 
-  bag --processes 4 pinakes
+  bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'}, processes=4) 
 
-or, from python:
+or:
 
-  bagit.make_bag('pinakes', bag_info=bag_info, processes=4) 
+  bagit.py --processes 4 --contact-name 'Ed Summers' mydir
 
 bag --help will give the full set of options.
-
-Installation
-
-    % easy_install bagit
-
-or if you prefer:
-
-  % git clone git://github.com/edsu/bagit.git
-  % cd bagit
-  % sudo python setup.py install
 
 Development
 
@@ -57,8 +42,6 @@ utility:
 TODO:
 
   * define the return value of make_bag
-  * auto-generate Payload-Oxum
-  * remove unix dependency on 'mv'
   * add validation
   * write manifest to tmp file first before moving stuff around, so that 
     if the manifest generation throws an exception the bag directory

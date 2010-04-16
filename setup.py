@@ -14,7 +14,7 @@ setup(
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
     py_modules = ['bagit',],
-    scripts = ['scripts/bag'],
+    scripts = ['bagit.py'],
     description = description,
     platforms = ['POSIX'],
     classifiers = [
