@@ -1,7 +1,7 @@
 This package can be used to create BagIt style packages programmatically
 in Python or from the command line.  More about BagIt can be found at:
 
-  http://tools.ietf.org/html/draft-kunze-bagit 
+  http://purl.org/net/bagit
 
 bagit.py is a standalone python module that you can drop into your 
 project as needed or you can install globally with:
