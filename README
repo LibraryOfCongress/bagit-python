@@ -10,6 +10,7 @@ project as needed or you can install globally with:
 
 From python you can use the bagit module like this:
 
+  import bagit
   bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
 
 Or from the command line:
