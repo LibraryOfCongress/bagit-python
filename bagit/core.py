@@ -2,10 +2,10 @@
 # This code was created by the Library of Congress and its National Digital
 # Information Infrastructure and Preservation Program (NDIIPP) partners.
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 # * Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
 # * Redistributions in binary form must reproduce the above copyright notice,
@@ -14,7 +14,7 @@
 # * Neither the name of the Library of Congress nor the names of its
 # contributors may be used to endorse or promote products derived from this
 # software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -28,61 +28,18 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from glob import glob
-from os import path
+from itertools import chain
+import logging
+import os
 
-import sys, os
 
-
-def open_bag(bag_dir, lenient = False):
-    """Opens a bag in the given bag_dir, and returns a new Bag object.
-       The bagit.txt is required, regardless of the lenient parameter.
-    """
-    # Open the bagit.txt file, and load any tags from it, including
-    # the required version and encoding.
-    bagit_file_path = path.join(bag_dir, "bagit.txt")
-    
-    if not path.isfile(bagit_file_path):
-        raise BagError("No bagit.txt found: %s" % bagit_file_path)
-    
-    tags = load_tag_file(bagit_file_path)
-    
-    try:
-        version = tags["BagIt-Version"]
-        encoding = tags["Tag-File-Character-Encoding"]
-    except KeyError, e:
-        raise BagError("Missing required tag in bagit.txt: %s" % e)
-    
-    if version == "0.95":
-        new_bag = Point95Bag()
-    elif version == "0.96":
-        new_bag = Point96Bag()
-    else:
-        raise BagError("Unsupported bag version: %s" % version)
-    
-    if encoding.upper() != "UTF-8" and not lenient:
-        raise BagError("Unsupported tag file encoding: %s" % encoding)
-    
-    new_bag.dir = bag_dir
-    new_bag.tags = tags
-    new_bag.version = version
-    new_bag.encoding = encoding
-    new_bag.lenient = lenient
-    
-    new_bag.validate_structure()
-    new_bag.open()
-    
-    return new_bag
-
-def load_tag_file(tag_file_name, tag_map = {}):
+def load_tag_file(tag_file_name):
     tag_file = open(tag_file_name, "r")
-    
+
     try:
-        for tag_name, tag_value in parse_tags(tag_file):
-            tag_map[tag_name] = tag_value
+        return dict(parse_tags(tag_file))
     finally:
         tag_file.close()
-        
-    return tag_map
 
 def parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
@@ -101,114 +58,171 @@ def parse_tags(file):
     # tag, or if we pass the EOF.
     for line in file:
         # Skip over any empty or blank lines.
-        if len(line) == 0 or line.isspace(): continue
+        if len(line) == 0 or line.isspace():
+            continue
 
         if line[0].isspace(): # folded line
             tag_value += line.strip()
         else:
             # Starting a new tag; yield the last one.
-            yield (tag_name, tag_value)
+            if tag_name:
+                yield (tag_name, tag_value)
 
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
             tag_value = parts[1].strip()
 
     # Passed the EOF.  All done after this.
-    if tag_name: yield (tag_name, tag_value)
+    if tag_name:
+        yield (tag_name, tag_value)
 
 
 class BagError(Exception):
-    def __init__(self, message):
-        self.message = message
-    
-    def __str__(self):
-        return repr(self.message)
+    pass
 
-class Bag:
+class BagValidationError(BagError):
+    pass
+
+class Bag(object):
     """A representation of a bag."""
-    def __init__(self):
-        self.dir = dir
-        self.tags = {}
-        self.entries = {}
-        self.algs = []
-        self.lenient = False
-        
-    def open(self):
-        raise RuntimeError("Not implemented: open()")
-        
-    def load_tags(self):
-        raise RuntimeError("Not implemented: load_tags()")
-        
+
+    path = None
+    tags = {}
+    entries = {}
+    algs = []
+
+    tag_file_name = None
+
+    #: This list is used during validation to detect extra files in the top-level bag directory. Note that it will be extended to include the manifest and
+    valid_files = ["bagit.txt", "fetch.txt"]
+    valid_directories = ['data']
+
+    def __init__(self, path=None):
+        super(Bag, self).__init__()
+        self.path = path
+
+    @classmethod
+    def load(cls, path, lenient=False):
+        """Opens a bag in the given bag_dir, and returns a new Bag object.
+           The bagit.txt is required
+        """
+
+        b = cls(path=path)
+
+        try:
+            b.open()
+            b.validate()
+        except BagValidationError, e:
+            logging.warning("%s: validation error: %s", b.path, e)
+            if not lenient:
+                raise e
+
+        return b
+
+    def validate(self):
+        self.validate_structure()
+
     def validate_structure(self):
         """Checks the structure of the bag, determining if it conforms to the
            BagIt spec.
         """
         self.validate_structure_payload_directory()
         self.validate_structure_tag_files()
-            
+
     def validate_structure_payload_directory(self):
-        data_dir_path = os.path.join(self.dir, "data")
-        
+        data_dir_path = os.path.join(self.path, "data")
+
         if not os.path.isdir(data_dir_path):
-            if not self.lenient: raise BagError("Missing data directory.")
-            
+            raise BagValidationError("Missing data directory.")
+
     def validate_structure_tag_files(self):
         # Files allowed in all versions are:
         #  - tagmanifest-<alg>.txt
         #  - manifest-<alt>.txt
         #  - bagit.txt
         #  - fetch.txt
-        allowed_files = ["bagit.txt", "fetch.txt"]
+        valid_files = list(self.valid_files)
 
-        # The manifest files and tagmanifest files will start with {self.dir}/
+        # The manifest files and tagmanifest files will start with {self.path}/
         # So strip that off.
-        allowed_files += [fullpath[len(self.dir) + 1:] for fullpath in list(self.manifest_files()) + list(self.tagmanifest_files())]
-        
-        for name in os.listdir(self.dir):
-            fullname = path.join(self.dir, name)
+        for f in chain(self.manifest_files(), self.tagmanifest_files()):
+            valid_files.append(f[len(self.path) + 1:])
 
-            if path.isdir(fullname):
-                if name == "data": continue # Ignore the payload directory
-                if not self.lenient:
-                    raise BagError("Extra directory found: %s" % name)
-            elif path.isfile(fullname):
-                if not name in allowed_files:
+        for name in os.listdir(self.path):
+            fullname = os.path.join(self.path, name)
+
+            if os.path.isdir(fullname):
+                if not name in self.valid_directories:
+                    raise BagValidationError("Extra directory found: %s" % name)
+            elif os.path.isfile(fullname):
+                if not name in valid_files:
                     is_valid = self.validate_structure_is_valid_tag_file_name(name)
-                    if not is_valid and not self.lenient:
-                        raise BagError("Extra tag file found: %s" % name)
-            elif not self.lenient:
+                    if not is_valid:
+                        raise BagValidationError("Extra tag file found: %s" % name)
+            else:
                 # Something that's  neither a dir or a file. WTF?
-                raise BagError("Unknown item in bag: %s" % name)
-                
+                raise BagValidationError("Unknown item in bag: %s" % name)
+
     def validate_structure_is_valid_tag_file_name(self):
         raise RuntimeError("Not implemented: validate_structure_tag_file_name()")
-        
+
+    def validate_structure_is_valid_tag_file_name(self, file_name):
+        return file_name == self.tag_file_name
+
     def open(self):
-        self.load_tags()    
-    
+        # Open the bagit.txt file, and load any tags from it, including
+        # the required version and encoding.
+        bagit_file_path = os.path.join(self.path, "bagit.txt")
+
+        if not os.path.isfile(bagit_file_path):
+            raise BagError("No bagit.txt found: %s" % bagit_file_path)
+
+        self.tags = tags = load_tag_file(bagit_file_path)
+
+        try:
+            self.version = tags["BagIt-Version"]
+            self.encoding = tags["Tag-File-Character-Encoding"]
+        except KeyError, e:
+            raise BagError("Missing required tag in bagit.txt: %s" % e)
+
+        if self.version == "0.95":
+            self.tag_file_name = "package-info.txt"
+        elif self.version == "0.96":
+            self.tag_file_name = "bag-info.txt"
+        else:
+            raise BagError("Unsupported bag version: %s" % version)
+
+        if not self.encoding.lower() == "utf-8":
+            raise BagValidationError("Unsupported encoding: %s" % self.encoding)
+
+        info_file_path = os.path.join(self.path, self.tag_file_name)
+        if os.path.exists(info_file_path):
+            self.info = load_tag_file(info_file_path)
+
+        # TODO: Refactor this into a separate method
         for manifest_file in self.manifest_files():
-            alg = path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
+            alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
             self.algs.append(alg)
 
             manifest_file = open(manifest_file, "r")
-            
+
             try:
                 for line in manifest_file:
                     line = line.strip()
 
                     # Ignore blank lines and comments.
                     if line == "" or line.startswith("#"): continue
-                        
+
                     entry = line.split(None, 1)
-                    
+
                     # Format is FILENAME *CHECKSUM
                     if len(entry) != 2:
                         print "*** Invalid %s manifest entry: %s" % (alg, line)
                         continue
-                    
+
                     entry_hash = entry[0]
-                    entry_path = path.normpath(entry[1].lstrip("*"))
-                    
+                    entry_path = os.path.normpath(entry[1].lstrip("*"))
+
                     if self.entries.has_key(entry_path):
                         if self.entries[entry_path].has_key(alg):
                             print "*** Duplicate %s manifest entry: %s" % (alg, entry_path)
@@ -219,22 +233,22 @@ class Bag:
                         self.entries[entry_path][alg] = entry_hash
             finally:
                 manifest_file.close()
-                
+
     def manifest_files(self):
-        for file in glob(path.join(self.dir, "manifest-*.txt")):
+        for file in glob(os.path.join(self.path, "manifest-*.txt")):
             yield file
-            
+
     def tagmanifest_files(self):
-        for file in glob(path.join(self.dir, "tagmanifest-*.txt")):
+        for file in glob(os.path.join(self.path, "tagmanifest-*.txt")):
             yield file
-            
+
     def compare_manifests_with_fs(self):
         files_on_fs = set(self.payload_files())
         files_in_manifest = set(self.entries.keys())
-        
+
         return (list(files_in_manifest - files_on_fs),
              list(files_on_fs - files_in_manifest))
-             
+
     def compare_fetch_with_fs(self):
         """Compares the fetch entries with the files actually
            in the payload, and returns a list of all the files
@@ -243,50 +257,50 @@ class Bag:
 
         files_on_fs = set(self.payload_files())
         files_in_fetch = set(self.files_to_be_fetched())
-        
+
         return list(files_in_fetch - files_on_fs)
 
     def payload_files(self):
-        payload_dir = os.path.join(self.dir, "data")
-        
+        payload_dir = os.path.join(self.path, "data")
+
         for dirpath, dirnames, filenames in os.walk(payload_dir):
             for f in filenames:
                 # Jump through some hoops here to make the payload files come out
                 # looking like data/dir/file, rather than having the entire path.
                 rel_path = os.path.join(dirpath, os.path.normpath(f.replace('\\', '/')))
-                rel_path = rel_path.replace(self.dir + os.path.sep, "", 1)
+                rel_path = rel_path.replace(self.path + os.path.sep, "", 1)
                 yield rel_path
-                
+
     def fetch_entries(self):
-        fetch_file_path = os.path.join(self.dir, "fetch.txt")
-        
+        fetch_file_path = os.path.join(self.path, "fetch.txt")
+
         if os.path.isfile(fetch_file_path):
             fetch_file = open(fetch_file_path, "r")
-            
+
             try:
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
             finally:
                 fetch_file.close()
-            
+
     def files_to_be_fetched(self):
         for url, size, path in self.fetch_entries():
             yield path
-            
+
     def urls_to_be_fetched(self):
         for url, size, path in self.fetch_entries():
             yield url
-            
+
     def has_oxum(self): return self.tags.has_key('Payload-Oxum')
-            
+
     def validate_oxum(self):
         """From John Kunze's email:
            The oxum is a so-called "poor man's checksum".  It counts the octet
            length of all the files in the payload and the number of the files
            on disk, and then concatenates them with a period.  Quoting Mr.
            Kunze:
-           
+
            They are in the new BagIt V0.96 format, and the metadata includes the
            Payload-Oxum element in bag-info.txt (new name for package-info.txt).
 
@@ -303,9 +317,9 @@ class Bag:
         """
         oxum = self.tags.get('Payload-Oxum')
         if oxum == None: return
-        
+
         byte_count, file_count = oxum.split('.', 1)
-        
+
         if not byte_count.isdigit() or not file_count.isdigit():
             raise BagError("Invalid oxum: %s" % oxum)
 
@@ -313,27 +327,11 @@ class Bag:
         file_count = long(file_count)
         total_bytes = 0
         total_files = 0
-        
+
         for payload_file in self.payload_files():
-            payload_file = path.join(self.dir, payload_file)
+            payload_file = os.path.join(self.path, payload_file)
             total_bytes += os.stat(payload_file).st_size
             total_files += 1
-            
+
         if file_count != total_files or byte_count != total_bytes:
             raise BagError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
-            
-class EarlyVersionBag(Bag):
-    def validate_structure_is_valid_tag_file_name(self, file_name):
-        return file_name == self.TAG_FILE_NAME
-        
-    def load_tags(self):
-        tag_file_path = path.join(self.dir, self.TAG_FILE_NAME)
-        
-        if path.isfile(tag_file_path):
-            load_tag_file(tag_file_path, self.tags)
-            
-class Point95Bag(EarlyVersionBag):
-    TAG_FILE_NAME = "package-info.txt"
-    
-class Point96Bag(EarlyVersionBag):
-    TAG_FILE_NAME = "bag-info.txt"
