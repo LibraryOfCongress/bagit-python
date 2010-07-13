@@ -2,12 +2,12 @@ from distutils.core import setup
 
 description = \
 """
-This package can be used to create BagIt style packages of 
+This package can be used to create BagIt style packages of
 digital content for safe transmission and digital preservation.
 See: http://tools.ietf.org/html/draft-kunze-bagit
 """
 
-setup( 
+setup(
     name = 'bagit',
     version = '0.5',
     url = 'http://github.com/edsu/bagit',
@@ -20,7 +20,7 @@ setup(
     classifiers = [
         'License :: Public Domain',
         'Intended Audience :: Developers',
-        'Topic :: Communications :: File Sharing', 
+        'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
     ],
