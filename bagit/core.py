@@ -101,6 +101,9 @@ class Bag(object):
         super(Bag, self).__init__()
         self.path = path
 
+    def __unicode__(self):
+        return u'Bag(path="%s")' % self.path
+
     @classmethod
     def load(cls, path, lenient=False):
         """Opens a bag in the given bag_dir, and returns a new Bag object.
@@ -190,7 +193,7 @@ class Bag(object):
         elif self.version == "0.96":
             self.tag_file_name = "bag-info.txt"
         else:
-            raise BagError("Unsupported bag version: %s" % version)
+            raise BagError("Unsupported bag version: %s" % self.version)
 
         if not self.encoding.lower() == "utf-8":
             raise BagValidationError("Unsupported encoding: %s" % self.encoding)
@@ -217,7 +220,7 @@ class Bag(object):
 
                     # Format is FILENAME *CHECKSUM
                     if len(entry) != 2:
-                        print "*** Invalid %s manifest entry: %s" % (alg, line)
+                        logging.error("%s: Invalid %s manifest entry: %s", self, alg, line)
                         continue
 
                     entry_hash = entry[0]
@@ -225,7 +228,7 @@ class Bag(object):
 
                     if self.entries.has_key(entry_path):
                         if self.entries[entry_path].has_key(alg):
-                            print "*** Duplicate %s manifest entry: %s" % (alg, entry_path)
+                            logging.warning("%s: Duplicate %s manifest entry: %s", self, alg, entry_path)
 
                         self.entries[entry_path][alg] = entry_hash
                     else:
