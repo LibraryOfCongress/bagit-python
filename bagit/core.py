@@ -31,7 +31,7 @@ from glob import glob
 from itertools import chain
 import logging
 import os
-
+import hashlib
 
 def load_tag_file(tag_file_name):
     tag_file = open(tag_file_name, "r")
@@ -122,56 +122,6 @@ class Bag(object):
 
         return b
 
-    def validate(self):
-        self.validate_structure()
-
-    def validate_structure(self):
-        """Checks the structure of the bag, determining if it conforms to the
-           BagIt spec.
-        """
-        self.validate_structure_payload_directory()
-        self.validate_structure_tag_files()
-
-    def validate_structure_payload_directory(self):
-        data_dir_path = os.path.join(self.path, "data")
-
-        if not os.path.isdir(data_dir_path):
-            raise BagValidationError("Missing data directory.")
-
-    def validate_structure_tag_files(self):
-        # Files allowed in all versions are:
-        #  - tagmanifest-<alg>.txt
-        #  - manifest-<alt>.txt
-        #  - bagit.txt
-        #  - fetch.txt
-        valid_files = list(self.valid_files)
-
-        # The manifest files and tagmanifest files will start with {self.path}/
-        # So strip that off.
-        for f in chain(self.manifest_files(), self.tagmanifest_files()):
-            valid_files.append(f[len(self.path) + 1:])
-
-        for name in os.listdir(self.path):
-            fullname = os.path.join(self.path, name)
-
-            if os.path.isdir(fullname):
-                if not name in self.valid_directories:
-                    raise BagValidationError("Extra directory found: %s" % name)
-            elif os.path.isfile(fullname):
-                if not name in valid_files:
-                    is_valid = self.validate_structure_is_valid_tag_file_name(name)
-                    if not is_valid:
-                        raise BagValidationError("Extra tag file found: %s" % name)
-            else:
-                # Something that's  neither a dir or a file. WTF?
-                raise BagValidationError("Unknown item in bag: %s" % name)
-
-    def validate_structure_is_valid_tag_file_name(self):
-        raise RuntimeError("Not implemented: validate_structure_tag_file_name()")
-
-    def validate_structure_is_valid_tag_file_name(self, file_name):
-        return file_name == self.tag_file_name
-
     def open(self):
         # Open the bagit.txt file, and load any tags from it, including
         # the required version and encoding.
@@ -202,7 +152,9 @@ class Bag(object):
         if os.path.exists(info_file_path):
             self.info = load_tag_file(info_file_path)
 
-        # TODO: Refactor this into a separate method
+        self.load_manifests()
+
+    def load_manifests(self):
         for manifest_file in self.manifest_files():
             alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
             self.algs.append(alg)
@@ -295,7 +247,64 @@ class Bag(object):
         for url, size, path in self.fetch_entries():
             yield url
 
-    def has_oxum(self): return self.tags.has_key('Payload-Oxum')
+    def has_oxum(self):
+        return self.tags.has_key('Payload-Oxum')
+
+    def validate(self):
+        self.validate_structure()
+        self.validate_contents()
+
+    def validate_structure(self):
+        """Checks the structure of the bag, determining if it conforms to the
+           BagIt spec.
+        """
+        self.validate_structure_payload_directory()
+        self.validate_structure_tag_files()
+
+    def validate_structure_payload_directory(self):
+        data_dir_path = os.path.join(self.path, "data")
+
+        if not os.path.isdir(data_dir_path):
+            raise BagValidationError("Missing data directory.")
+
+    def validate_structure_tag_files(self):
+        # Files allowed in all versions are:
+        #  - tagmanifest-<alg>.txt
+        #  - manifest-<alt>.txt
+        #  - bagit.txt
+        #  - fetch.txt
+        valid_files = list(self.valid_files)
+
+        # The manifest files and tagmanifest files will start with {self.path}/
+        # So strip that off.
+        for f in chain(self.manifest_files(), self.tagmanifest_files()):
+            valid_files.append(f[len(self.path) + 1:])
+
+        for name in os.listdir(self.path):
+            fullname = os.path.join(self.path, name)
+
+            if os.path.isdir(fullname):
+                if not name in self.valid_directories:
+                    raise BagValidationError("Extra directory found: %s" % name)
+            elif os.path.isfile(fullname):
+                if not name in valid_files:
+                    is_valid = self.validate_structure_is_valid_tag_file_name(name)
+                    if not is_valid:
+                        raise BagValidationError("Extra tag file found: %s" % name)
+            else:
+                # Something that's  neither a dir or a file. WTF?
+                raise BagValidationError("Unknown item in bag: %s" % name)
+
+    def validate_structure_is_valid_tag_file_name(self, file_name):
+        return file_name == self.tag_file_name
+
+    def validate_contents(self):
+        """
+        Validate the contents of this bag, which can be a very time-consuming
+        operation
+        """
+        self.validate_oxum()    # Fast
+        self.validate_entries() # *SLOW*
 
     def validate_oxum(self):
         """From John Kunze's email:
@@ -338,3 +347,69 @@ class Bag(object):
 
         if file_count != total_files or byte_count != total_bytes:
             raise BagError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
+
+    def validate_entries(self):
+        """
+        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        """
+        errors = list()
+
+        # To avoid the overhead of reading the file more than once or loading
+        # potentially massive files into memory we'll create a dictionary of
+        # hash objects so we can open a file, read a block and pass it to
+        # multiple hash objects
+
+        hashers = {}
+        for alg in self.algs:
+            try:
+                hashers[alg] = hashlib.new(alg)
+            except KeyError:
+                logging.warning("Unable to validate file contents using unknown %s hash algorithm", alg)
+
+        if not hashers:
+            raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
+
+        for rel_path, hashes in self.entries.items():
+            full_path = os.path.join(self.path, rel_path)
+
+            # Create a clone of the default empty hash objects:
+            f_hashers = dict(
+                (alg, h.copy()) for alg, h in hashers.items() if alg in hashes
+            )
+
+            try:
+                f_hashes = self._calculate_file_hashes(full_path, hashers)
+            except:
+                # Any unhandled exceptions are probably fatal (e.g. file server issues) and recovery is dubious:
+                logging.exception("%s: unable to calculate file hashes for %s: %s", self, full_path)
+                raise
+
+            for alg, stored_hash in f_hashes.items():
+                computed_hash = f_hashes[alg]
+                if stored_hash != computed_hash:
+                    logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
+                    errors.append("%s (%s)" % (full_path, alg))
+
+        if errors:
+            raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
+
+    def _calculate_file_hashes(self, full_path, f_hashers):
+        """
+        Returns a dictionary of (algorithm, hexdigest) values for the provided
+        filename
+        """
+        if not os.path.exists(full_path):
+            raise BagValidationError("%s does not exist" % full_path)
+
+        f = open(full_path, "rb")
+
+        f_size = os.stat(full_path).st_size
+
+        while f.tell() < f_size:
+            block = f.read(1048576)
+            [ i.update(block) for i in f_hashers.values() ]
+        f.close()
+
+        return dict(
+            (alg, h.hexdigest()) for alg, h in f_hashers.items()
+        )
