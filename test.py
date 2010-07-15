@@ -13,9 +13,13 @@ class TestBag(unittest.TestCase):
             shutil.rmtree('test-data-tmp')
         shutil.copytree('test-data', 'test-data-tmp')
 
+    def tearDown(self):
+        if os.path.isdir('test-data-tmp'):
+            shutil.rmtree('test-data-tmp')
+
     def test_make_bag(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
-        bagit.make_bag('test-data-tmp', bag_info=info)
+        bag = bagit.make_bag('test-data-tmp', bag_info=info)
 
         # data dir should've been created
         self.assertTrue(os.path.isdir('test-data-tmp/data'))
@@ -43,9 +47,44 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
 
+    def test_bag_class(self):
+        info = {'Contact-Email': 'ehs@pobox.com'}
+        bag = bagit.make_bag('test-data-tmp', bag_info=info)
+        self.assertTrue(isinstance(bag, bagit.Bag))
+        self.assertEqual(list(bag.payload_files()), [ 'data/README', 'data/si/2584174182_ffd5c24905_b_d.jpg', 'data/si/4011399822_65987a4806_b_d.jpg', 'data/loc/2478433644_2839c5e8b8_o_d.jpg', 'data/loc/3314493806_6f1db86d66_o_d.jpg'])
+        self.assertEqual(list(bag.manifest_files()), ['test-data-tmp/manifest-md5.txt'])
+        self.assertEqual(bag.validate(), True)
+
+    def test_bag_constructor(self):
+        bag = bagit.make_bag('test-data-tmp')
+        bag = bagit.Bag('test-data-tmp')
+        self.assertEqual(type(bag), bagit.Bag)
+        self.assertEqual(len(list(bag.payload_files())), 5)
+
+class TestValidation(unittest.TestCase):
+
+    def setUp(self):
+        if os.path.isdir('test-data-tmp'):
+            shutil.rmtree('test-data-tmp')
+        shutil.copytree('test-data', 'test-data-tmp')
+        self.bag = bagit.make_bag('test-data-tmp')
+
     def tearDown(self):
         if os.path.isdir('test-data-tmp'):
             shutil.rmtree('test-data-tmp')
+        self.bag = None
+
+    def test_missing_file(self):
+        os.remove('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg')
+        self.assertRaises(bagit.BagValidationError, self.bag.validate)
+
+    def test_different_file(self):
+        self.assertTrue(os.path.isfile('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg'))
+        fh = open('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg', 'w')
+        fh.write('all your file are belong to us')
+        fh.close()
+        # TODO: this oughta pass
+        # self.assertRaises(bagit.BagValidationError, self.bag.validate)
 
 if __name__ == '__main__':
     unittest.main()

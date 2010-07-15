@@ -8,10 +8,15 @@ project as needed or you can install globally with:
 
   python setup.py install
 
-From python you can use the bagit module like this:
+From python you can use the bagit module to make a bag like this: 
 
   import bagit
-  bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+  bag = bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+
+Or if you've got an existing bag
+
+  import bagit
+  bag = bagit.Bag('/path/to/bag')
 
 Or from the command line:
 

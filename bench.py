@@ -41,6 +41,6 @@ bagit.make_bag('bench-data', processes=%s)
 """
 
 # try 1-8 parallel processes
-for p in range(1,9):
+for p in range(1, 9):
     t = timeit.Timer(statement % p)
-    print "%s processes: %.2f seconds " % (p, (10 * t.timeit(number=10)/10))
+    print "%s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10))
