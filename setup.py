@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 description = \
 """
@@ -9,7 +9,7 @@ See: http://tools.ietf.org/html/draft-kunze-bagit
 
 setup(
     name = 'bagit',
-    version = '0.6',
+    version = '0.7',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
@@ -17,6 +17,7 @@ setup(
     scripts = ['bagit.py'],
     description = description,
     platforms = ['POSIX'],
+    test_suite = 'test',
     classifiers = [
         'License :: Public Domain',
         'Intended Audience :: Developers',
