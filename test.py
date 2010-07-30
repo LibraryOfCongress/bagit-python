@@ -51,7 +51,12 @@ class TestBag(unittest.TestCase):
         info = {'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag('test-data-tmp', bag_info=info)
         self.assertTrue(isinstance(bag, bagit.Bag))
-        self.assertEqual(list(bag.payload_files()), [ 'data/README', 'data/si/2584174182_ffd5c24905_b_d.jpg', 'data/si/4011399822_65987a4806_b_d.jpg', 'data/loc/2478433644_2839c5e8b8_o_d.jpg', 'data/loc/3314493806_6f1db86d66_o_d.jpg'])
+        self.assertEqual(set(bag.payload_files()), set([
+            'data/README',
+            'data/si/2584174182_ffd5c24905_b_d.jpg',
+            'data/si/4011399822_65987a4806_b_d.jpg',
+            'data/loc/2478433644_2839c5e8b8_o_d.jpg',
+            'data/loc/3314493806_6f1db86d66_o_d.jpg']))
         self.assertEqual(list(bag.manifest_files()), ['test-data-tmp/manifest-md5.txt'])
         self.assertEqual(bag.validate(), True)
 
