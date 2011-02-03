@@ -1,9 +1,14 @@
 import os
 import shutil
+import logging
 import datetime
 import unittest
 
 import bagit
+
+# don't let < ERROR clutter up test output
+logging.basicConfig(level=logging.ERROR)
+
 
 class TestBag(unittest.TestCase):
 
@@ -78,6 +83,17 @@ class TestBag(unittest.TestCase):
         os.remove(os.path.join("test-data-tmp", "data", "loc",
             "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, bag.validate)
+
+    def test_validate_flipped_bit(self):
+        bag = bagit.make_bag('test-data-tmp')
+        readme = os.path.join("test-data-tmp", "data", "README")
+        txt = open(readme).read()
+        txt = 'A' + txt[1:]
+        open(readme, "w").write(txt)
+        bag = bagit.Bag('test-data-tmp')
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+        # fast doesn't catch the flipped bit, since oxsum is the same
+        self.assertTrue(bag.validate(fast=True))
 
     def test_validate_fast(self):
         bag = bagit.make_bag('test-data-tmp')

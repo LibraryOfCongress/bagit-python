@@ -32,6 +32,7 @@ For more help see:
 """
 
 import os
+import sys
 import hashlib
 import logging
 import optparse
@@ -139,8 +140,8 @@ class Bag(object):
         if path:
             self._open()
 
-    def __unicode__(self):
-        return u'Bag(path="%s")' % self.path
+    def __str__(self):
+        return self.path
 
     def _open(self):
         # Open the bagit.txt file, and load any tags from it, including
@@ -386,11 +387,11 @@ class Bag(object):
 
             # Create a clone of the default empty hash objects:
             f_hashers = dict(
-                (alg, h.copy()) for alg, h in hashers.items() if alg in hashes
+                (alg, hashlib.new(alg)) for alg, h in hashers.items() if alg in hashes
             )
 
             try:
-                f_hashes = self._calculate_file_hashes(full_path, hashers)
+                f_hashes = self._calculate_file_hashes(full_path, f_hashers)
             except BagValidationError, e:
                 raise e
             # Any unhandled exceptions are probably fatal
@@ -398,8 +399,8 @@ class Bag(object):
                 logging.exception("unable to calculate file hashes for %s: %s", self, full_path)
                 raise
 
-            for alg, stored_hash in f_hashes.items():
-                computed_hash = f_hashes[alg]
+            for alg, computed_hash in f_hashes.items():
+                stored_hash = hashes[alg]
                 if stored_hash != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
                     errors.append("%s (%s)" % (full_path, alg))
@@ -524,7 +525,8 @@ def _make_opt_parser():
                       help='parallelize checksums generation')
     parser.add_option('--log', action='store', dest='log')
     parser.add_option('--quiet', action='store_true', dest='quiet')
-    parser.add_option('--validate', action='store-true', dest='validate')
+    parser.add_option('--validate', action='store_true', dest='validate')
+    parser.add_option('--fast', action='store_true', dest='fast')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
@@ -556,6 +558,28 @@ if __name__ == '__main__':
     opt_parser = _make_opt_parser()
     opts, args = opt_parser.parse_args()
     _configure_logging(opts)
+    log = logging.getLogger()
+
+    rc = 0
     for bag_dir in args:
-        make_bag(bag_dir, bag_info=opt_parser.bag_info, 
-                processes=opts.processes)
+
+        # validate the bag
+        if opts.validate:
+            try:
+                bag = Bag(bag_dir)
+                # validate throws a BagError or BagValidationError
+                valid = bag.validate(fast=opts.fast)
+                if opts.fast:
+                    log.info("%s valid according to Payload-Oxum" % bag_dir)
+                else:
+                    log.info("%s is valid")
+            except BagError, e:
+                log.info("%s is invalid: %s" % (bag_dir, e))
+                rc = 1
+
+        # make the bag
+        else:
+            make_bag(bag_dir, bag_info=opt_parser.bag_info, 
+                     processes=opts.processes)
+
+        sys.exit(rc)
