@@ -131,6 +131,7 @@ class Bag(object):
     def __init__(self, path=None):
         super(Bag, self).__init__()
         self.tags = {}
+        self.info = {}
         self.entries = {}
         self.algs = []
         self.tag_file_name = None
@@ -236,13 +237,18 @@ class Bag(object):
             yield url
 
     def has_oxum(self):
-        return self.tags.has_key('Payload-Oxum')
+        return self.info.has_key('Payload-Oxum')
 
-    def validate(self):
-        """Checks the structure and contents are valid
+    def validate(self, fast=False):
+        """Checks the structure and contents are valid. If you supply 
+        the parameter fast=True the Payload-Oxum (if present) will 
+        be used to check that the payload files are present and 
+        accounted for, instead of re-calculating fixities and 
+        comparing them against the manifest. By default validate()
+        will re-calculate fixities (fast=False).
         """
         self._validate_structure()
-        self._validate_contents()
+        self._validate_contents(fast=fast)
         return True
 
     def _load_manifests(self):
@@ -254,7 +260,6 @@ class Bag(object):
 
             try:
                 for line in manifest_file:
-                    print line
                     line = line.strip()
 
                     # Ignore blank lines and comments.
@@ -326,16 +331,15 @@ class Bag(object):
     def _validate_structure_is_valid_tag_file_name(self, file_name):
         return file_name == self.tag_file_name
 
-    def _validate_contents(self):
-        """
-        Validate the contents of this bag, which can be a very time-consuming
-        operation
-        """
+    def _validate_contents(self, fast=False):
+        if fast and not self.has_oxum():
+            raise BagValidationError("cannot validate Bag with fast=True if Bag lacks a Payload-Oxum")
         self._validate_oxum()    # Fast
-        self._validate_entries() # *SLOW*
+        if not fast:
+            self._validate_entries() # *SLOW*
 
     def _validate_oxum(self):
-        oxum = self.tags.get('Payload-Oxum')
+        oxum = self.info.get('Payload-Oxum')
         if oxum == None: return
 
         byte_count, file_count = oxum.split('.', 1)
@@ -354,7 +358,7 @@ class Bag(object):
             total_files += 1
 
         if file_count != total_files or byte_count != total_bytes:
-            raise BagError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
+            raise BagValidationError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
 
     def _validate_entries(self):
         """
@@ -520,6 +524,7 @@ def _make_opt_parser():
                       help='parallelize checksums generation')
     parser.add_option('--log', action='store', dest='log')
     parser.add_option('--quiet', action='store_true', dest='quiet')
+    parser.add_option('--validate', action='store-true', dest='validate')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
