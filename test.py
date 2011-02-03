@@ -113,14 +113,5 @@ class TestBag(unittest.TestCase):
         os.remove('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg')
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
-    def test_different_file(self):
-        bag = bagit.make_bag('test-data-tmp')
-        self.assertTrue(os.path.isfile('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg'))
-        fh = open('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg', 'w')
-        fh.write('all your file are belong to us')
-        fh.close()
-        # TODO: this oughta pass
-        # self.assertRaises(bagit.BagValidationError, self.bag.validate)
-
 if __name__ == '__main__':
     unittest.main()
