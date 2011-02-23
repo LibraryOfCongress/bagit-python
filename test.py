@@ -115,7 +115,23 @@ class TestBag(unittest.TestCase):
 
     def test_handle_directory_end_slash_gracefully(self):
         bag = bagit.make_bag('test-data-tmp/')
-        self.assertEqual(bag.validate(), True)
+        self.assertTrue(bag.validate())
+        bag2 = bagit.Bag('test-data-tmp/')
+        self.assertTrue(bag2.validate())
+
+    def test_allow_extraneous_files_in_base(self):
+        bag = bagit.make_bag('test-data-tmp')
+        self.assertTrue(bag.validate())
+        f = os.path.join("test-data-tmp", "IGNOREFILE")
+        open(f, 'w')
+        self.assertTrue(bag.validate())
+
+    def test_allow_extraneous_dirs_in_base(self):
+        bag = bagit.make_bag('test-data-tmp')
+        self.assertTrue(bag.validate())
+        d = os.path.join("test-data-tmp", "IGNOREDIR")
+        os.mkdir(d)
+        self.assertTrue(bag.validate())
 
 
 if __name__ == '__main__':

@@ -75,10 +75,6 @@ def make_bag(bag_dir, bag_info=None, processes=1):
         logging.error("no such bag directory %s" % bag_dir)
         raise RuntimeError("no such bag directory %s" % bag_dir)
 
-    # if bag_dir ends in a path separator, strip it off
-    if bag_dir[-1] == os.sep:
-        bag_dir = bag_dir[:-1]
-
     old_dir = os.path.abspath(os.path.curdir)
     os.chdir(bag_dir)
 
@@ -142,6 +138,9 @@ class Bag(object):
         self.tag_file_name = None
         self.path = path
         if path:
+            # if path ends in a path separator, strip it off
+            if path[-1] == os.sep:
+                self.path = path[:-1]
             self._open()
 
     def __str__(self):
