@@ -296,7 +296,7 @@ class Bag(object):
            a BagValidationError exception.
         """
         self._validate_structure_payload_directory()
-        self._validate_structure_tag_files()
+        #self._validate_structure_tag_files()
 
     def _validate_structure_payload_directory(self):
         data_dir_path = os.path.join(self.path, "data")
@@ -304,33 +304,33 @@ class Bag(object):
         if not isdir(data_dir_path):
             raise BagValidationError("Missing data directory.")
 
-    def _validate_structure_tag_files(self):
-        # Files allowed in all versions are:
-        #  - tagmanifest-<alg>.txt
-        #  - manifest-<alt>.txt
-        #  - bagit.txt
-        #  - fetch.txt
-        valid_files = list(self.valid_files)
+    # def _validate_structure_tag_files(self):
+    #     # Files allowed in all versions are:
+    #     #  - tagmanifest-<alg>.txt
+    #     #  - manifest-<alt>.txt
+    #     #  - bagit.txt
+    #     #  - fetch.txt
+    #     valid_files = list(self.valid_files)
 
-        # The manifest files and tagmanifest files will start with {self.path}/
-        # So strip that off.
-        for f in chain(self.manifest_files(), self.tagmanifest_files()):
-            valid_files.append(f[len(self.path) + 1:])
+    #     # The manifest files and tagmanifest files will start with {self.path}/
+    #     # So strip that off.
+    #     for f in chain(self.manifest_files(), self.tagmanifest_files()):
+    #         valid_files.append(f[len(self.path) + 1:])
 
-        for name in os.listdir(self.path):
-            fullname = os.path.join(self.path, name)
+    #     for name in os.listdir(self.path):
+    #         fullname = os.path.join(self.path, name)
 
-            if isdir(fullname):
-                if not name in self.valid_directories:
-                    raise BagValidationError("Extra directory found: %s" % name)
-            elif isfile(fullname):
-                if not name in valid_files:
-                    is_valid = self._validate_structure_is_valid_tag_file_name(name)
-                    if not is_valid:
-                        raise BagValidationError("Extra tag file found: %s" % name)
-            else:
-                # Something that's  neither a dir or a file. WTF?
-                raise BagValidationError("Unknown item in bag: %s" % name)
+    #         if isdir(fullname):
+    #             if not name in self.valid_directories:
+    #                 raise BagValidationError("Extra directory found: %s" % name)
+    #         elif isfile(fullname):
+    #             if not name in valid_files:
+    #                 is_valid = self._validate_structure_is_valid_tag_file_name(name)
+    #                 if not is_valid:
+    #                     raise BagValidationError("Extra tag file found: %s" % name)
+    #         else:
+    #             # Something that's  neither a dir or a file. WTF?
+    #             raise BagValidationError("Unknown item in bag: %s" % name)
 
     def _validate_structure_is_valid_tag_file_name(self, file_name):
         return file_name == self.tag_file_name
