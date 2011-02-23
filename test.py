@@ -113,5 +113,10 @@ class TestBag(unittest.TestCase):
         os.remove('test-data-tmp/data/loc/3314493806_6f1db86d66_o_d.jpg')
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
+    def test_handle_directory_end_slash_gracefully(self):
+        bag = bagit.make_bag('test-data-tmp/')
+        self.assertEqual(bag.validate(), True)
+
+
 if __name__ == '__main__':
     unittest.main()
