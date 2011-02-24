@@ -133,6 +133,18 @@ class TestBag(unittest.TestCase):
         os.mkdir(d)
         self.assertTrue(bag.validate())
 
+    def test_missing_tagfile_raises_error(self):
+        bag = bagit.make_bag('test-data-tmp')
+        self.assertTrue(bag.validate())
+        os.remove(os.path.join("test-data-tmp", "bagit.txt"))
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+
+    def test_missing_manifest_raises_error(self):
+        bag = bagit.make_bag('test-data-tmp')
+        self.assertTrue(bag.validate())
+        os.remove(os.path.join("test-data-tmp", "manifest-md5.txt"))
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+
 
 if __name__ == '__main__':
     unittest.main()
