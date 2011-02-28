@@ -553,7 +553,7 @@ if __name__ == '__main__':
                 if opts.fast:
                     log.info("%s valid according to Payload-Oxum" % bag_dir)
                 else:
-                    log.info("%s is valid")
+                    log.info("%s is valid" % bag_dir)
             except BagError, e:
                 log.info("%s is invalid: %s" % (bag_dir, e))
                 rc = 1
