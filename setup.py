@@ -9,7 +9,7 @@ See: http://tools.ietf.org/html/draft-kunze-bagit
 
 setup(
     name = 'bagit',
-    version = '0.9.4',
+    version = '0.9.5',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',

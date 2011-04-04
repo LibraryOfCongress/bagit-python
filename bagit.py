@@ -472,12 +472,12 @@ def _make_manifest(manifest_file, data_dir, processes):
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
         for fn in filenames:
-            # The BagIt spec requires paths to always use '/' as the path 
-            # separator, even on platforms where it is not the default, 
-            # e.g. Windows
             path = os.path.join(dirpath, fn)
-            parts = os.path.split(path)
-            yield "/".join(parts)
+            # BagIt spec requires manifest to always use '/' as path separator
+            if os.path.sep != '/':
+                parts = path.split(os.path.sep)
+                path = '/'.join(parts)
+            yield path
 
 def _manifest_line(filename):
     fh = urlopen(filename)
