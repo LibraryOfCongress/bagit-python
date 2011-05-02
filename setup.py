@@ -4,12 +4,12 @@ description = \
 """
 This package can be used to create BagIt style packages of
 digital content for safe transmission and digital preservation.
-See: http://tools.ietf.org/html/draft-kunze-bagit
+See: http://en.wikipedia.org/wiki/BagIt for more details.
 """
 
 setup(
     name = 'bagit',
-    version = '0.9.5',
+    version = '0.9.6',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',

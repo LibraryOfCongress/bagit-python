@@ -458,11 +458,21 @@ def _parse_tags(file):
 
 def _make_manifest(manifest_file, data_dir, processes):
     logging.info('writing manifest with %s processes' % processes)
-    pool = multiprocessing.Pool(processes=processes)
+
+    # avoid using multiprocessing unless it is required since
+    # multiprocessing doesn't work in some environments (mod_wsgi, etc)
+
+    if processes > 1:
+        pool = multiprocessing.Pool(processes=processes)
+        checksums = pool.map(_manifest_line, _walk(data_dir))
+    else:
+        checksums = map(_manifest_line, _walk(data_dir))
+
     manifest = open(manifest_file, 'w')
     num_files = 0
     total_bytes = 0
-    for digest, filename, bytes in pool.map(_manifest_line, _walk(data_dir)):
+
+    for digest, filename, bytes in checksums:
         num_files += 1
         total_bytes += bytes
         manifest.write("%s  %s\n" % (digest, filename))

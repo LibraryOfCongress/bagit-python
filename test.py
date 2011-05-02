@@ -145,6 +145,11 @@ class TestBag(unittest.TestCase):
         os.remove(os.path.join("test-data-tmp", "manifest-md5.txt"))
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
+    def test_make_bag_multiprocessing(self):
+        bag = bagit.make_bag('test-data-tmp', processes=2)
+        self.assertTrue(os.path.isdir('test-data-tmp/data'))
+
+
 
 if __name__ == '__main__':
     unittest.main()
