@@ -73,17 +73,6 @@ class TestBag(unittest.TestCase):
         self.assertEqual(type(bag), bagit.Bag)
         self.assertEqual(len(list(bag.payload_files())), 5)
 
-    def test_bag_url(self):
-        bag = bagit.Bag('http://chroniclingamerica.loc.gov/data/dlc/batch_dlc_jamaica_ver01/')
-        self.assertEqual(len(bag.entries), 19396)
-
-    def test_validate(self):
-        bag = bagit.make_bag('test-data-tmp')
-        self.assertEqual(bag.validate(), True)
-        os.remove(os.path.join("test-data-tmp", "data", "loc",
-            "2478433644_2839c5e8b8_o_d.jpg"))
-        self.assertRaises(bagit.BagValidationError, bag.validate)
-
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag('test-data-tmp')
         readme = os.path.join("test-data-tmp", "data", "README")

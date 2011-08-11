@@ -41,7 +41,6 @@ import multiprocessing
 from glob import glob
 from datetime import date
 from itertools import chain
-from urllib import urlopen
 
 # standard bag-info.txt metadata
 _bag_info_headers = [
@@ -223,7 +222,7 @@ class Bag(object):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
-            fetch_file = urlopen(fetch_file_path)
+            fetch_file = open(fetch_file_path)
 
             try:
                 for line in fetch_file:
@@ -233,12 +232,8 @@ class Bag(object):
                 fetch_file.close()
 
     def files_to_be_fetched(self):
-        for url, size, path in self.fetch_entries():
-            yield path
-
-    def urls_to_be_fetched(self):
-        for url, size, path in self.fetch_entries():
-            yield url
+        for f, size, path in self.fetch_entries():
+            yield f 
 
     def has_oxum(self):
         return self.info.has_key('Payload-Oxum')
@@ -260,7 +255,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
             self.algs.append(alg)
 
-            manifest_file = urlopen(manifest_file)
+            manifest_file = open(manifest_file)
 
             try:
                 for line in manifest_file:
@@ -397,7 +392,7 @@ class Bag(object):
         if not os.path.exists(full_path):
             raise BagValidationError("%s does not exist" % full_path)
 
-        f = urlopen(full_path)
+        f = open(full_path)
 
         f_size = os.stat(full_path).st_size
 
@@ -413,7 +408,7 @@ class Bag(object):
         )
 
 def _load_tag_file(tag_file_name):
-    tag_file = urlopen(tag_file_name)
+    tag_file = open(tag_file_name)
 
     try:
         return dict(_parse_tags(tag_file))
@@ -490,7 +485,7 @@ def _walk(data_dir):
             yield path
 
 def _manifest_line(filename):
-    fh = urlopen(filename)
+    fh = open(filename)
     m = hashlib.md5()
     total_bytes = 0
     while True:
@@ -542,12 +537,12 @@ def _configure_logging(opts):
 
 def isfile(path):
     if path.startswith('http://'):
-        return urlopen(path).getcode() == 200
+        return open(path).getcode() == 200
     return os.path.isfile(path)
 
 def isdir(path):
     if path.startswith('http://'):
-        return urlopen(path).getcode() == 200
+        return open(path).getcode() == 200
     return os.path.isdir(path)
 
 if __name__ == '__main__':
