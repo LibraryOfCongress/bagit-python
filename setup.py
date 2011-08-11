@@ -9,7 +9,7 @@ See: http://en.wikipedia.org/wiki/BagIt for more details.
 
 setup(
     name = 'bagit',
-    version = '0.9.6',
+    version = '0.9.7',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
