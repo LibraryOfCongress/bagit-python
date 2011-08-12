@@ -92,10 +92,10 @@ def make_bag(bag_dir, bag_info=None, processes=1):
 
         logging.info("writing bagit.txt")
         txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
-        open("bagit.txt", "w").write(txt)
+        open("bagit.txt", "wb").write(txt)
 
         logging.info("writing bag-info.txt")
-        bag_info_txt = open("bag-info.txt", "w")
+        bag_info_txt = open("bag-info.txt", "wb")
         if bag_info == None:
             bag_info = {}
         bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
@@ -222,7 +222,7 @@ class Bag(object):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
-            fetch_file = open(fetch_file_path)
+            fetch_file = open(fetch_file_path, 'rb')
 
             try:
                 for line in fetch_file:
@@ -255,7 +255,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
             self.algs.append(alg)
 
-            manifest_file = open(manifest_file)
+            manifest_file = open(manifest_file, 'rb')
 
             try:
                 for line in manifest_file:
@@ -392,7 +392,7 @@ class Bag(object):
         if not os.path.exists(full_path):
             raise BagValidationError("%s does not exist" % full_path)
 
-        f = open(full_path)
+        f = open(full_path, 'rb')
 
         f_size = os.stat(full_path).st_size
 
@@ -408,7 +408,7 @@ class Bag(object):
         )
 
 def _load_tag_file(tag_file_name):
-    tag_file = open(tag_file_name)
+    tag_file = open(tag_file_name, 'rb')
 
     try:
         return dict(_parse_tags(tag_file))
@@ -463,7 +463,7 @@ def _make_manifest(manifest_file, data_dir, processes):
     else:
         checksums = map(_manifest_line, _walk(data_dir))
 
-    manifest = open(manifest_file, 'w')
+    manifest = open(manifest_file, 'wb')
     num_files = 0
     total_bytes = 0
 
@@ -485,7 +485,7 @@ def _walk(data_dir):
             yield path
 
 def _manifest_line(filename):
-    fh = open(filename)
+    fh = open(filename, 'rb')
     m = hashlib.md5()
     total_bytes = 0
     while True:
@@ -536,8 +536,6 @@ def _configure_logging(opts):
         logging.basicConfig(level=level, format=log_format)
 
 def isfile(path):
-    if path.startswith('http://'):
-        return open(path).getcode() == 200
     return os.path.isfile(path)
 
 def isdir(path):
