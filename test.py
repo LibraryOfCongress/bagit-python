@@ -65,7 +65,8 @@ class TestBag(unittest.TestCase):
             'data/si/4011399822_65987a4806_b_d.jpg',
             'data/loc/2478433644_2839c5e8b8_o_d.jpg',
             'data/loc/3314493806_6f1db86d66_o_d.jpg']))
-        self.assertEqual(list(bag.manifest_files()), ['test-data-tmp/manifest-md5.txt'])
+        self.assertEqual(list(bag.manifest_files()), ['%s/manifest-md5.txt' %
+            self.tmpdir])
 
     def test_has_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -79,7 +80,7 @@ class TestBag(unittest.TestCase):
 
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
-        readme = os.path.join("test-data-tmp", "data", "README")
+        readme = os.path.join(self.tmpdir, "data", "README")
         txt = open(readme).read()
         txt = 'A' + txt[1:]
         open(readme, "w").write(txt)
@@ -91,13 +92,13 @@ class TestBag(unittest.TestCase):
     def test_validate_fast(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertEqual(bag.validate(fast=True), True)
-        os.remove(os.path.join("test-data-tmp", "data", "loc",
+        os.remove(os.path.join(self.tmpdir, "data", "loc",
             "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=True)
 
     def test_validate_fast_without_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
-        os.remove(os.path.join("test-data-tmp", "bag-info.txt"))
+        os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=True)
 
@@ -107,35 +108,35 @@ class TestBag(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
     def test_handle_directory_end_slash_gracefully(self):
-        bag = bagit.make_bag('test-data-tmp/')
+        bag = bagit.make_bag(self.tmpdir + '/')
         self.assertTrue(bag.validate())
-        bag2 = bagit.Bag('test-data-tmp/')
+        bag2 = bagit.Bag(self.tmpdir + '/')
         self.assertTrue(bag2.validate())
 
     def test_allow_extraneous_files_in_base(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.validate())
-        f = os.path.join("test-data-tmp", "IGNOREFILE")
+        f = os.path.join(self.tmpdir, "IGNOREFILE")
         open(f, 'w')
         self.assertTrue(bag.validate())
 
     def test_allow_extraneous_dirs_in_base(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.validate())
-        d = os.path.join("test-data-tmp", "IGNOREDIR")
+        d = os.path.join(self.tmpdir, "IGNOREDIR")
         os.mkdir(d)
         self.assertTrue(bag.validate())
 
     def test_missing_tagfile_raises_error(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.validate())
-        os.remove(os.path.join("test-data-tmp", "bagit.txt"))
+        os.remove(os.path.join(self.tmpdir, "bagit.txt"))
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
     def test_missing_manifest_raises_error(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.validate())
-        os.remove(os.path.join("test-data-tmp", "manifest-md5.txt"))
+        os.remove(os.path.join(self.tmpdir, "manifest-md5.txt"))
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
     def test_make_bag_multiprocessing(self):
