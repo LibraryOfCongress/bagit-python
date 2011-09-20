@@ -53,7 +53,7 @@ Development
     % cd bagit 
     % python test.py
 
-If you'd like to see how increasingl parallelization of bag creation on 
+If you'd like to see how increasing parallelization of bag creation on 
 your system effects the time to create a bag try using the included bench 
 utility:
 
