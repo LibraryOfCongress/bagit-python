@@ -2,7 +2,8 @@ bagit
 =====
 
 bagit is a Python library for creating 
-[BagIt](http://purl.org/net/bagit) style packages programmatically in Python or from the command line.
+[BagIt](http://purl.org/net/bagit) style packages programmatically in Python or
+from the command line.
 
 Installation
 ------------
