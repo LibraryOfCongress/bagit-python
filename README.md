@@ -24,8 +24,10 @@ bag = bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
 
 Or if you've got an existing bag
 
-    import bagit
-    bag = bagit.Bag('/path/to/bag')
+```python
+import bagit
+bag = bagit.Bag('/path/to/bag')
+```
 
 Or from the command line:
 
@@ -34,7 +36,9 @@ Or from the command line:
 If you'd like to generate the checksums using parallel system processes, 
 instead of single process:
 
-    bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'}, processes=4) 
+```python
+bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'}, processes=4) 
+```
 
 or:
 
