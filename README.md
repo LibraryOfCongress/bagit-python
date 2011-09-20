@@ -63,4 +63,4 @@ utility:
 License
 -------
 
-[Public Domain](http://creativecommons.org/licenses/publicdomain/)
+[CC0](http://creativecommons.org/choose/zero/)
