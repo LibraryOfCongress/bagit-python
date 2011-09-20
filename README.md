@@ -17,8 +17,10 @@ Usage
 
 From python you can use the bagit module to make a bag like this: 
 
-    import bagit
-    bag = bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+```python
+import bagit
+bag = bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+```
 
 Or if you've got an existing bag
 
