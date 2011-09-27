@@ -54,6 +54,7 @@ class TestBag(unittest.TestCase):
         today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
+        self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/edsu/bagit' in bag_info_txt)
 
     def test_bag_class(self):
         info = {'Contact-Email': 'ehs@pobox.com'}

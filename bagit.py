@@ -100,6 +100,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             bag_info = {}
         bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
         bag_info['Payload-Oxum'] = Oxum
+        bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
         headers = bag_info.keys()
         headers.sort()
         for h in headers:
