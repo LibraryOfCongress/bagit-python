@@ -460,6 +460,8 @@ def _make_manifest(manifest_file, data_dir, processes):
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
         checksums = pool.map(_manifest_line, _walk(data_dir))
+        pool.close()
+        pool.join()
     else:
         checksums = map(_manifest_line, _walk(data_dir))
 
