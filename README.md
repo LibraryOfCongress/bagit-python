@@ -34,6 +34,16 @@ Or from the command line:
 
     bagit.py --contact-name 'Ed Summers' mydir
 
+If you want to validate a bag you can:
+
+```python
+bag = bagit.Bag('/path/to/bag')
+if bag.validate():
+    print "yay :)"
+else:
+    print "boo :("
+```
+
 If you'd like to generate the checksums using parallel system processes, 
 instead of single process:
 
