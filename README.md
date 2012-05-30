@@ -1,8 +1,7 @@
 bagit
 =====
 
-bagit is a Python library and command line utility for working with  
-[BagIt](http://purl.org/net/bagit) style packages.
+bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
 Installation
 ------------
