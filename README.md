@@ -1,6 +1,9 @@
 bagit
 =====
 
+[![Build Status](https://secure.travis-ci.org/edsu/bagit.png)
+ ](http://travis-ci.org/edsu/bagit)
+
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
 Installation
@@ -71,4 +74,4 @@ utility:
 License
 -------
 
-[CC0](http://creativecommons.org/choose/zero/)
+[![cc0](http://i.creativecommons.org/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/)
