@@ -1,8 +1,7 @@
 bagit
 =====
 
-[![Build Status](https://secure.travis-ci.org/edsu/bagit.png)
- ](http://travis-ci.org/edsu/bagit)
+[![Build Status](https://secure.travis-ci.org/edsu/bagit.png)](http://travis-ci.org/edsu/bagit)
 
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
