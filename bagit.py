@@ -62,6 +62,7 @@ _bag_info_headers = [
 
 checksum_algos = ['md5', 'sha1']
 
+
 def make_bag(bag_dir, bag_info=None, processes=1):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -78,34 +79,46 @@ def make_bag(bag_dir, bag_info=None, processes=1):
     os.chdir(bag_dir)
 
     try:
-        logging.info("creating data dir")
-        os.mkdir('data')
+        unbaggable = _can_bag(os.curdir)
+        if unbaggable:
+            logging.error("no write permissions for the following directories and files: \n%s", unbaggable)
+            sys.exit("\nNot all files/folders can be moved.")
+        unreadable_dirs, unreadable_files = _can_read(os.curdir)
+        if unreadable_dirs or unreadable_files:
+            if unreadable_dirs:
+                logging.error("The follwing directories do not have read permissions: \n%s", unreadable_dirs)
+            if unreadable_files:
+                logging.error("The follwing files do not have read permissions: \n%s", unreadable_files)
+            sys.exit("\nRead permissions are required to calculate file fixities.")
+        else:
+            logging.info("creating data dir")
+            os.mkdir('data')
 
-        for f in os.listdir('.'):
-            if f == 'data': continue
-            new_f = os.path.join('data', f)
-            logging.info("moving %s to %s" % (f, new_f))
-            os.rename(f, new_f)
+            for f in os.listdir('.'):
+                if f == 'data': continue
+                new_f = os.path.join('data', f)
+                logging.info("moving %s to %s" % (f, new_f))
+                os.rename(f, new_f)
 
-        logging.info("writing manifest-md5.txt")
-        Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
+            logging.info("writing manifest-md5.txt")
+            Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
 
-        logging.info("writing bagit.txt")
-        txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
-        open("bagit.txt", "wb").write(txt)
+            logging.info("writing bagit.txt")
+            txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
+            open("bagit.txt", "wb").write(txt)
 
-        logging.info("writing bag-info.txt")
-        bag_info_txt = open("bag-info.txt", "wb")
-        if bag_info == None:
-            bag_info = {}
-        bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
-        bag_info['Payload-Oxum'] = Oxum
-        bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
-        headers = bag_info.keys()
-        headers.sort()
-        for h in headers:
-            bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
-        bag_info_txt.close()
+            logging.info("writing bag-info.txt")
+            bag_info_txt = open("bag-info.txt", "wb")
+            if bag_info == None:
+                bag_info = {}
+            bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
+            bag_info['Payload-Oxum'] = Oxum
+            bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
+            headers = bag_info.keys()
+            headers.sort()
+            for h in headers:
+                bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
+            bag_info_txt.close()
 
     except Exception, e:
         logging.error(e)
@@ -486,6 +499,30 @@ def _walk(data_dir):
                 parts = path.split(os.path.sep)
                 path = '/'.join(parts)
             yield path
+
+def _can_bag(test_dir):
+    """returns (unwriteable files/folders)
+    """
+    unwriteable = []
+    for inode in os.listdir(test_dir):
+        if not os.access(os.path.join(test_dir, inode), os.W_OK):
+            unwriteable.append(os.path.join(os.path.abspath(test_dir), inode))
+    return tuple(unwriteable)
+
+def _can_read(test_dir):
+    """
+    returns ((unreadable_dirs), (unreadable_files))
+    """
+    unreadable_dirs = []
+    unreadable_files = []
+    for dirpath, dirnames, filenames in os.walk(test_dir):
+        for dn in dirnames:
+            if not os.access(os.path.join(dirpath, dn), os.R_OK):
+                unreadable_dirs.append(os.path.join(dirpath, dn))
+        for fn in filenames:
+            if not os.access(os.path.join(dirpath, fn), os.R_OK):
+                unreadable_files.append(os.path.join(dirpath, fn))
+    return (tuple(unreadable_dirs), tuple(unreadable_files))
 
 def _manifest_line(filename):
     fh = open(filename, 'rb')
