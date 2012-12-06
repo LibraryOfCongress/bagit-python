@@ -7,6 +7,18 @@ digital content for safe transmission and digital preservation.
 See: http://en.wikipedia.org/wiki/BagIt for more details.
 """
 
+# for older pythons ...
+requirements = []
+try:
+    import multiprocessing
+except:
+    requirements.append("multiprocessing")
+try:
+    import hashlib
+except:
+    requirements.append("hashlib")
+
+
 setup(
     name = 'bagit',
     version = '0.9.8',
@@ -18,6 +30,7 @@ setup(
     description = description,
     platforms = ['POSIX'],
     test_suite = 'test',
+    install_requires = requirements,
     classifiers = [
         'License :: Public Domain',
         'Intended Audience :: Developers',
