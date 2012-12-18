@@ -122,11 +122,11 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             bag_info_txt.close()
 
     except Exception, e:
-        logging.error(e)
-
-    finally:
         os.chdir(old_dir)
+        logging.error(e)
+        raise e
 
+    os.chdir(old_dir)
     return Bag(bag_dir)
 
 
@@ -243,9 +243,11 @@ class Bag(object):
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
-            finally:
+            except Exception, e:
                 fetch_file.close()
+                raise e
 
+            fetch_file.close()
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
             yield f 
