@@ -103,6 +103,13 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=True)
 
+    def test_validate_slow_without_oxum_extra_file(self):
+        bag = bagit.make_bag(self.tmpdir)
+        os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
+        os.mknod(os.path.join(self.tmpdir, "data", "extra_file"))
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
+
     def test_missing_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, 'data', 'loc', '3314493806_6f1db86d66_o_d.jpg'))

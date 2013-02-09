@@ -360,6 +360,16 @@ class Bag(object):
         """
         errors = list()
 
+        # First we'll make sure there's no mismatch between the filesystem
+        # and the list of files in the manifest(s)
+        only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
+        for path in only_in_manifests:
+            logging.warning("%s: exists in manifest but not in filesystem", path)
+            errors.append(path)
+        for path in only_on_fs:
+            logging.warning("%s: exists in filesystem but not in manifests", path)
+            errors.append(path)
+
         # To avoid the overhead of reading the file more than once or loading
         # potentially massive files into memory we'll create a dictionary of
         # hash objects so we can open a file, read a block and pass it to
