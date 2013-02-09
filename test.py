@@ -106,7 +106,7 @@ class TestBag(unittest.TestCase):
     def test_validate_slow_without_oxum_extra_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
-        os.mknod(os.path.join(self.tmpdir, "data", "extra_file"))
+        open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("foo")
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
