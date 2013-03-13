@@ -1,4 +1,9 @@
+from sys import version, exit
 from setuptools import setup
+
+if version < '2.4.0' or version > '3.0.0':
+    print "python 2.4 - 2.7 is required"
+    exit(1)
 
 description = \
 """
@@ -21,7 +26,7 @@ except:
 
 setup(
     name = 'bagit',
-    version = '1.0.0',
+    version = '1.0.1',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
@@ -37,5 +42,9 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
+        'Programming Language :: Python :: 2.4',
+        'Programming Language :: Python :: 2.5',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7'
     ],
 )
