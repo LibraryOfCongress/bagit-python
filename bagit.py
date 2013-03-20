@@ -87,9 +87,9 @@ def make_bag(bag_dir, bag_info=None, processes=1):
         unreadable_dirs, unreadable_files = _can_read(os.curdir)
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
-                logging.error("The follwing directories do not have read permissions: \n%s", unreadable_dirs)
+                logging.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
             if unreadable_files:
-                logging.error("The follwing files do not have read permissions: \n%s", unreadable_files)
+                logging.error("The following files do not have read permissions: \n%s", unreadable_files)
             sys.exit("\nRead permissions are required to calculate file fixities.")
         else:
             logging.info("creating data dir")
