@@ -26,7 +26,7 @@ except:
 
 setup(
     name = 'bagit',
-    version = '1.0.1',
+    version = '1.0.2',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
