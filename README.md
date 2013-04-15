@@ -3,7 +3,7 @@ bagit
 
 [![Build Status](https://secure.travis-ci.org/edsu/bagit.png)](http://travis-ci.org/edsu/bagit)
 
-This is a fork of the bagit Python library by [edsu](https://github.com/edsu/bagit) for Python 3.3 under active development.
+This is a port of the bagit Python library by [edsu](https://github.com/edsu/bagit) to Python 3.3 and is under active development.
 
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
