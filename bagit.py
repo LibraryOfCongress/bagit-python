@@ -490,8 +490,6 @@ def _make_manifest(manifest_file, data_dir, processes):
         pool.join()
     else:
         checksums = list(map(_manifest_line, _walk(data_dir)))
-        # import pdb
-        # pdb.set_trace()
 
     with open(manifest_file, 'w', encoding='utf8') as manifest:
       num_files = 0
