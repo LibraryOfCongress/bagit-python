@@ -115,13 +115,13 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
             bag_info['Payload-Oxum'] = Oxum
             bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
-            headers = bag_info.keys()
+            headers = list(bag_info.keys())
             headers.sort()
             for h in headers:
                 bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
             bag_info_txt.close()
 
-    except Exception, e:
+    except Exception as e:
         os.chdir(old_dir)
         logging.error(e)
         raise e
@@ -173,7 +173,7 @@ class Bag(object):
         try:
             self.version = tags["BagIt-Version"]
             self.encoding = tags["Tag-File-Character-Encoding"]
-        except KeyError, e:
+        except KeyError as e:
             raise BagError("Missing required tag in bagit.txt: %s" % e)
 
         if self.version == "0.95":
@@ -243,7 +243,7 @@ class Bag(object):
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
-            except Exception, e:
+            except Exception as e:
                 fetch_file.close()
                 raise e
 
@@ -253,7 +253,7 @@ class Bag(object):
             yield f 
 
     def has_oxum(self):
-        return self.info.has_key('Payload-Oxum')
+        return 'Payload-Oxum' in self.info
 
     def validate(self, fast=False):
         """Checks the structure and contents are valid. If you supply 
@@ -291,8 +291,8 @@ class Bag(object):
                     entry_hash = entry[0]
                     entry_path = os.path.normpath(entry[1].lstrip("*"))
 
-                    if self.entries.has_key(entry_path):
-                        if self.entries[entry_path].has_key(alg):
+                    if entry_path in self.entries:
+                        if alg in self.entries[entry_path]:
                             logging.warning("%s: Duplicate %s manifest entry: %s", self, alg, entry_path)
 
                         self.entries[entry_path][alg] = entry_hash
@@ -341,8 +341,8 @@ class Bag(object):
         if not byte_count.isdigit() or not file_count.isdigit():
             raise BagError("Invalid oxum: %s" % oxum)
 
-        byte_count = long(byte_count)
-        file_count = long(file_count)
+        byte_count = int(byte_count)
+        file_count = int(file_count)
         total_bytes = 0
         total_files = 0
 
@@ -385,24 +385,24 @@ class Bag(object):
         if not hashers:
             raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
 
-        for rel_path, hashes in self.entries.items():
+        for rel_path, hashes in list(self.entries.items()):
             full_path = os.path.join(self.path, rel_path)
 
             # Create a clone of the default empty hash objects:
             f_hashers = dict(
-                (alg, hashlib.new(alg)) for alg, h in hashers.items() if alg in hashes
+                (alg, hashlib.new(alg)) for alg, h in list(hashers.items()) if alg in hashes
             )
 
             try:
                 f_hashes = self._calculate_file_hashes(full_path, f_hashers)
-            except BagValidationError, e:
+            except BagValidationError as e:
                 raise e
             # Any unhandled exceptions are probably fatal
             except:
                 logging.exception("unable to calculate file hashes for %s: %s", self, full_path)
                 raise
 
-            for alg, computed_hash in f_hashes.items():
+            for alg, computed_hash in list(f_hashes.items()):
                 stored_hash = hashes[alg]
                 if stored_hash != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
@@ -427,11 +427,11 @@ class Bag(object):
             block = f.read(1048576)
             if not block:
                 break
-            [ i.update(block) for i in f_hashers.values() ]
+            [ i.update(block) for i in list(f_hashers.values()) ]
         f.close()
 
         return dict(
-            (alg, h.hexdigest()) for alg, h in f_hashers.items()
+            (alg, h.hexdigest()) for alg, h in list(f_hashers.items())
         )
 
 def _load_tag_file(tag_file_name):
@@ -490,7 +490,9 @@ def _make_manifest(manifest_file, data_dir, processes):
         pool.close()
         pool.join()
     else:
-        checksums = map(_manifest_line, _walk(data_dir))
+        checksums = list(map(_manifest_line, _walk(data_dir)))
+        # import pdb
+        # pdb.set_trace()
 
     manifest = open(manifest_file, 'wb')
     num_files = 0
@@ -615,7 +617,7 @@ if __name__ == '__main__':
                     log.info("%s valid according to Payload-Oxum" % bag_dir)
                 else:
                     log.info("%s is valid" % bag_dir)
-            except BagError, e:
+            except BagError as e:
                 log.info("%s is invalid: %s" % (bag_dir, e))
                 rc = 1
 
