@@ -2,7 +2,7 @@ from sys import version, exit
 from setuptools import setup
 
 if version < '3.3.0':
-    print "python 3.3 is required"
+    print("python 3.3 is required")
     exit(1)
 
 description = \
@@ -11,18 +11,6 @@ This package can be used to create BagIt style packages of
 digital content for safe transmission and digital preservation.
 See: http://en.wikipedia.org/wiki/BagIt for more details.
 """
-
-# for older pythons ...
-requirements = []
-try:
-    import multiprocessing
-except:
-    requirements.append("multiprocessing")
-try:
-    import hashlib
-except:
-    requirements.append("hashlib")
-
 
 setup(
     name = 'bagit',
@@ -42,9 +30,6 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
-        'Programming Language :: Python :: 2.4',
-        'Programming Language :: Python :: 2.5',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python :: 3.3'
     ],
 )
