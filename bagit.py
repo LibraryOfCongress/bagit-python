@@ -236,17 +236,15 @@ class Bag(object):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
-            fetch_file = open(fetch_file_path, 'rb')
 
             try:
-                for line in fetch_file:
-                    parts = line.strip().split(None, 2)
-                    yield (parts[0], parts[1], parts[2])
+                with open(fetch_file_path, 'r', encoding='utf8') as fetch_file:
+                    for line in fetch_file:
+                        parts = line.strip().split(None, 2)
+                        yield (parts[0], parts[1], parts[2])
             except Exception as e:
-                fetch_file.close()
                 raise e
 
-            fetch_file.close()
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
             yield f 
@@ -271,9 +269,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
             self.algs.append(alg)
 
-            manifest_file = open(manifest_file, 'rb')
-
-            try:
+            with open(manifest_file, 'r', encoding='utf8') as manifest_file:
                 for line in manifest_file:
                     line = line.strip()
 
@@ -298,8 +294,6 @@ class Bag(object):
                     else:
                         self.entries[entry_path] = {}
                         self.entries[entry_path][alg] = entry_hash
-            finally:
-                manifest_file.close()
 
     def _validate_structure(self):
         """Checks the structure of the bag, determining if it conforms to the
@@ -434,12 +428,8 @@ class Bag(object):
         )
 
 def _load_tag_file(tag_file_name):
-    tag_file = open(tag_file_name, 'rb')
-
-    try:
+    with open(tag_file_name, 'r', encoding='utf8') as tag_file:
         return dict(_parse_tags(tag_file))
-    finally:
-        tag_file.close()
 
 def _parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
