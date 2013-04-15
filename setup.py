@@ -1,8 +1,8 @@
 from sys import version, exit
 from setuptools import setup
 
-if version < '2.4.0' or version > '3.0.0':
-    print "python 2.4 - 2.7 is required"
+if version < '3.3.0':
+    print "python 3.3 is required"
     exit(1)
 
 description = \
