@@ -3,6 +3,8 @@ bagit
 
 [![Build Status](https://secure.travis-ci.org/edsu/bagit.png)](http://travis-ci.org/edsu/bagit)
 
+This is a fork of the bagit Python library by [edsu](https://github.com/edsu/bagit) for Python 3.3 under active development.
+
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
 Installation
@@ -13,7 +15,7 @@ needed or you can install globally with:
 
     pip install bagit
 
-Python v2.4+ is required.
+Python v3.3+ is required.
 
 Usage
 -----
@@ -41,9 +43,9 @@ If you want to validate a bag you can:
 ```python
 bag = bagit.Bag('/path/to/bag')
 if bag.validate():
-    print "yay :)"
+    print("yay :)")
 else:
-    print "boo :("
+    print("boo :(")
 ```
 
 If you'd like to generate the checksums using parallel system processes, 
