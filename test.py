@@ -34,13 +34,15 @@ class TestBag(unittest.TestCase):
 
         # check bagit.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bagit.txt')))
-        bagit_txt = open(j(self.tmpdir, 'bagit.txt')).read()
+        with open(j(self.tmpdir, 'bagit.txt'), encoding='utf8') as txt_file:
+            bagit_txt = txt_file.read()
         self.assertTrue('BagIt-Version: 0.96' in bagit_txt)
         self.assertTrue('Tag-File-Character-Encoding: UTF-8' in bagit_txt)
 
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-md5.txt')))
-        manifest_txt = open(j(self.tmpdir, 'manifest-md5.txt')).read()
+        with open(j(self.tmpdir, 'manifest-md5.txt'), encoding='utf8') as mainfest_file:
+            manifest_txt = mainfest_file.read()
         self.assertTrue('8e2af7a0143c7b8f4de0b3fc90f27354  data/README' in manifest_txt)
         self.assertTrue('9a2b89e9940fea6ac3a0cc71b0a933a0  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
         self.assertTrue('6172e980c2767c12135e3b9d246af5a3  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
@@ -49,7 +51,8 @@ class TestBag(unittest.TestCase):
 
         # check bag-info.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bag-info.txt')))
-        bag_info_txt = open(j(self.tmpdir, 'bag-info.txt')).read()
+        with open(j(self.tmpdir, 'bag-info.txt'), encoding="utf8") as info_file:
+            bag_info_txt = info_file.read()
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
@@ -82,9 +85,11 @@ class TestBag(unittest.TestCase):
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = os.path.join(self.tmpdir, "data", "README")
-        txt = open(readme).read()
-        txt = 'A' + txt[1:]
-        open(readme, "w").write(txt)
+        with open(readme, "r", encoding="utf8") as readme_file:
+            txt = readme_file.read()
+            txt = 'A' + txt[1:]
+        with open(readme, "w", encoding="utf8") as readme_file:
+            readme_file.write(txt)
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate)
         # fast doesn't catch the flipped bit, since oxsum is the same
@@ -106,7 +111,8 @@ class TestBag(unittest.TestCase):
     def test_validate_slow_without_oxum_extra_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
-        open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("foo")
+        with open(os.path.join(self.tmpdir, "data", "extra_file"), "w", encoding="utf8") as extra_file:
+            extra_file.write("foo")
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
@@ -125,7 +131,8 @@ class TestBag(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.validate())
         f = os.path.join(self.tmpdir, "IGNOREFILE")
-        open(f, 'w')
+        with open(f, 'w', encoding='utf8'):
+            pass
         self.assertTrue(bag.validate())
 
     def test_allow_extraneous_dirs_in_base(self):
