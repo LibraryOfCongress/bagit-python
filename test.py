@@ -16,10 +16,10 @@ logging.basicConfig(level=logging.ERROR)
 class TestBag(unittest.TestCase):
 
     def setUp(self):
-	self.tmpdir = tempfile.mkdtemp()
-	if os.path.isdir(self.tmpdir):
-	    shutil.rmtree(self.tmpdir)
-        shutil.copytree('test-data', self.tmpdir)
+        self.tmpdir = tempfile.mkdtemp()
+        if os.path.isdir(self.tmpdir):
+            shutil.rmtree(self.tmpdir)
+            shutil.copytree('test-data', self.tmpdir)
 
     def tearDown(self):
         if os.path.isdir(self.tmpdir):
