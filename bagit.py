@@ -106,20 +106,19 @@ def make_bag(bag_dir, bag_info=None, processes=1):
 
             logging.info("writing bagit.txt")
             txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
-            open("bagit.txt", "wb").write(txt)
-
+            with open("bagit.txt", "w", encoding="utf8") as bagit_txt:
+                bagit_txt.write(txt)
             logging.info("writing bag-info.txt")
-            bag_info_txt = open("bag-info.txt", "wb")
-            if bag_info == None:
-                bag_info = {}
-            bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
-            bag_info['Payload-Oxum'] = Oxum
-            bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
-            headers = list(bag_info.keys())
-            headers.sort()
-            for h in headers:
-                bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
-            bag_info_txt.close()
+            with open("bag-info.txt", "w", encoding='utf8') as bag_info_txt:
+                if bag_info == None:
+                    bag_info = {}
+                bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
+                bag_info['Payload-Oxum'] = Oxum
+                bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
+                headers = list(bag_info.keys())
+                headers.sort()
+                for h in headers:
+                    bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
 
     except Exception as e:
         os.chdir(old_dir)
@@ -494,15 +493,14 @@ def _make_manifest(manifest_file, data_dir, processes):
         # import pdb
         # pdb.set_trace()
 
-    manifest = open(manifest_file, 'wb')
-    num_files = 0
-    total_bytes = 0
+    with open(manifest_file, 'w', encoding='utf8') as manifest:
+      num_files = 0
+      total_bytes = 0
 
-    for digest, filename, bytes in checksums:
-        num_files += 1
-        total_bytes += bytes
-        manifest.write("%s  %s\n" % (digest, filename))
-    manifest.close()
+      for digest, filename, bytes in checksums:
+          num_files += 1
+          total_bytes += bytes
+          manifest.write("%s  %s\n" % (digest, filename))
     return "%s.%s" % (total_bytes, num_files)
 
 def _walk(data_dir):
