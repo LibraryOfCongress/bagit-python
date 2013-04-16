@@ -1,10 +1,8 @@
 language: python
 python:
- - "2.7"
- - "2.6"
- - "2.5"
+ - "3.3"
 script: python setup.py test
 install:
   # this can go away when this is resolved satisfactorily
-  # https://github.com/travis-ci/travis-cookbooks/issues/155 
+  # https://github.com/travis-ci/travis-cookbooks/issues/155
   - "sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm"
