@@ -37,6 +37,7 @@ import hashlib
 import logging
 import optparse
 import multiprocessing
+import codecs
 
 from glob import glob
 from datetime import date
@@ -264,6 +265,7 @@ class Bag(object):
         will re-calculate fixities (fast=False).
         """
         self._validate_structure()
+        self._validate_bagittxt()
         self._validate_contents(fast=fast)
         return True
 
@@ -411,6 +413,20 @@ class Bag(object):
         if errors:
             raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
 
+    def _validate_bagittxt(self):
+        """
+        Verify that bagit.txt conforms to specification
+        """
+        bagit_file_path = os.path.join(self.path, "bagit.txt")
+        bagit_file = open(bagit_file_path, 'rb')
+        try:
+            first_line = bagit_file.readline()
+            if first_line[:len(codecs.BOM_UTF8)] == codecs.BOM_UTF8:
+                raise BagValidationError("bagit.txt must not contain a byte-order mark")
+        finally:
+            bagit_file.close()
+
+
     def _calculate_file_hashes(self, full_path, f_hashers):
         """
         Returns a dictionary of (algorithm, hexdigest) values for the provided
@@ -457,7 +473,12 @@ def _parse_tags(file):
     # Line folding is handled by yielding values
     # only after we encounter the start of a new
     # tag, or if we pass the EOF.
-    for line in file:
+    for num, line in enumerate(file):
+        # If byte-order mark ignore it for now.
+        if 0 == num:
+            if line[:len(codecs.BOM_UTF8)] == codecs.BOM_UTF8:
+                line = line[len(codecs.BOM_UTF8):]
+
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
