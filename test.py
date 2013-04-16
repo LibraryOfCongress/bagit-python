@@ -4,6 +4,7 @@ import logging
 import datetime
 import tempfile
 import unittest
+import codecs
 
 from os.path import join as j
 
@@ -109,6 +110,16 @@ class TestBag(unittest.TestCase):
         open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("foo")
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
+
+    def test_bom_in_bagit_txt(self):
+        bag = bagit.make_bag(self.tmpdir)
+        bagfile = codecs.BOM_UTF8
+        bagfile += open(os.path.join(self.tmpdir, "bagit.txt"), "rb").read()
+        bf = open(os.path.join(self.tmpdir, "bagit.txt"), "wb")
+        bf.write(bagfile)
+        bf.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
 
     def test_missing_file(self):
         bag = bagit.make_bag(self.tmpdir)
