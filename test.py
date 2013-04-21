@@ -111,6 +111,13 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
+    def test_is_valid(self):
+        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+        open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("bar")
+        self.assertFalse(bag.is_valid())
+
     def test_bom_in_bagit_txt(self):
         bag = bagit.make_bag(self.tmpdir)
         bagfile = codecs.BOM_UTF8
