@@ -269,6 +269,16 @@ class Bag(object):
         self._validate_contents(fast=fast)
         return True
 
+    def is_valid(self, fast=False):
+        """Returns validation success or failure as boolean.
+        Optional fast parameter passed directly to validate().
+        """
+        try:
+            self.validate(fast=fast)
+        except BagError, e:
+            return False
+        return True
+
     def _load_manifests(self):
         for manifest_file in self.manifest_files():
             alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
