@@ -431,7 +431,7 @@ class Bag(object):
         bagit_file = open(bagit_file_path, 'rb')
         try:
             first_line = bagit_file.readline()
-            if first_line[:len(codecs.BOM_UTF8)] == codecs.BOM_UTF8:
+            if first_line.startswith(codecs.BOM_UTF8):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
         finally:
             bagit_file.close()
@@ -486,8 +486,8 @@ def _parse_tags(file):
     for num, line in enumerate(file):
         # If byte-order mark ignore it for now.
         if 0 == num:
-            if line[:len(codecs.BOM_UTF8)] == codecs.BOM_UTF8:
-                line = line[len(codecs.BOM_UTF8):]
+            if line.startswith(codecs.BOM_UTF8):
+                line = line.lstrip(codecs.BOM_UTF8)
 
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
