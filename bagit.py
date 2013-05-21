@@ -416,7 +416,7 @@ class Bag(object):
 
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
-                if stored_hash != computed_hash:
+                if stored_hash.lower() != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
                     errors.append("%s (%s)" % (full_path, alg))
 

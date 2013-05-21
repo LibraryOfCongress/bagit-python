@@ -169,6 +169,15 @@ class TestBag(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
 
+    def test_mixed_case_checksums(self):
+        bag = bagit.make_bag(self.tmpdir)
+        hashstr = bag.entries.itervalues().next()
+        hashstr = hashstr.itervalues().next()
+        manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r").read()
+        manifest = manifest.replace(hashstr, hashstr.upper())
+        open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w").write(manifest)
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate())
 
 
 if __name__ == '__main__':
