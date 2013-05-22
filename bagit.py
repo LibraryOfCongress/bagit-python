@@ -179,7 +179,7 @@ class Bag(object):
 
         if self.version == "0.95":
             self.tag_file_name = "package-info.txt"
-        elif self.version == "0.96":
+        elif self.version in ["0.96", "0.97"]:
             self.tag_file_name = "bag-info.txt"
         else:
             raise BagError("Unsupported bag version: %s" % self.version)
