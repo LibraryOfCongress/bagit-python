@@ -280,8 +280,18 @@ class Bag(object):
         return True
 
     def _load_manifests(self):
-        for manifest_file in self.manifest_files():
-            alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
+        manifests = list(self.manifest_files())
+
+        if self.version == "0.97":
+            # v0.97 requires that optional tagfiles are verified.
+            manifests += list(self.tagmanifest_files())
+
+        for manifest_file in manifests:
+            if not manifest_file.find("tagmanifest-") is -1:
+                search = "tagmanifest-"
+            else:
+                search = "manifest-"
+            alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
             manifest_file = open(manifest_file, 'rb')
