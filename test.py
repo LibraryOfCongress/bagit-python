@@ -179,6 +179,26 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.validate())
 
+    def test_multiple_oxum_values(self):
+        bag = bagit.make_bag(self.tmpdir)
+        baginfo = open(os.path.join(self.tmpdir, "bag-info.txt"), "a")
+        baginfo.write('Payload-Oxum: 7.7\n')
+        baginfo.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate(fast=True))
+
+    def test_multiple_meta_values(self):
+        bag = bagit.make_bag(self.tmpdir)
+        baginfo = open(os.path.join(self.tmpdir, "bag-info.txt"), "a")
+        vals = [7, 4, 'foo', 6, 'bar']
+        for val in vals:
+            baginfo.write('Multival-Meta: {0}\n'.format(val))
+        baginfo.close()
+        bag = bagit.Bag(self.tmpdir)
+        meta = bag.info.get('Multival-Meta')
+        self.assertEqual(type(meta), list)
+        self.assertEqual(len(meta), len(vals))
+
 
 if __name__ == '__main__':
     unittest.main()

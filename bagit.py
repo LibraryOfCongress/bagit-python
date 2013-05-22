@@ -189,7 +189,7 @@ class Bag(object):
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path)
+            self.info = _load_tag_file(info_file_path, duplicates=True)
 
         self._load_manifests()
 
@@ -348,6 +348,11 @@ class Bag(object):
         oxum = self.info.get('Payload-Oxum')
         if oxum == None: return
 
+        # If multiple Payload-Oxum tags (bad idea)
+        # use the first listed in bag-info.txt
+        if type(oxum) is list:
+            oxum = oxum[0]
+
         byte_count, file_count = oxum.split('.', 1)
 
         if not byte_count.isdigit() or not file_count.isdigit():
@@ -460,11 +465,32 @@ class Bag(object):
             (alg, h.hexdigest()) for alg, h in f_hashers.items()
         )
 
-def _load_tag_file(tag_file_name):
+def _load_tag_file(tag_file_name, duplicates=False):
+    """
+    If duplicates is True then allow duplicate entries
+    for a given tag. This is desirable for bag-info.txt
+    metadata in v0.97 of the spec.
+    """
     tag_file = open(tag_file_name, 'rb')
 
     try:
-        return dict(_parse_tags(tag_file))
+        if not duplicates:
+            return dict(_parse_tags(tag_file))
+
+        # Store duplicate tags as list of vals
+        # in order of parsing under the same key.
+        tags = {}
+        for name, value in _parse_tags(tag_file):
+            if not name in tags.keys():
+                tags[name] = value
+                continue
+
+            if not type(tags[name]) is list:
+                tags[name] = [tags[name], value]
+            else:
+                tags[name].append(value)
+        return tags
+
     finally:
         tag_file.close()
 
