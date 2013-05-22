@@ -207,7 +207,10 @@ class Bag(object):
 
     def compare_manifests_with_fs(self):
         files_on_fs = set(self.payload_files())
-        files_in_manifest = set(self.entries.keys())
+        files_in_manifest = set(self.payload_entries().keys())
+
+        if self.version == "0.97":
+            files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
 
         return (list(files_in_manifest - files_on_fs),
              list(files_on_fs - files_in_manifest))
@@ -234,6 +237,27 @@ class Bag(object):
                 rel_path = rel_path.replace(self.path + os.path.sep, "", 1)
                 yield rel_path
 
+    def payload_entries(self):
+        # Don't use dict comprehension (compatibility with Python < 2.7)
+        return dict((key, value) for (key, value) in self.entries.iteritems() \
+                     if key.startswith("data" + os.sep))
+
+    def tagfile_entries(self):
+        return dict((key, value) for (key, value) in self.entries.iteritems() \
+                     if not key.startswith("data" + os.sep))
+
+    def missing_optional_tagfiles(self):
+        """
+        From v0.97 we need to validate any tagfiles listed
+        in the optional tagmanifest(s). As there is no mandatory
+        directory structure for additional tagfiles we can
+        only check for entries with missing files (not missing
+        entries for existing files).
+        """
+        for tagfilepath in self.tagfile_entries().keys():
+            if not os.path.isfile(os.path.join(self.path, tagfilepath)):
+                yield tagfilepath
+
     def fetch_entries(self):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
@@ -249,6 +273,7 @@ class Bag(object):
                 raise e
 
             fetch_file.close()
+
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
             yield f 
