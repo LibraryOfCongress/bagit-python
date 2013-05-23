@@ -119,6 +119,11 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             headers = bag_info.keys()
             headers.sort()
             for h in headers:
+                # v0.97 support for multiple instances of any meta item.
+                if type(bag_info[h]) == list:
+                    for val in bag_info[h]:
+                        bag_info_txt.write("%s: %s\n"  % (h, val))
+                    continue
                 bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
             bag_info_txt.close()
 

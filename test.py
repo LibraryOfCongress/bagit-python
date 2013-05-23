@@ -189,16 +189,11 @@ class TestBag(unittest.TestCase):
         self.assertTrue(bag.validate(fast=True))
 
     def test_multiple_meta_values(self):
-        bag = bagit.make_bag(self.tmpdir)
-        baginfo = open(os.path.join(self.tmpdir, "bag-info.txt"), "a")
-        vals = [7, 4, 8, 6, 8]
-        for val in vals:
-            baginfo.write('Multival-Meta: %s\n' % val)
-        baginfo.close()
-        bag = bagit.Bag(self.tmpdir)
-        meta = bag.info.get('Multival-Meta')
+        baginfo = {"Multival-Meta": [7, 4, 8, 6, 8]}
+        bag = bagit.make_bag(self.tmpdir, baginfo)
+        meta = bag.info.get("Multival-Meta")
         self.assertEqual(type(meta), list)
-        self.assertEqual(len(meta), len(vals))
+        self.assertEqual(len(meta), len(baginfo["Multival-Meta"]))
 
     def test_validate_optional_tagfile(self):
         bag = bagit.make_bag(self.tmpdir)
