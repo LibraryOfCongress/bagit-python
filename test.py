@@ -5,6 +5,7 @@ import datetime
 import tempfile
 import unittest
 import codecs
+import hashlib
 
 from os.path import join as j
 
@@ -198,6 +199,33 @@ class TestBag(unittest.TestCase):
         meta = bag.info.get('Multival-Meta')
         self.assertEqual(type(meta), list)
         self.assertEqual(len(meta), len(vals))
+
+    def test_validate_optional_tagfile(self):
+        bag = bagit.make_bag(self.tmpdir)
+        tagdir = tempfile.mkdtemp(dir=self.tmpdir)
+        tagfile = open(os.path.join(tagdir, "tagfile"), "w")
+        tagfile.write("test")
+        tagfile.close()
+        relpath = os.path.join(tagdir, "tagfile").replace(self.tmpdir + os.sep, "")
+        relpath.replace("\\", "/")
+        tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
+        # Incorrect checksum.
+        tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
+        tagman.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+
+        hasher = hashlib.new("md5")
+        hasher.update(open(os.path.join(tagdir, "tagfile"), "rb").read())
+        tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
+        tagman.write(hasher.hexdigest() + " " + relpath + "\n")
+        tagman.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate())
+
+        os.remove(os.path.join(tagdir, "tagfile"))
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
 
 
 if __name__ == '__main__':
