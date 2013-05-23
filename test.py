@@ -37,7 +37,7 @@ class TestBag(unittest.TestCase):
         # check bagit.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bagit.txt')))
         bagit_txt = open(j(self.tmpdir, 'bagit.txt')).read()
-        self.assertTrue('BagIt-Version: 0.96' in bagit_txt)
+        self.assertTrue('BagIt-Version: 0.97' in bagit_txt)
         self.assertTrue('Tag-File-Character-Encoding: UTF-8' in bagit_txt)
 
         # check manifest
