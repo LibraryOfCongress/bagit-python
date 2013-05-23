@@ -191,9 +191,9 @@ class TestBag(unittest.TestCase):
     def test_multiple_meta_values(self):
         bag = bagit.make_bag(self.tmpdir)
         baginfo = open(os.path.join(self.tmpdir, "bag-info.txt"), "a")
-        vals = [7, 4, 'foo', 6, 'bar']
+        vals = [7, 4, 8, 6, 8]
         for val in vals:
-            baginfo.write('Multival-Meta: {0}\n'.format(val))
+            baginfo.write('Multival-Meta: %s\n' % val)
         baginfo.close()
         bag = bagit.Bag(self.tmpdir)
         meta = bag.info.get('Multival-Meta')
