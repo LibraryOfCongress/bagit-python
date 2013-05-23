@@ -106,7 +106,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
 
             logging.info("writing bagit.txt")
-            txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
+            txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
             open("bagit.txt", "wb").write(txt)
 
             logging.info("writing bag-info.txt")
