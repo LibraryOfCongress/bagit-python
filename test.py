@@ -209,6 +209,7 @@ class TestBag(unittest.TestCase):
         relpath = os.path.join(tagdir, "tagfile").replace(self.tmpdir + os.sep, "")
         relpath.replace("\\", "/")
         tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
+
         # Incorrect checksum.
         tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
         tagman.close()
@@ -223,6 +224,7 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.validate())
 
+        # Missing tagfile.
         os.remove(os.path.join(tagdir, "tagfile"))
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate)
