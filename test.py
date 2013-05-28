@@ -179,8 +179,8 @@ class TestBag(unittest.TestCase):
 
     def test_mixed_case_checksums(self):
         bag = bagit.make_bag(self.tmpdir)
-        hashstr = bag.entries.itervalues().next()
-        hashstr = hashstr.itervalues().next()
+        hashstr = next(iter(bag.entries))
+        hashstr = next(iter(hashstr))
         manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r").read()
         manifest = manifest.replace(hashstr, hashstr.upper())
         open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w").write(manifest)
