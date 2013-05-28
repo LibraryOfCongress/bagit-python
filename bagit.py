@@ -116,8 +116,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
                 bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
                 bag_info['Payload-Oxum'] = Oxum
                 bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
-                headers = bag_info.keys()
-                headers.sort()
+                headers = sorted(bag_info.keys())
                 for h in headers:
                     # v0.97 support for multiple instances of any meta item.
                     if type(bag_info[h]) == list:
@@ -301,7 +300,7 @@ class Bag(object):
         """
         try:
             self.validate(fast=fast)
-        except BagError, e:
+        except BagError as e:
             return False
         return True
 
@@ -468,7 +467,7 @@ class Bag(object):
         bagit_file = open(bagit_file_path, 'rb')
         try:
             first_line = bagit_file.readline()
-            if first_line.startswith(codecs.BOM_UTF8):
+            if first_line[:3] == codecs.BOM_UTF8:
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
         finally:
             bagit_file.close()
@@ -505,23 +504,22 @@ def _load_tag_file(tag_file_name, duplicates=False):
     """
     with open(tag_file_name, 'r', encoding='utf8') as tag_file:
 
-        try:
-            if not duplicates:
-                return dict(_parse_tags(tag_file))
+        if not duplicates:
+            return dict(_parse_tags(tag_file))
 
-            # Store duplicate tags as list of vals
-            # in order of parsing under the same key.
-            tags = {}
-            for name, value in _parse_tags(tag_file):
-                if not name in tags.keys():
-                    tags[name] = value
-                    continue
+        # Store duplicate tags as list of vals
+        # in order of parsing under the same key.
+        tags = {}
+        for name, value in _parse_tags(tag_file):
+            if not name in tags.keys():
+                tags[name] = value
+                continue
 
-                if not type(tags[name]) is list:
-                    tags[name] = [tags[name], value]
-                else:
-                    tags[name].append(value)
-            return tags
+            if not type(tags[name]) is list:
+                tags[name] = [tags[name], value]
+            else:
+                tags[name].append(value)
+        return tags
 
 def _parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
@@ -539,10 +537,6 @@ def _parse_tags(file):
     # only after we encounter the start of a new
     # tag, or if we pass the EOF.
     for num, line in enumerate(file):
-        # If byte-order mark ignore it for now.
-        if 0 == num:
-            if line.startswith(codecs.BOM_UTF8):
-                line = line.lstrip(codecs.BOM_UTF8)
 
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
