@@ -241,13 +241,12 @@ class Bag(object):
                 yield rel_path
 
     def payload_entries(self):
-        # Don't use dict comprehension (compatibility with Python < 2.7)
-        return dict((key, value) for (key, value) in self.entries.iteritems() \
-                     if key.startswith("data" + os.sep))
+        return {key: value for key, value in self.entries.items() \
+                     if key.startswith("data" + os.sep)}
 
     def tagfile_entries(self):
-        return dict((key, value) for (key, value) in self.entries.iteritems() \
-                     if not key.startswith("data" + os.sep))
+        return {key: value for key, value in self.entries.items() \
+                     if not key.startswith("data" + os.sep)}
 
     def missing_optional_tagfiles(self):
         """
