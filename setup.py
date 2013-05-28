@@ -23,7 +23,6 @@ setup(
     description = description,
     platforms = ['POSIX'],
     test_suite = 'test',
-    install_requires = requirements,
     classifiers = [
         'License :: Public Domain',
         'Intended Audience :: Developers',
