@@ -4,6 +4,8 @@ import logging
 import datetime
 import tempfile
 import unittest
+import codecs
+import hashlib
 
 from os.path import join as j
 
@@ -36,7 +38,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bagit.txt')))
         with open(j(self.tmpdir, 'bagit.txt'), encoding='utf8') as txt_file:
             bagit_txt = txt_file.read()
-        self.assertTrue('BagIt-Version: 0.96' in bagit_txt)
+        self.assertTrue('BagIt-Version: 0.97' in bagit_txt)
         self.assertTrue('Tag-File-Character-Encoding: UTF-8' in bagit_txt)
 
         # check manifest
@@ -116,6 +118,23 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
+    def test_is_valid(self):
+        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+        open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("bar")
+        self.assertFalse(bag.is_valid())
+
+    def test_bom_in_bagit_txt(self):
+        bag = bagit.make_bag(self.tmpdir)
+        bagfile = codecs.BOM_UTF8
+        bagfile += open(os.path.join(self.tmpdir, "bagit.txt"), "rb").read()
+        bf = open(os.path.join(self.tmpdir, "bagit.txt"), "wb")
+        bf.write(bagfile)
+        bf.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+
     def test_missing_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, 'data', 'loc', '3314493806_6f1db86d66_o_d.jpg'))
@@ -158,6 +177,59 @@ class TestBag(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
 
+    def test_mixed_case_checksums(self):
+        bag = bagit.make_bag(self.tmpdir)
+        hashstr = bag.entries.itervalues().next()
+        hashstr = hashstr.itervalues().next()
+        manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r").read()
+        manifest = manifest.replace(hashstr, hashstr.upper())
+        open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w").write(manifest)
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate())
+
+    def test_multiple_oxum_values(self):
+        bag = bagit.make_bag(self.tmpdir)
+        baginfo = open(os.path.join(self.tmpdir, "bag-info.txt"), "a")
+        baginfo.write('Payload-Oxum: 7.7\n')
+        baginfo.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate(fast=True))
+
+    def test_multiple_meta_values(self):
+        baginfo = {"Multival-Meta": [7, 4, 8, 6, 8]}
+        bag = bagit.make_bag(self.tmpdir, baginfo)
+        meta = bag.info.get("Multival-Meta")
+        self.assertEqual(type(meta), list)
+        self.assertEqual(len(meta), len(baginfo["Multival-Meta"]))
+
+    def test_validate_optional_tagfile(self):
+        bag = bagit.make_bag(self.tmpdir)
+        tagdir = tempfile.mkdtemp(dir=self.tmpdir)
+        tagfile = open(os.path.join(tagdir, "tagfile"), "w")
+        tagfile.write("test")
+        tagfile.close()
+        relpath = os.path.join(tagdir, "tagfile").replace(self.tmpdir + os.sep, "")
+        relpath.replace("\\", "/")
+        tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
+
+        # Incorrect checksum.
+        tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
+        tagman.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
+
+        hasher = hashlib.new("md5")
+        hasher.update(open(os.path.join(tagdir, "tagfile"), "rb").read())
+        tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
+        tagman.write(hasher.hexdigest() + " " + relpath + "\n")
+        tagman.close()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.validate())
+
+        # Missing tagfile.
+        os.remove(os.path.join(tagdir, "tagfile"))
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, bag.validate)
 
 
 if __name__ == '__main__':

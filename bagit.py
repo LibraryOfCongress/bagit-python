@@ -37,6 +37,7 @@ import hashlib
 import logging
 import optparse
 import multiprocessing
+import codecs
 
 from glob import glob
 from datetime import date
@@ -105,7 +106,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
 
             logging.info("writing bagit.txt")
-            txt = """BagIt-Version: 0.96\nTag-File-Character-Encoding: UTF-8\n"""
+            txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
             with open("bagit.txt", "w", encoding="utf8") as bagit_txt:
                 bagit_txt.write(txt)
             logging.info("writing bag-info.txt")
@@ -115,9 +116,14 @@ def make_bag(bag_dir, bag_info=None, processes=1):
                 bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
                 bag_info['Payload-Oxum'] = Oxum
                 bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/edsu/bagit>'
-                headers = list(bag_info.keys())
+                headers = bag_info.keys()
                 headers.sort()
                 for h in headers:
+                    # v0.97 support for multiple instances of any meta item.
+                    if type(bag_info[h]) == list:
+                        for val in bag_info[h]:
+                            bag_info_txt.write("%s: %s\n"  % (h, val))
+                        continue
                     bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
 
     except Exception as e:
@@ -177,7 +183,7 @@ class Bag(object):
 
         if self.version == "0.95":
             self.tag_file_name = "package-info.txt"
-        elif self.version == "0.96":
+        elif self.version in ["0.96", "0.97"]:
             self.tag_file_name = "bag-info.txt"
         else:
             raise BagError("Unsupported bag version: %s" % self.version)
@@ -187,7 +193,7 @@ class Bag(object):
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path)
+            self.info = _load_tag_file(info_file_path, duplicates=True)
 
         self._load_manifests()
 
@@ -205,7 +211,10 @@ class Bag(object):
 
     def compare_manifests_with_fs(self):
         files_on_fs = set(self.payload_files())
-        files_in_manifest = set(self.entries.keys())
+        files_in_manifest = set(self.payload_entries().keys())
+
+        if self.version == "0.97":
+            files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
 
         return (list(files_in_manifest - files_on_fs),
              list(files_on_fs - files_in_manifest))
@@ -231,6 +240,27 @@ class Bag(object):
                 rel_path = os.path.join(dirpath, os.path.normpath(f.replace('\\', '/')))
                 rel_path = rel_path.replace(self.path + os.path.sep, "", 1)
                 yield rel_path
+
+    def payload_entries(self):
+        # Don't use dict comprehension (compatibility with Python < 2.7)
+        return dict((key, value) for (key, value) in self.entries.iteritems() \
+                     if key.startswith("data" + os.sep))
+
+    def tagfile_entries(self):
+        return dict((key, value) for (key, value) in self.entries.iteritems() \
+                     if not key.startswith("data" + os.sep))
+
+    def missing_optional_tagfiles(self):
+        """
+        From v0.97 we need to validate any tagfiles listed
+        in the optional tagmanifest(s). As there is no mandatory
+        directory structure for additional tagfiles we can
+        only check for entries with missing files (not missing
+        entries for existing files).
+        """
+        for tagfilepath in self.tagfile_entries().keys():
+            if not os.path.isfile(os.path.join(self.path, tagfilepath)):
+                yield tagfilepath
 
     def fetch_entries(self):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
@@ -261,12 +291,33 @@ class Bag(object):
         will re-calculate fixities (fast=False).
         """
         self._validate_structure()
+        self._validate_bagittxt()
         self._validate_contents(fast=fast)
         return True
 
+    def is_valid(self, fast=False):
+        """Returns validation success or failure as boolean.
+        Optional fast parameter passed directly to validate().
+        """
+        try:
+            self.validate(fast=fast)
+        except BagError, e:
+            return False
+        return True
+
     def _load_manifests(self):
-        for manifest_file in self.manifest_files():
-            alg = os.path.basename(manifest_file).replace("manifest-", "").replace(".txt", "")
+        manifests = list(self.manifest_files())
+
+        if self.version == "0.97":
+            # v0.97 requires that optional tagfiles are verified.
+            manifests += list(self.tagmanifest_files())
+
+        for manifest_file in manifests:
+            if not manifest_file.find("tagmanifest-") is -1:
+                search = "tagmanifest-"
+            else:
+                search = "manifest-"
+            alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
             with open(manifest_file, 'r', encoding='utf8') as manifest_file:
@@ -328,6 +379,11 @@ class Bag(object):
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
         if oxum == None: return
+
+        # If multiple Payload-Oxum tags (bad idea)
+        # use the first listed in bag-info.txt
+        if type(oxum) is list:
+            oxum = oxum[0]
 
         byte_count, file_count = oxum.split('.', 1)
 
@@ -397,12 +453,26 @@ class Bag(object):
 
             for alg, computed_hash in list(f_hashes.items()):
                 stored_hash = hashes[alg]
-                if stored_hash != computed_hash:
+                if stored_hash.lower() != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
                     errors.append("%s (%s)" % (full_path, alg))
 
         if errors:
             raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
+
+    def _validate_bagittxt(self):
+        """
+        Verify that bagit.txt conforms to specification
+        """
+        bagit_file_path = os.path.join(self.path, "bagit.txt")
+        bagit_file = open(bagit_file_path, 'rb')
+        try:
+            first_line = bagit_file.readline()
+            if first_line.startswith(codecs.BOM_UTF8):
+                raise BagValidationError("bagit.txt must not contain a byte-order mark")
+        finally:
+            bagit_file.close()
+
 
     def _calculate_file_hashes(self, full_path, f_hashers):
         """
@@ -427,9 +497,31 @@ class Bag(object):
             (alg, h.hexdigest()) for alg, h in list(f_hashers.items())
         )
 
-def _load_tag_file(tag_file_name):
+def _load_tag_file(tag_file_name, duplicates=False):
+    """
+    If duplicates is True then allow duplicate entries
+    for a given tag. This is desirable for bag-info.txt
+    metadata in v0.97 of the spec.
+    """
     with open(tag_file_name, 'r', encoding='utf8') as tag_file:
-        return dict(_parse_tags(tag_file))
+
+        try:
+            if not duplicates:
+                return dict(_parse_tags(tag_file))
+
+            # Store duplicate tags as list of vals
+            # in order of parsing under the same key.
+            tags = {}
+            for name, value in _parse_tags(tag_file):
+                if not name in tags.keys():
+                    tags[name] = value
+                    continue
+
+                if not type(tags[name]) is list:
+                    tags[name] = [tags[name], value]
+                else:
+                    tags[name].append(value)
+            return tags
 
 def _parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
@@ -446,7 +538,12 @@ def _parse_tags(file):
     # Line folding is handled by yielding values
     # only after we encounter the start of a new
     # tag, or if we pass the EOF.
-    for line in file:
+    for num, line in enumerate(file):
+        # If byte-order mark ignore it for now.
+        if 0 == num:
+            if line.startswith(codecs.BOM_UTF8):
+                line = line.lstrip(codecs.BOM_UTF8)
+
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue

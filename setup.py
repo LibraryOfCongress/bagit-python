@@ -14,7 +14,7 @@ See: http://en.wikipedia.org/wiki/BagIt for more details.
 
 setup(
     name = 'bagit',
-    version = '1.0.2',
+    version = '1.0.4',
     url = 'http://github.com/edsu/bagit',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',

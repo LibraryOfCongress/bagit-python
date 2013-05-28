@@ -42,8 +42,8 @@ If you want to validate a bag you can:
 
 ```python
 bag = bagit.Bag('/path/to/bag')
-if bag.validate():
-    print("yay :)")
+if bag.is_valid():
+    print "yay :)"
 else:
     print("boo :(")
 ```
