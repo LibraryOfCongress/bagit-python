@@ -132,6 +132,8 @@ class TestBag(unittest.TestCase):
         bf = open(os.path.join(self.tmpdir, "bagit.txt"), "wb")
         bf.write(bagfile)
         bf.close()
+        import pdb
+        pdb.set_trace()
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
