@@ -541,10 +541,11 @@ def _parse_tags(file):
             if line.startswith(codecs.BOM_UTF8):
                 line = line.lstrip(codecs.BOM_UTF8)
 
+        line = str(line, encoding="utf8")
+
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
-
         if line[0].isspace(): # folded line
             tag_value += line.strip()
         else:
