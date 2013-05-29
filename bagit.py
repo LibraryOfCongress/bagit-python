@@ -20,7 +20,7 @@ Basic usage is to give bag a directory to bag up:
 
 You can bag multiple directories if you wish:
 
-    % bagit.py directory1 directory2
+   % bagit.py directory1 directory2
 
 Optionally you can pass metadata intended for the bag-info.txt:
 
@@ -466,11 +466,10 @@ class Bag(object):
         bagit_file = open(bagit_file_path, 'rb')
         try:
             first_line = bagit_file.readline()
-            if first_line[:3] == codecs.BOM_UTF8:
+            if first_line.startswith(codecs.BOM_UTF8):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
         finally:
             bagit_file.close()
-
 
     def _calculate_file_hashes(self, full_path, f_hashers):
         """
@@ -501,7 +500,7 @@ def _load_tag_file(tag_file_name, duplicates=False):
     for a given tag. This is desirable for bag-info.txt
     metadata in v0.97 of the spec.
     """
-    with open(tag_file_name, 'r', encoding='utf8') as tag_file:
+    with open(tag_file_name, 'rb') as tag_file:
 
         if not duplicates:
             return dict(_parse_tags(tag_file))
@@ -536,6 +535,11 @@ def _parse_tags(file):
     # only after we encounter the start of a new
     # tag, or if we pass the EOF.
     for num, line in enumerate(file):
+
+        # If byte-order mark ignore it for now.
+        if 0 == num:
+            if line.startswith(codecs.BOM_UTF8):
+                line = line.lstrip(codecs.BOM_UTF8)
 
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
