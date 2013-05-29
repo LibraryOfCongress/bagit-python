@@ -1,7 +1,7 @@
 bagit
 =====
 
-[![Build Status](https://secure.travis-ci.org/jobyh/bagit.png?branch=python3.3-development)](http://travis-ci.org/jobyh/bagit)
+[![Build Status](https://secure.travis-ci.org/jobyh/bagit.png?branch=python3-development)](http://travis-ci.org/jobyh/bagit)
 
 This is a port of the bagit Python library by [edsu](https://github.com/edsu/bagit) to Python 3.3 and is under active development.
 
