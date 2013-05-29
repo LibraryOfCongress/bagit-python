@@ -1,8 +1,8 @@
 from sys import version, exit
 from setuptools import setup
 
-if version < '3.3.0':
-    print("python 3.3 is required")
+if version < '3.2.0':
+    print("python 3.2 is required")
     exit(1)
 
 description = \
@@ -29,6 +29,7 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
-        'Programming Language :: Python :: 3.3'
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.2'
     ],
 )
