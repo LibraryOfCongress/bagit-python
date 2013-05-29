@@ -3,7 +3,7 @@ bagit
 
 [![Build Status](https://secure.travis-ci.org/jobyh/bagit.png?branch=python3-development)](http://travis-ci.org/jobyh/bagit)
 
-This is a port of the bagit Python library by [edsu](https://github.com/edsu/bagit) to Python 3.3 and is under active development.
+This is a port of the bagit Python library by [edsu](https://github.com/edsu/bagit) to Python 3.2+ and is under active development.
 
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
@@ -15,7 +15,7 @@ needed or you can install globally with:
 
     pip install bagit
 
-Python v3.3+ is required.
+Python v3.2+ is required.
 
 Usage
 -----
