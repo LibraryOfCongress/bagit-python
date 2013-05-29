@@ -122,13 +122,15 @@ class TestBag(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir)
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.is_valid())
-        open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("bar")
+        with open(os.path.join(self.tmpdir, "data", "extra_file"), "w") as d:
+            d.write("bar")
         self.assertFalse(bag.is_valid())
 
     def test_bom_in_bagit_txt(self):
         bag = bagit.make_bag(self.tmpdir)
         bagfile = codecs.BOM_UTF8
-        bagfile += open(os.path.join(self.tmpdir, "bagit.txt"), "rb").read()
+        with open(os.path.join(self.tmpdir, "bagit.txt"), "rb") as bf:
+            bagfile += bf.read()
         bf = open(os.path.join(self.tmpdir, "bagit.txt"), "wb")
         bf.write(bagfile)
         bf.close()
@@ -181,9 +183,12 @@ class TestBag(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir)
         hashstr = next(iter(bag.entries.values()))
         hashstr = next(iter(hashstr.values()))
-        manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r").read()
+        manifest = None
+        with open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r") as m:
+            manifest = m.read()
         manifest = manifest.replace(hashstr, hashstr.upper())
-        open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w").write(manifest)
+        with open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w") as m:
+            m.write(manifest)
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.validate())
 
@@ -219,7 +224,8 @@ class TestBag(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
         hasher = hashlib.new("md5")
-        hasher.update(open(os.path.join(tagdir, "tagfile"), "rb").read())
+        with open(os.path.join(tagdir, "tagfile"), "rb") as tm:
+            hasher.update(tm.read())
         tagman = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"), "w")
         tagman.write(hasher.hexdigest() + " " + relpath + "\n")
         tagman.close()
