@@ -1,6 +1,7 @@
 language: python
 python:
  - "3.3"
+ - "3.2"
 script: python setup.py test
 install:
   # this can go away when this is resolved satisfactorily
