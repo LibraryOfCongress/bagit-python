@@ -71,11 +71,11 @@ def make_bag(bag_dir, bag_info=None, processes=1):
     key/value pairs to put into the bag-info.txt metadata file as
     the bag_info dictionary.
     """
-    logging.info("creating bag for directory %s" % bag_dir)
+    logging.info("creating bag for directory {0}".format(bag_dir))
 
     if not os.path.isdir(bag_dir):
-        logging.error("no such bag directory %s" % bag_dir)
-        raise RuntimeError("no such bag directory %s" % bag_dir)
+        logging.error("no such bag directory {0}".format(bag_dir))
+        raise RuntimeError("no such bag directory {0}".format(bag_dir))
 
     old_dir = os.path.abspath(os.path.curdir)
     os.chdir(bag_dir)
@@ -99,7 +99,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             for f in os.listdir('.'):
                 if f == 'data': continue
                 new_f = os.path.join('data', f)
-                logging.info("moving %s to %s" % (f, new_f))
+                logging.info("moving {0} to {1}".format(f, new_f))
                 os.rename(f, new_f)
 
             logging.info("writing manifest-md5.txt")
@@ -170,7 +170,7 @@ class Bag(object):
         bagit_file_path = os.path.join(self.path, "bagit.txt")
 
         if not isfile(bagit_file_path):
-            raise BagError("No bagit.txt found: %s" % bagit_file_path)
+            raise BagError("No bagit.txt found: {0}".format(bagit_file_path))
 
         self.tags = tags = _load_tag_file(bagit_file_path)
 
@@ -178,17 +178,17 @@ class Bag(object):
             self.version = tags["BagIt-Version"]
             self.encoding = tags["Tag-File-Character-Encoding"]
         except KeyError as e:
-            raise BagError("Missing required tag in bagit.txt: %s" % e)
+            raise BagError("Missing required tag in bagit.txt: {0}".format(e))
 
         if self.version == "0.95":
             self.tag_file_name = "package-info.txt"
         elif self.version in ["0.96", "0.97"]:
             self.tag_file_name = "bag-info.txt"
         else:
-            raise BagError("Unsupported bag version: %s" % self.version)
+            raise BagError("Unsupported bag version: {0}".format(self.version))
 
         if not self.encoding.lower() == "utf-8":
-            raise BagValidationError("Unsupported encoding: %s" % self.encoding)
+            raise BagValidationError("Unsupported encoding: {0}".format(self.encoding))
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
@@ -197,13 +197,13 @@ class Bag(object):
         self._load_manifests()
 
     def manifest_files(self):
-        for filename in ["manifest-%s.txt" % a for a in checksum_algos]:
+        for filename in ["manifest-{0}.txt".format(a) for a in checksum_algos]:
             f = os.path.join(self.path, filename)
             if isfile(f):
                 yield f
 
     def tagmanifest_files(self):
-        for filename in ["tagmanifest-%s.txt" % a for a in checksum_algos]:
+        for filename in ["tagmanifest-{0}.txt".format(a) for a in checksum_algos]:
             f = os.path.join(self.path, filename)
             if isfile(f):
                 yield f
@@ -386,7 +386,7 @@ class Bag(object):
         byte_count, file_count = oxum.split('.', 1)
 
         if not byte_count.isdigit() or not file_count.isdigit():
-            raise BagError("Invalid oxum: %s" % oxum)
+            raise BagError("Invalid oxum: {0}".format(oxum))
 
         byte_count = int(byte_count)
         file_count = int(file_count)
@@ -399,7 +399,7 @@ class Bag(object):
             total_files += 1
 
         if file_count != total_files or byte_count != total_bytes:
-            raise BagValidationError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
+            raise BagValidationError("Oxum error.  Found {0} files and {1} bytes on disk; expected {2} files and {3} bytes.".format(total_files, total_bytes, file_count, byte_count))
 
     def _validate_entries(self):
         """
@@ -430,7 +430,7 @@ class Bag(object):
                 logging.warning("Unable to validate file contents using unknown %s hash algorithm", alg)
 
         if not hashers:
-            raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
+            raise RuntimeError("{0}: Unable to validate bag contents: none of the hash algorithms in {0} are supported!".format(self, self.algs))
 
         for rel_path, hashes in list(self.entries.items()):
             full_path = os.path.join(self.path, rel_path)
@@ -453,10 +453,10 @@ class Bag(object):
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
-                    errors.append("%s (%s)" % (full_path, alg))
+                    errors.append("{0} ({1})".format(full_path, alg))
 
         if errors:
-            raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
+            raise BagValidationError("{0}: {1} files failed checksum validation: {2}".format(self, len(errors), errors))
 
     def _validate_bagittxt(self):
         """
@@ -477,7 +477,7 @@ class Bag(object):
         filename
         """
         if not os.path.exists(full_path):
-            raise BagValidationError("%s does not exist" % full_path)
+            raise BagValidationError("{0} does not exist".format(full_path))
 
         f = open(full_path, 'rb')
 
@@ -583,8 +583,8 @@ def _make_manifest(manifest_file, data_dir, processes):
       for digest, filename, bytes in checksums:
           num_files += 1
           total_bytes += bytes
-          manifest.write("%s  %s\n" % (digest, filename))
-    return "%s.%s" % (total_bytes, num_files)
+          manifest.write("{0}  {1}\n".format(digest, filename))
+    return "{0}.{1}".format(total_bytes, num_files)
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
@@ -695,11 +695,11 @@ if __name__ == '__main__':
                 # validate throws a BagError or BagValidationError
                 valid = bag.validate(fast=opts.fast)
                 if opts.fast:
-                    log.info("%s valid according to Payload-Oxum" % bag_dir)
+                    log.info("{0} valid according to Payload-Oxum".format(bag_dir))
                 else:
-                    log.info("%s is valid" % bag_dir)
+                    log.info("{0} is valid".format(bag_dir))
             except BagError as e:
-                log.info("%s is invalid: %s" % (bag_dir, e))
+                log.info("{0} is invalid: {1}".format(bag_dir, e))
                 rc = 1
 
         # make the bag
