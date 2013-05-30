@@ -22,9 +22,9 @@ if not os.path.isdir('bench-data'):
     ftp.retrlines('NLST', files.append)
 
     for file in files:
-        print("fetching %s" % file)
+        print("fetching {0}".format(file))
         fh = open(os.path.join('bench-data', file), 'wb')
-        ftp.retrbinary('RETR %s' % file, fh.write)
+        ftp.retrbinary('RETR {0}'.format(file), fh.write)
         fh.close()
 
 # bag up bench-data using n processes
@@ -37,10 +37,10 @@ if os.path.isdir('bench-data/data'):
     os.system("mv bench-data/data/* bench-data/")
     os.system("rmdir bench-data/data")
 
-bagit.make_bag('bench-data', processes=%s)
+bagit.make_bag('bench-data', processes={0})
 """
 
 # try 1-8 parallel processes
 for p in range(1, 9):
-    t = timeit.Timer(statement % p)
-    print("%s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10)))
+    t = timeit.Timer(statement.format(p))
+    print("{0} processes: {1:.2f} seconds ".format(p, (10 * t.timeit(number=10) / 10)))
