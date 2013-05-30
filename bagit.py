@@ -563,7 +563,7 @@ def _parse_tags(file):
 
 
 def _make_manifest(manifest_file, data_dir, processes):
-    logging.info('writing manifest with %s processes' % processes)
+    logging.info('writing manifest with {0} processes'.format(processes))
 
     # avoid using multiprocessing unless it is required since
     # multiprocessing doesn't work in some environments (mod_wsgi, etc)
@@ -656,7 +656,7 @@ def _make_opt_parser():
     parser.add_option('--fast', action='store_true', dest='fast')
 
     for header in _bag_info_headers:
-        parser.add_option('--%s' % header.lower(), type="string",
+        parser.add_option('--{0}'.format(header.lower()), type="string",
                           action='callback', callback=_bag_info_store)
     return parser
 
