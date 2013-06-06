@@ -13,7 +13,7 @@ Installation
 bagit.py is a single-file python module that you can drop into your project as 
 needed or you can install globally with:
 
-    pip install bagit
+    python setup.py install
 
 Python v3.2+ is required.
 
