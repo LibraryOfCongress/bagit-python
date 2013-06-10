@@ -48,16 +48,8 @@ else:
 
 If you'd like to get a detailed list of checksum errors during validation, 
 just catch the ChecksumMismatchError which has the property `errors` which
-is a list of each checksum error which is represented as a dictionary like:
-
-```python
-{
-  'path': 'data/README',
-  'algorithm': 'md5', 
-  'expected': '8e2af7a0143c7b8f4de0b3fc90f27354', 
-  'found': 'fd41543285d17e7c29cd953f5cf5b955'
-}
-```
+is a list of ChecksumError, each of which has `path`, `algorithm`, 
+`expected` and `found` properties.
 
 So, if you wanted to print out a list of files that failed checksum validation
 you could do this:
@@ -69,7 +61,8 @@ try:
 except ChecksumMismatchError, e:
   print "eek, some files failed checksum validation, here they are:"
   for error in e.errors:
-    print error['path']
+    print "%s was supposed to have %s fixity of %s but I found %s" % \
+      (error.path, error.algorithm, error.expected, error.found)
 
 except BagValidationError, e:
   print "uhoh, something else went wrong: %s" % e

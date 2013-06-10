@@ -123,15 +123,15 @@ class TestBag(unittest.TestCase):
         got_exception = False
         try:
             bag.validate()
-        except bagit.ChecksumMismatchError, e:
+        except bagit.ManifestError, e:
             self.assertTrue(str(e))
             got_exception = True
             self.assertEqual(len(e.errors), 1)
             error = e.errors[0]
-            self.assertEqual(error['algorithm'], 'md5')
-            self.assertEqual(error['path'], 'data/README')
-            self.assertEqual(error['expected'], '8e2af7a0143c7b8f4de0b3fc90f27354')
-            self.assertEqual(error['found'], 'fd41543285d17e7c29cd953f5cf5b955')
+            self.assertEqual(error.algorithm, 'md5')
+            self.assertEqual(error.path, 'data/README')
+            self.assertEqual(error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
+            self.assertEqual(error.found, 'fd41543285d17e7c29cd953f5cf5b955')
 
         if not got_exception:
             self.fail("didn't get ChecksumMismatchError")
