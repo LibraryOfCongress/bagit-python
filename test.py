@@ -112,6 +112,29 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
+    def test_validate_errors(self):
+        bag = bagit.make_bag(self.tmpdir)
+        readme = os.path.join(self.tmpdir, "data", "README")
+        txt = open(readme).read()
+        txt = 'A' + txt[1:]
+        open(readme, "w").write(txt)
+
+        bag = bagit.Bag(self.tmpdir)
+        got_exception = False
+        try:
+            bag.validate()
+        except bagit.ChecksumMismatchError, e:
+            got_exception = True
+            self.assertEqual(len(e.errors), 1)
+            error = e.errors[0]
+            self.assertEqual(error['algorithm'], 'md5')
+            self.assertEqual(error['path'], 'data/README')
+            self.assertEqual(error['expected'], '8e2af7a0143c7b8f4de0b3fc90f27354')
+            self.assertEqual(error['found'], 'fd41543285d17e7c29cd953f5cf5b955')
+
+        if not got_exception:
+            self.fail("didn't get ChecksumMismatchError")
+
     def test_is_valid(self):
         bag = bagit.make_bag(self.tmpdir)
         bag = bagit.Bag(self.tmpdir)

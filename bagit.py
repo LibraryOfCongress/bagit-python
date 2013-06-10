@@ -143,6 +143,12 @@ class BagError(Exception):
 class BagValidationError(BagError):
     pass
 
+class ChecksumMismatchError(BagValidationError):
+    def __init__(self, errors):
+        self.errors = errors
+    def __str__(self):
+        return " %d files failed checksum validation: %s" % len(errors)
+
 class Bag(object):
     """A representation of a bag."""
 
@@ -463,10 +469,15 @@ class Bag(object):
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
-                    errors.append("%s (%s)" % (full_path, alg))
+                    errors.append({
+                        "path": rel_path,
+                        "algorithm": alg,
+                        "expected": stored_hash.lower(),
+                        "found": computed_hash
+                    })
 
         if errors:
-            raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
+            raise ChecksumMismatchError(errors)
 
     def _validate_bagittxt(self):
         """
