@@ -59,7 +59,8 @@ is a list of each checksum error which is represented as a dictionary like:
 }
 ```
 
-So, for example:
+So, if you wanted to print out a list of files that failed checksum validation
+you could do this:
 
 ```python
 try:
