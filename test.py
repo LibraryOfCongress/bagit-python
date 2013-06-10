@@ -124,6 +124,7 @@ class TestBag(unittest.TestCase):
         try:
             bag.validate()
         except bagit.ChecksumMismatchError, e:
+            self.assertTrue(str(e))
             got_exception = True
             self.assertEqual(len(e.errors), 1)
             error = e.errors[0]

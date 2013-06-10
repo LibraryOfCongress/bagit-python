@@ -147,7 +147,7 @@ class ChecksumMismatchError(BagValidationError):
     def __init__(self, errors):
         self.errors = errors
     def __str__(self):
-        return " %d files failed checksum validation: %s" % len(errors)
+        return "%d files failed checksum validation: %s" % (len(self.errors), self.errors)
 
 class Bag(object):
     """A representation of a bag."""
