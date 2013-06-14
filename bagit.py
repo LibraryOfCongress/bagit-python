@@ -147,34 +147,53 @@ class BagValidationError(Exception):
 
 class BagValidationFileError(BagValidationError):
 
-    Checksum = 0
-    Missing = 1
-    Unexpected = 2
-
-    def __init__(self, path, type, algorithm=None, expected=None, found=None):
-        """Construct an new BagValidationFileError object.
+    def __init__(self, path):
+        """Construct an new BagValidationError object.
+        
+        Note: You should not instantiate this class directly. Instead, use one
+        of its subclasses:
+        * BagValidationFileChecksumError
+        * BagValidationFileMissingError
+        * BagValidationFileUnexpectedError
 
         Arguments:
         path -- the offending file path as a string
-        type -- the type of error (BagValidationFileError.Checksum, BagValidationFileError.Missing, or BagValidationFileError.Unexpected)
+
+        """
+        self.path = path
+
+    def __str__(self):
+       return "%s: unknown validation error occurred" % self.path
+
+class BagValidationFileChecksumError(BagValidationFileError):
+
+    def __init__(self, path, algorithm=None, expected=None, found=None):
+        """Construct an new BagValidationFileChecksumError object.
+
+        Arguments:
+        path -- the offending file path as a string
         algorithm -- (only used if type is "checksum") the checksum algorithm used
         expected -- (only used if type is "checksum") the expected checksum for the file
         found -- (only used if type is "checksum") the actual checksum for the file
 
         """
         self.path = path
-        self.type = type
         self.algorithm = algorithm
         self.expected = expected
         self.found = found
 
     def __str__(self):
-        if self.type == self.Checksum:
-            return "%s: checksum validation failed: alg=%s expected=%s found=%s" % (self.path, self.algorithm, self.expected, self.found)
-        elif self.type == self.Missing:
-            return "%s: exists in manifest but not found on filesystem" % self.path
-        elif self.type == self.Unexpected:
-            return "%s: exists on filesystem but is not in manifest" % self.path
+        return "%s: checksum validation failed: alg=%s expected=%s found=%s" % (self.path, self.algorithm, self.expected, self.found)
+
+class BagValidationFileMissingError(BagValidationFileError):
+
+    def __str__(self):
+        return "%s: exists in manifest but not found on filesystem" % self.path
+
+class BagValidationFileUnexpectedError(BagValidationFileError):
+
+    def __str__(self):
+        return "%s: exists on filesystem but is not in manifest" % self.path
 
 class BagValidationErrorSet(BagValidationError):
 
@@ -188,7 +207,10 @@ class BagValidationErrorSet(BagValidationError):
         self.errors = errors
 
     def __str__(self):
-        return "%d files failed checksum validation: %s" % (len(self.errors), self.errors)
+        errors_string = ''
+        for error in self.errors:
+            errors_string += "\n%s" % error
+        return "%d files failed checksum validation: %s" % (len(self.errors), errors_string)
 
 
 class Bag(object):
@@ -469,11 +491,11 @@ class Bag(object):
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
-            e = BagValidationFileError(path, BagValidationFileError.Missing)
+            e = BagValidationFileMissingError(path)
             logging.warning(str(e))
             errors.append(e)
         for path in only_on_fs:
-            e = BagValidationFileError(path, BagValidationFileError.Unexpected)
+            e = BagValidationFileUnexpectedError(path)
             logging.warning(str(e))
             errors.append(e)
 
@@ -503,7 +525,7 @@ class Bag(object):
             try:
                 f_hashes = self._calculate_file_hashes(full_path, f_hashers)
             except BagValidationError, e:
-                raise e
+                f_hashes = dict()  # continue with no hashes
             # Any unhandled exceptions are probably fatal
             except:
                 logging.exception("unable to calculate file hashes for %s: %s", self, full_path)
@@ -512,7 +534,7 @@ class Bag(object):
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
-                    e = BagValidationFileError(rel_path, BagValidationFileError.Checksum, alg, stored_hash.lower(), computed_hash)
+                    e = BagValidationFileChecksumError(rel_path, alg, stored_hash.lower(), computed_hash)
                     logging.warning(str(e))
                     errors.append(e)
 
