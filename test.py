@@ -88,7 +88,7 @@ class TestBag(unittest.TestCase):
         txt = 'A' + txt[1:]
         open(readme, "w").write(txt)
         bag = bagit.Bag(self.tmpdir)
-        self.assertRaises(bagit.BagValidationError, bag.validate)
+        self.assertRaises(bagit.BagValidationErrorSet, bag.validate)
         # fast doesn't catch the flipped bit, since oxsum is the same
         self.assertTrue(bag.validate(fast=True))
 
@@ -110,7 +110,7 @@ class TestBag(unittest.TestCase):
         os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
         open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("foo")
         bag = bagit.Bag(self.tmpdir)
-        self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
+        self.assertRaises(bagit.BagValidationErrorSet, bag.validate, fast=False)
 
     def test_validate_errors(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -123,7 +123,7 @@ class TestBag(unittest.TestCase):
         got_exception = False
         try:
             bag.validate()
-        except bagit.ManifestError, e:
+        except bagit.BagValidationErrorSet, e:
             self.assertTrue(str(e))
             got_exception = True
             self.assertEqual(len(e.errors), 1)
@@ -141,7 +141,7 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.is_valid())
         open(os.path.join(self.tmpdir, "data", "extra_file"), "w").write("bar")
-        self.assertFalse(bag.is_valid())
+        self.assertRaises(bagit.BagValidationError, bag.is_valid)
 
     def test_bom_in_bagit_txt(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -233,7 +233,7 @@ class TestBag(unittest.TestCase):
         tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
         tagman.close()
         bag = bagit.Bag(self.tmpdir)
-        self.assertRaises(bagit.BagValidationError, bag.validate)
+        self.assertRaises(bagit.BagValidationErrorSet, bag.validate)
 
         hasher = hashlib.new("md5")
         hasher.update(open(os.path.join(tagdir, "tagfile"), "rb").read())

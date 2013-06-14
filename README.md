@@ -58,11 +58,10 @@ you could do this:
 try:
   bag.validate()
 
-except ChecksumMismatchError, e:
+except BagValidationErrorSet, e:
   print "eek, some files failed checksum validation, here they are:"
   for error in e.errors:
-    print "%s was supposed to have %s fixity of %s but I found %s" % \
-      (error.path, error.algorithm, error.expected, error.found)
+    print error
 
 except BagValidationError, e:
   print "uhoh, something else went wrong: %s" % e

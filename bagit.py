@@ -141,29 +141,55 @@ class BagError(Exception):
     pass
 
 
-class BagValidationError(BagError):
+class BagValidationError(Exception):
     pass
 
 
-class ManifestError(BagValidationError):
+class BagValidationFileError(BagValidationError):
 
-    def __init__(self, errors):
-        self.errors = errors
+    Checksum = 0
+    Missing = 1
+    Unexpected = 2
 
-    def __str__(self):
-        return "%d files failed checksum validation: %s" % (len(self.errors), self.errors)
+    def __init__(self, path, type, algorithm=None, expected=None, found=None):
+        """Construct an new BagValidationFileError object.
 
+        Arguments:
+        path -- the offending file path as a string
+        type -- the type of error (BagValidationFileError.Checksum, BagValidationFileError.Missing, or BagValidationFileError.Unexpected)
+        algorithm -- (only used if type is "checksum") the checksum algorithm used
+        expected -- (only used if type is "checksum") the expected checksum for the file
+        found -- (only used if type is "checksum") the actual checksum for the file
 
-class ChecksumMismatch:
-
-    def __init__(self, path, algorithm, expected, found):
+        """
         self.path = path
+        self.type = type
         self.algorithm = algorithm
         self.expected = expected
         self.found = found
 
     def __str__(self):
-        return "%s (%s) expected=%s found=%s" % (self.path, self.algorithm, self.expected, self.found)
+        if self.type == self.Checksum:
+            return "%s: checksum validation failed: alg=%s expected=%s found=%s" % (self.path, self.algorithm, self.expected, self.found)
+        elif self.type == self.Missing:
+            return "%s: exists in manifest but not found on filesystem" % self.path
+        elif self.type == self.Unexpected:
+            return "%s: exists on filesystem but is not in manifest" % self.path
+
+class BagValidationErrorSet(BagValidationError):
+
+    def __init__(self, errors):
+        """Construct an exception comprised of a set of BagValidationError objects.
+
+        Arguments:
+        errors -- a List of BagValidationFileError objects
+
+        """
+        self.errors = errors
+
+    def __str__(self):
+        return "%d files failed checksum validation: %s" % (len(self.errors), self.errors)
+
 
 class Bag(object):
     """A representation of a bag."""
@@ -443,11 +469,13 @@ class Bag(object):
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
-            logging.warning("%s: exists in manifest but not in filesystem", path)
-            errors.append(path)
+            e = BagValidationFileError(path, BagValidationFileError.Missing)
+            logging.warning(str(e))
+            errors.append(e)
         for path in only_on_fs:
-            logging.warning("%s: exists in filesystem but not in manifests", path)
-            errors.append(path)
+            e = BagValidationFileError(path, BagValidationFileError.Unexpected)
+            logging.warning(str(e))
+            errors.append(e)
 
         # To avoid the overhead of reading the file more than once or loading
         # potentially massive files into memory we'll create a dictionary of
@@ -484,16 +512,12 @@ class Bag(object):
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
-                    logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
-                    errors.append(ChecksumMismatch(
-                        path=rel_path,
-                        algorithm=alg,
-                        expected=stored_hash.lower(),
-                        found=computed_hash
-                    ))
+                    e = BagValidationFileError(rel_path, BagValidationFileError.Checksum, alg, stored_hash.lower(), computed_hash)
+                    logging.warning(str(e))
+                    errors.append(e)
 
         if errors:
-            raise ManifestError(errors)
+            raise BagValidationErrorSet(errors)
 
     def _validate_bagittxt(self):
         """
