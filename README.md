@@ -1,5 +1,5 @@
-bagit
-=====
+bagit-python
+============
 
 [![Build Status](https://secure.travis-ci.org/LibraryOfCongress/bagit-python.png)](http://travis-ci.org/LibraryOfCongress/bagit-python)
 
