@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Bagit-python by LibraryOfCongress</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Bagit-python</h1>
+        <p>Work with BagIt packages from Python.</p>
+
+        <p class="view"><a href="https://github.com/LibraryOfCongress/bagit-python">View the Project on GitHub <small>LibraryOfCongress/bagit-python</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/LibraryOfCongress/bagit-python/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/LibraryOfCongress/bagit-python/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/LibraryOfCongress/bagit-python">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="bagit" class="anchor" href="#bagit"><span class="octicon octicon-link"></span></a>bagit</h1>
+
+<p><a href="http://travis-ci.org/LibraryOfCongress/bagit-python"><img src="https://secure.travis-ci.org/LibraryOfCongress/bagit-python.png" alt="Build Status"></a></p>
+
+<p>bagit is a Python library and command line utility for working with  <a href="http://purl.org/net/bagit">BagIt</a> style packages.</p>
+
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>bagit.py is a single-file python module that you can drop into your project as 
+needed or you can install globally with:</p>
+
+<pre><code>pip install bagit
+</code></pre>
+
+<p>Python v2.4+ is required.</p>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>From python you can use the bagit module to make a bag like this: </p>
+
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">bagit</span>
+<span class="n">bag</span> <span class="o">=</span> <span class="n">bagit</span><span class="o">.</span><span class="n">make_bag</span><span class="p">(</span><span class="s">'mydir'</span><span class="p">,</span> <span class="p">{</span><span class="s">'Contact-Name'</span><span class="p">:</span> <span class="s">'Ed Summers'</span><span class="p">})</span>
+</pre></div>
+
+<p>Or if you've got an existing bag</p>
+
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">bagit</span>
+<span class="n">bag</span> <span class="o">=</span> <span class="n">bagit</span><span class="o">.</span><span class="n">Bag</span><span class="p">(</span><span class="s">'/path/to/bag'</span><span class="p">)</span>
+</pre></div>
+
+<p>Or from the command line:</p>
+
+<pre><code>bagit.py --contact-name 'Ed Summers' mydir
+</code></pre>
+
+<p>If you want to validate a bag you can:</p>
+
+<div class="highlight"><pre><span class="n">bag</span> <span class="o">=</span> <span class="n">bagit</span><span class="o">.</span><span class="n">Bag</span><span class="p">(</span><span class="s">'/path/to/bag'</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">bag</span><span class="o">.</span><span class="n">is_valid</span><span class="p">():</span>
+    <span class="k">print</span> <span class="s">"yay :)"</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">"boo :("</span>
+</pre></div>
+
+<p>If you'd like to generate the checksums using parallel system processes, 
+instead of single process:</p>
+
+<div class="highlight"><pre><span class="n">bagit</span><span class="o">.</span><span class="n">make_bag</span><span class="p">(</span><span class="s">'mydir'</span><span class="p">,</span> <span class="p">{</span><span class="s">'Contact-Name'</span><span class="p">:</span> <span class="s">'Ed Summers'</span><span class="p">},</span> <span class="n">processes</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> 
+</pre></div>
+
+<p>or:</p>
+
+<pre><code>bagit.py --processes 4 --contact-name 'Ed Summers' mydir
+</code></pre>
+
+<p>bag --help will give the full set of options.</p>
+
+<h2>
+<a name="development" class="anchor" href="#development"><span class="octicon octicon-link"></span></a>Development</h2>
+
+<pre><code>% git clone git://github.com/LibraryOfCongress/bagit-python.git
+% cd bagit 
+% python test.py
+</code></pre>
+
+<p>If you'd like to see how increasing parallelization of bag creation on 
+your system effects the time to create a bag try using the included bench 
+utility:</p>
+
+<pre><code>% ./bench.py
+</code></pre>
+
+<h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p><a href="http://creativecommons.org/publicdomain/zero/1.0/"><img src="http://i.creativecommons.org/p/zero/1.0/88x31.png" alt="cc0"></a></p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/LibraryOfCongress">LibraryOfCongress</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
