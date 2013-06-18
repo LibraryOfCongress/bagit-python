@@ -139,13 +139,6 @@ def make_bag(bag_dir, bag_info=None, processes=1):
     return Bag(bag_dir)
 
 
-
-class BagError(Exception):
-    pass
-
-class BagValidationError(BagError):
-    pass
-
 class Bag(object):
     """A representation of a bag."""
 
@@ -424,11 +417,13 @@ class Bag(object):
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
-            logging.warning("%s: exists in manifest but not in filesystem", path)
-            errors.append(path)
+            e = FileMissing(path)
+            logging.warning(str(e))
+            errors.append(e)
         for path in only_on_fs:
-            logging.warning("%s: exists in filesystem but not in manifests", path)
-            errors.append(path)
+            e = UnexpectedFile(path)
+            logging.warning(str(e))
+            errors.append(e)
 
         # To avoid the overhead of reading the file more than once or loading
         # potentially massive files into memory we'll create a dictionary of
@@ -456,7 +451,7 @@ class Bag(object):
             try:
                 f_hashes = self._calculate_file_hashes(full_path, f_hashers)
             except BagValidationError, e:
-                raise e
+                f_hashes = dict()  # continue with no hashes
             # Any unhandled exceptions are probably fatal
             except:
                 logging.exception("unable to calculate file hashes for %s: %s", self, full_path)
@@ -465,11 +460,12 @@ class Bag(object):
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
-                    logging.warning("%s: stored hash %s doesn't match calculated hash %s", full_path, stored_hash, computed_hash)
-                    errors.append("%s (%s)" % (full_path, alg))
+                    e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
+                    logging.warning(str(e))
+                    errors.append(e)
 
         if errors:
-            raise BagValidationError("%s: %d files failed checksum validation: %s" % (self, len(errors), errors))
+            raise BagValidationError("invalid bag", errors)
 
     def _validate_bagittxt(self):
         """
@@ -507,6 +503,41 @@ class Bag(object):
         return dict(
             (alg, h.hexdigest()) for alg, h in f_hashers.items()
         )
+
+class BagError(Exception):
+    pass
+
+class BagValidationError(BagError):
+    def __init__(self, message, details=[]):
+        self.message = message
+        self.details = details
+    def __str__(self):
+        if len(self.details) > 0:
+            details = " ; ".join([str(e) for e in self.details])
+            return "%s: %s" % (self.message, details)
+        return self.message
+
+class ManifestErrorDetail():
+    def __init__(self, path):
+        self.path = path
+
+class ChecksumMismatch(ManifestErrorDetail):
+    def __init__(self, path, algorithm=None, expected=None, found=None):
+        self.path = path
+        self.algorithm = algorithm
+        self.expected = expected
+        self.found = found
+    def __str__(self):
+        return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
+
+class FileMissing(ManifestErrorDetail):
+    def __str__(self):
+        return "%s exists in manifest but not found on filesystem" % self.path
+
+class UnexpectedFile(ManifestErrorDetail):
+    def __str__(self):
+        return "%s exists on filesystem but is not in manifest" % self.path
+
 
 def _load_tag_file(tag_file_name, duplicates=False):
     """
