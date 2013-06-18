@@ -63,7 +63,7 @@ Development
 -----------
 
     % git clone git://github.com/LibraryOfCongress/bagit-python.git
-    % cd bagit 
+    % cd bagit-python
     % python test.py
 
 If you'd like to see how increasing parallelization of bag creation on 
