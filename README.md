@@ -1,4 +1,4 @@
-bagit-py3
+bagit-python3
 =========
 
 [![Build Status](https://travis-ci.org/jobyh/bagit-py3.png)](https://travis-ci.org/jobyh/bagit-py3)
