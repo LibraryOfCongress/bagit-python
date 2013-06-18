@@ -102,8 +102,8 @@ except bag.BagValidationError, e:
 Development
 -----------
 
-    % git clone git://github.com/libraryofcongress/bagit.git
-    % cd bagit 
+    % git clone git://github.com/LibraryOfCongress/bagit-python.git
+    % cd bagit-python
     % python test.py
 
 If you'd like to see how increasing parallelization of bag creation on 
