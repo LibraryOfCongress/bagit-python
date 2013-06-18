@@ -61,6 +61,13 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
         self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/edsu/bagit' in bag_info_txt)
 
+    def test_make_bag_with_data_dir_present(self):
+        os.mkdir(j(self.tmpdir, 'data'))
+        bag = bagit.make_bag(self.tmpdir)
+
+        # data dir should now contain another data dir
+        self.assertTrue(os.path.isdir(j(self.tmpdir, 'data', 'data')))
+
     def test_bag_class(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag(self.tmpdir, bag_info=info)

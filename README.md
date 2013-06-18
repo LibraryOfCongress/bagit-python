@@ -1,5 +1,5 @@
 bagit-python3
-=========
+=============
 
 [![Build Status](https://travis-ci.org/jobyh/bagit-py3.png)](https://travis-ci.org/jobyh/bagit-py3)
 
@@ -64,7 +64,7 @@ bag --help will give the full set of options.
 Development
 -----------
 
-    % git clone git://github.com/edsu/bagit.git
+    % git clone git://github.com/LibraryOfCongress/bagit-python.git
     % cd bagit 
     % python test.py
 
