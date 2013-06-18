@@ -514,11 +514,11 @@ class BagValidationError(BagError):
             return "%s: %s" % (self.message, details)
         return self.message
 
-class ManifestError():
+class ManifestErrorDetail():
     def __init__(self, path):
         self.path = path
 
-class ChecksumMismatch(ManifestError):
+class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
         self.path = path
         self.algorithm = algorithm
@@ -527,11 +527,11 @@ class ChecksumMismatch(ManifestError):
     def __str__(self):
         return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
 
-class FileMissing(ManifestError):
+class FileMissing(ManifestErrorDetail):
     def __str__(self):
         return "%s exists in manifest but not found on filesystem" % self.path
 
-class UnexpectedFile(ManifestError):
+class UnexpectedFile(ManifestErrorDetail):
     def __str__(self):
         return "%s exists on filesystem but is not in manifest" % self.path
 
