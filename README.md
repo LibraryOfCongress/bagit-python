@@ -64,8 +64,8 @@ bag --help will give the full set of options.
 Development
 -----------
 
-    % git clone git://github.com/LibraryOfCongress/bagit-python.git
-    % cd bagit 
+    % git clone git://github.com/jobyh/bagit-python3.git
+    % cd bagit-python3
     % python test.py
 
 If you'd like to see how increasing parallelization of bag creation on 
