@@ -38,6 +38,7 @@ import logging
 import optparse
 import multiprocessing
 import codecs
+import tempfile
 
 from glob import glob
 from datetime import date
@@ -94,13 +95,15 @@ def make_bag(bag_dir, bag_info=None, processes=1):
             sys.exit("\nRead permissions are required to calculate file fixities.")
         else:
             logging.info("creating data dir")
-            os.mkdir('data')
+            temp_data = tempfile.mkdtemp(dir=os.getcwd())
 
             for f in os.listdir('.'):
-                if f == 'data': continue
-                new_f = os.path.join('data', f)
+                if os.path.abspath(f) == temp_data: continue
+                new_f = os.path.join(temp_data, f)
                 logging.info("moving %s to %s" % (f, new_f))
                 os.rename(f, new_f)
+
+            os.rename(temp_data, 'data')
 
             logging.info("writing manifest-md5.txt")
             Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
