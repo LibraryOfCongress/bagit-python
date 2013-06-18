@@ -15,28 +15,55 @@ needed or you can install globally with:
 
 Python v2.4+ is required.
 
-Usage
------
+Command Line Usage
+------------------
 
-From python you can use the bagit module to make a bag like this: 
+When you install bagit you should get a command line program called bagit.py
+which you can use to turn an existing directory into a bag:
+
+    bagit.py --contact-name 'John Kunze' /path/to/directory
+
+You can pass in key/value metadata for the bag using options like 
+`--contact-name` above, which get persisted to the bag-info.txt. For a 
+complete list of bag-info.txt properties you can use as commmand line
+arguments see `--help`.
+
+If you would like to validate a bag you can use the --validate flag.
+
+    bagit.py --validate /path/to/bag
+
+If you would like to take a quick look at the bag to see if it seems valid
+by just examining the structure of the bag, and comparing its payload-oxum (byte
+count and number of files) then use the `--fast` flag.
+
+    bagit.py --validate --fast /path/to/bag
+
+Since calculating checksums can take a while, you may want to calculate them in
+parallel if you are on a multicore machine. You can do that with the 
+`--processes` option:
+
+    bagit.py --validate --processes 4 /path/to/bag
+
+Python Usage
+------------
+
+You can also use bagit programatically in your own Python programs. To 
+create a bag you would do this:
 
 ```python
 import bagit
-bag = bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'})
+bag = bagit.make_bag('mydir', {'Contact-Name': 'John Kunze'})
 ```
 
-Or if you've got an existing bag
+`make_bag` returns a Bag instance. If you have a bag already on disk and would
+like to create a Bag instance for it, simply call the constructor directly:
 
 ```python
 import bagit
 bag = bagit.Bag('/path/to/bag')
 ```
 
-Or from the command line:
-
-    bagit.py --contact-name 'Ed Summers' mydir
-
-If you want to validate a bag you can:
+If you would like to see if a bag is valid, use its `is_valid` method:
 
 ```python
 bag = bagit.Bag('/path/to/bag')
@@ -46,39 +73,31 @@ else:
     print "boo :("
 ```
 
-If you'd like to get a detailed list of checksum errors during validation, 
-just catch the ChecksumMismatchError which has the property `errors` which
-is a list of ChecksumError, each of which has `path`, `algorithm`, 
-`expected` and `found` properties.
+If you'd like to get a detailed list of validation errors, 
+execute the `validate` method and catch the `BagValidationError` 
+exception. If the bag's manifest was invalid (and it wasn't caught by the 
+payload oxum) the exception's `details` property will contain a list of 
+`ManifestError`s that you can introspect on. Each ManifestError, will be of 
+type `ChecksumMismatch`, `FileMissing`, `UnexpectedFile`.
 
-So, if you wanted to print out a list of files that failed checksum validation
-you could do this:
+So for example if you want to print out checksums that failed to validate 
+you can do this:
 
 ```python
+
+import bagit
+
+bag = bagit.Bag("/path/to/bag")
+
 try:
   bag.validate()
 
-except BagValidationErrorSet, e:
-  print "eek, some files failed checksum validation, here they are:"
-  for error in e.errors:
-    print error
-
-except BagValidationError, e:
-  print "uhoh, something else went wrong: %s" % e
+except bag.BagValidationError, e:
+  for d in e.details:
+    if isinstance(d, bag.ChecksumMismatch):
+      print "expected %s to have %s checksum of %s but found %s" % \
+        (e.path, e.algorithm, e.expected, e.found)
 ```
-
-If you'd like to generate the checksums using parallel system processes, 
-instead of single process:
-
-```python
-bagit.make_bag('mydir', {'Contact-Name': 'Ed Summers'}, processes=4) 
-```
-
-or:
-
-    bagit.py --processes 4 --contact-name 'Ed Summers' mydir
-
-bag --help will give the full set of options.
 
 Development
 -----------

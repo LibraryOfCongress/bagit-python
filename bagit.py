@@ -136,83 +136,6 @@ def make_bag(bag_dir, bag_info=None, processes=1):
     return Bag(bag_dir)
 
 
-
-class BagError(Exception):
-    pass
-
-
-class BagValidationError(Exception):
-    pass
-
-
-class BagValidationFileError(BagValidationError):
-
-    def __init__(self, path):
-        """Construct an new BagValidationError object.
-        
-        Note: You should not instantiate this class directly. Instead, use one
-        of its subclasses:
-        * BagValidationFileChecksumError
-        * BagValidationFileMissingError
-        * BagValidationFileUnexpectedError
-
-        Arguments:
-        path -- the offending file path as a string
-
-        """
-        self.path = path
-
-    def __str__(self):
-       return "%s: unknown validation error occurred" % self.path
-
-class BagValidationFileChecksumError(BagValidationFileError):
-
-    def __init__(self, path, algorithm=None, expected=None, found=None):
-        """Construct an new BagValidationFileChecksumError object.
-
-        Arguments:
-        path -- the offending file path as a string
-        algorithm -- (only used if type is "checksum") the checksum algorithm used
-        expected -- (only used if type is "checksum") the expected checksum for the file
-        found -- (only used if type is "checksum") the actual checksum for the file
-
-        """
-        self.path = path
-        self.algorithm = algorithm
-        self.expected = expected
-        self.found = found
-
-    def __str__(self):
-        return "%s: checksum validation failed: alg=%s expected=%s found=%s" % (self.path, self.algorithm, self.expected, self.found)
-
-class BagValidationFileMissingError(BagValidationFileError):
-
-    def __str__(self):
-        return "%s: exists in manifest but not found on filesystem" % self.path
-
-class BagValidationFileUnexpectedError(BagValidationFileError):
-
-    def __str__(self):
-        return "%s: exists on filesystem but is not in manifest" % self.path
-
-class BagValidationErrorSet(BagValidationError):
-
-    def __init__(self, errors):
-        """Construct an exception comprised of a set of BagValidationError objects.
-
-        Arguments:
-        errors -- a List of BagValidationFileError objects
-
-        """
-        self.errors = errors
-
-    def __str__(self):
-        errors_string = ''
-        for error in self.errors:
-            errors_string += "\n%s" % error
-        return "%d files failed checksum validation: %s" % (len(self.errors), errors_string)
-
-
 class Bag(object):
     """A representation of a bag."""
 
@@ -491,11 +414,11 @@ class Bag(object):
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
-            e = BagValidationFileMissingError(path)
+            e = FileMissing(path)
             logging.warning(str(e))
             errors.append(e)
         for path in only_on_fs:
-            e = BagValidationFileUnexpectedError(path)
+            e = UnexpectedFile(path)
             logging.warning(str(e))
             errors.append(e)
 
@@ -534,12 +457,12 @@ class Bag(object):
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
-                    e = BagValidationFileChecksumError(rel_path, alg, stored_hash.lower(), computed_hash)
+                    e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
                     logging.warning(str(e))
                     errors.append(e)
 
         if errors:
-            raise BagValidationErrorSet(errors)
+            raise BagValidationError("invalid bag", errors)
 
     def _validate_bagittxt(self):
         """
@@ -577,6 +500,41 @@ class Bag(object):
         return dict(
             (alg, h.hexdigest()) for alg, h in f_hashers.items()
         )
+
+class BagError(Exception):
+    pass
+
+class BagValidationError(BagError):
+    def __init__(self, message, details=[]):
+        self.message = message
+        self.details = details
+    def __str__(self):
+        if len(self.details) > 0:
+            details = " ; ".join([str(e) for e in self.details])
+            return "%s: %s" % (self.message, details)
+        return self.message
+
+class ManifestError():
+    def __init__(self, path):
+        self.path = path
+
+class ChecksumMismatch(ManifestError):
+    def __init__(self, path, algorithm=None, expected=None, found=None):
+        self.path = path
+        self.algorithm = algorithm
+        self.expected = expected
+        self.found = found
+    def __str__(self):
+        return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
+
+class FileMissing(ManifestError):
+    def __str__(self):
+        return "%s exists in manifest but not found on filesystem" % self.path
+
+class UnexpectedFile(ManifestError):
+    def __str__(self):
+        return "%s exists on filesystem but is not in manifest" % self.path
+
 
 def _load_tag_file(tag_file_name, duplicates=False):
     """
