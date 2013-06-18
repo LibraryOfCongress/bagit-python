@@ -21,12 +21,18 @@ Command Line Usage
 When you install bagit you should get a command line program called bagit.py
 which you can use to turn an existing directory into a bag:
 
-    bagit.py --contact-name 'John Kunze' /path/to/directory
+    bagit.py --contact-name 'John Kunze' /directory/to/bag
 
 You can pass in key/value metadata for the bag using options like 
 `--contact-name` above, which get persisted to the bag-info.txt. For a 
 complete list of bag-info.txt properties you can use as commmand line
 arguments see `--help`.
+
+Since calculating checksums can take a while when creating a bag, you may want 
+to calculate them in parallel if you are on a multicore machine. You can do 
+that with the `--processes` option:
+
+    bagit.py --processes 4 /directory/to/bag
 
 If you would like to validate a bag you can use the --validate flag.
 
@@ -37,12 +43,6 @@ by just examining the structure of the bag, and comparing its payload-oxum (byte
 count and number of files) then use the `--fast` flag.
 
     bagit.py --validate --fast /path/to/bag
-
-Since calculating checksums can take a while, you may want to calculate them in
-parallel if you are on a multicore machine. You can do that with the 
-`--processes` option:
-
-    bagit.py --validate --processes 4 /path/to/bag
 
 Python Usage
 ------------
