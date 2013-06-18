@@ -26,8 +26,8 @@ except:
 
 setup(
     name = 'bagit',
-    version = '1.2.0',
-    url = 'http://github.com/edsu/bagit',
+    version = '1.2.1',
+    url = 'http://github.com/LibraryOfCongress/bagit-python',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
     py_modules = ['bagit',],
