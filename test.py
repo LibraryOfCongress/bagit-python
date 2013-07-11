@@ -128,22 +128,25 @@ class TestBag(unittest.TestCase):
     def test_validation_error_details(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = os.path.join(self.tmpdir, "data", "README")
-        txt = open(readme).read()
-        txt = 'A' + txt[1:]
-        open(readme, "w").write(txt)
+        with open(readme) as readme_file:
+            txt = readme_file.read()
+            txt = 'A' + txt[1:]
+        with open(readme, "w") as readme_file:
+            readme_file.write(txt)
 
         extra_file = os.path.join(self.tmpdir, "data", "extra")
-        open(extra_file, "w").write('foo')
+        with open(extra_file, "w") as extra:
+            extra.write('foo')
 
-        # remove the bag-info.txt which contains the oxum to force a full 
-        # check of the manifest 
+        # remove the bag-info.txt which contains the oxum to force a full
+        # check of the manifest
         os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
 
         bag = bagit.Bag(self.tmpdir)
         got_exception = False
         try:
             bag.validate()
-        except bagit.BagValidationError, e:
+        except bagit.BagValidationError as e:
             got_exception = True
 
             self.assertEqual(str(e), "invalid bag: data/extra exists on filesystem but is not in manifest ; data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
