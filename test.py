@@ -125,6 +125,45 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate, fast=False)
 
+    def test_validation_error_details(self):
+        bag = bagit.make_bag(self.tmpdir)
+        readme = os.path.join(self.tmpdir, "data", "README")
+        txt = open(readme).read()
+        txt = 'A' + txt[1:]
+        open(readme, "w").write(txt)
+
+        extra_file = os.path.join(self.tmpdir, "data", "extra")
+        open(extra_file, "w").write('foo')
+
+        # remove the bag-info.txt which contains the oxum to force a full 
+        # check of the manifest 
+        os.remove(os.path.join(self.tmpdir, "bag-info.txt"))
+
+        bag = bagit.Bag(self.tmpdir)
+        got_exception = False
+        try:
+            bag.validate()
+        except bagit.BagValidationError, e:
+            got_exception = True
+
+            self.assertEqual(str(e), "invalid bag: data/extra exists on filesystem but is not in manifest ; data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
+            self.assertEqual(len(e.details), 2)
+
+            error = e.details[0]
+            self.assertEqual(str(error), "data/extra exists on filesystem but is not in manifest")
+            self.assertTrue(isinstance(error, bagit.UnexpectedFile))
+            self.assertEqual(error.path, "data/extra")
+
+            error = e.details[1]
+            self.assertEqual(str(error), "data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
+            self.assertTrue(isinstance(error, bagit.ChecksumMismatch))
+            self.assertEqual(error.algorithm, 'md5')
+            self.assertEqual(error.path, 'data/README')
+            self.assertEqual(error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
+            self.assertEqual(error.found, 'fd41543285d17e7c29cd953f5cf5b955')
+        if not got_exception:
+            self.fail("didn't get BagValidationError")
+
     def test_is_valid(self):
         bag = bagit.make_bag(self.tmpdir)
         bag = bagit.Bag(self.tmpdir)
