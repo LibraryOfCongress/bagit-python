@@ -43,6 +43,8 @@ import tempfile
 from glob import glob
 from datetime import date
 from itertools import chain
+from os import listdir
+from os.path import isfile, join
 
 # standard bag-info.txt metadata
 _bag_info_headers = [
@@ -130,6 +132,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
                 bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
             bag_info_txt.close()
 
+            _make_tagmanifest_file('tagmanifest-md5.txt', bag_dir)
     except Exception, e:
         os.chdir(old_dir)
         logging.error(e)
@@ -367,11 +370,13 @@ class Bag(object):
     def _validate_structure_tag_files(self):
         # Note: we deviate somewhat from v0.96 of the spec in that it allows
         # other files and directories to be present in the base directory
-        # see 
+        # see
         if len(list(self.manifest_files())) == 0:
             raise BagValidationError("Missing manifest file")
         if "bagit.txt" not in os.listdir(self.path):
             raise BagValidationError("Missing bagit.txt")
+        if len(list(self.tagmanifest_files())) == 0:
+            raise BagValidationError("Missing tag manifest file")
 
     def _validate_contents(self, fast=False):
         if fast and not self.has_oxum():
@@ -633,6 +638,27 @@ def _make_manifest(manifest_file, data_dir, processes):
         manifest.write("%s  %s\n" % (digest, filename))
     manifest.close()
     return "%s.%s" % (total_bytes, num_files)
+
+
+def _make_tagmanifest_file(tagmanifest_file, bag_dir):
+    files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
+    checksums = []
+    for f in files:
+        fh = open(f, 'rb')
+        m = hashlib.md5()
+        while True:
+            bytes = fh.read(16384)
+            if not bytes:
+                break
+            m.update(bytes)
+
+        checksums.append((m.hexdigest(), f))
+        fh.close()
+    tagmanifest = open(tagmanifest_file, 'wb')
+    for digest, filename in checksums:
+        tagmanifest.write('%s %s\n' % (digest, filename))
+    tagmanifest.close()
+
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
