@@ -644,17 +644,19 @@ def _make_tagmanifest_file(tagmanifest_file, bag_dir):
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
-        fh = open(f, 'rb')
+        if f == tagmanifest_file:
+            continue
+        fh = open(join(bag_dir, f), 'rb')
         m = hashlib.md5()
         while True:
             bytes = fh.read(16384)
             if not bytes:
                 break
             m.update(bytes)
-
         checksums.append((m.hexdigest(), f))
         fh.close()
-    tagmanifest = open(tagmanifest_file, 'wb')
+
+    tagmanifest = open(join(bag_dir, tagmanifest_file), 'wb')
     for digest, filename in checksums:
         tagmanifest.write('%s %s\n' % (digest, filename))
     tagmanifest.close()
