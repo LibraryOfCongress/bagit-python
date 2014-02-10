@@ -44,6 +44,8 @@ from glob import glob
 from datetime import date
 from itertools import chain
 
+logger = logging.getLogger(__name__)
+
 # standard bag-info.txt metadata
 _bag_info_headers = [
     'Source-Organization',
