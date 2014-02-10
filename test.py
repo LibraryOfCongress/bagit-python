@@ -58,6 +58,13 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
         self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/edsu/bagit' in bag_info_txt)
 
+        # check tagmanifest-md5.txt
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
+        tagmanifest_txt = open(j(self.tmpdir, 'tagmanifest-md5.txt')).read()
+        self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
+        self.assertTrue('174c6e94c20dc92d507d7515611ad3dd manifest-md5.txt' in tagmanifest_txt)
+        self.assertTrue('611f630be5d7877dc2af15a8a6dff82e bag-info.txt' in tagmanifest_txt)
+
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
         bag = bagit.make_bag(self.tmpdir)
@@ -140,15 +147,20 @@ class TestBag(unittest.TestCase):
         except bagit.BagValidationError, e:
             got_exception = True
 
-            self.assertEqual(str(e), "invalid bag: data/extra exists on filesystem but is not in manifest ; data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
-            self.assertEqual(len(e.details), 2)
+            self.assertEqual(str(e), "invalid bag: bag-info.txt exists in manifest but not found on filesystem ; data/extra exists on filesystem but is not in manifest ; data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
+            self.assertEqual(len(e.details), 3)
 
             error = e.details[0]
+            self.assertEqual(str(error), "bag-info.txt exists in manifest but not found on filesystem")
+            self.assertTrue(isinstance(error, bagit.FileMissing))
+            self.assertEqual(error.path, "bag-info.txt")
+
+            error = e.details[1]
             self.assertEqual(str(error), "data/extra exists on filesystem but is not in manifest")
             self.assertTrue(isinstance(error, bagit.UnexpectedFile))
             self.assertEqual(error.path, "data/extra")
 
-            error = e.details[1]
+            error = e.details[2]
             self.assertEqual(str(error), "data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
             self.assertTrue(isinstance(error, bagit.ChecksumMismatch))
             self.assertEqual(error.algorithm, 'md5')
@@ -218,11 +230,31 @@ class TestBag(unittest.TestCase):
 
     def test_mixed_case_checksums(self):
         bag = bagit.make_bag(self.tmpdir)
-        hashstr = bag.entries.itervalues().next()
+        hashstr = {}
+        #Extract entries only for the payload and ignore
+        # entries from the tagmanifest file
+        for key in bag.entries.iterkeys():
+            if key.startswith('data' + os.sep):
+                hashstr = bag.entries[key]
         hashstr = hashstr.itervalues().next()
-        manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"), "r").read()
+        manifest = open(os.path.join(self.tmpdir, "manifest-md5.txt"),
+                        "r").read()
         manifest = manifest.replace(hashstr, hashstr.upper())
-        open(os.path.join(self.tmpdir, "manifest-md5.txt"), "w").write(manifest)
+        open(os.path.join(self.tmpdir, "manifest-md5.txt"),
+             "w").write(manifest)
+
+        #Since manifest-md5.txt file is updated, re-calculate its
+        # md5 checksum and update it in the tagmanifest-md5.txt file
+        hasher = hashlib.new('md5')
+        hasher.update(open(os.path.join(self.tmpdir, "manifest-md5.txt"),
+                      "r").read())
+        tagmanifest = open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"),
+                           "r").read()
+        tagmanifest = tagmanifest.replace(
+            bag.entries['manifest-md5.txt']['md5'], hasher.hexdigest())
+        open(os.path.join(self.tmpdir, "tagmanifest-md5.txt"),
+             "w").write(tagmanifest)
+
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.validate())
 
