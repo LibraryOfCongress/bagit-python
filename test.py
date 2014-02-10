@@ -63,7 +63,7 @@ class TestBag(unittest.TestCase):
         tagmanifest_txt = open(j(self.tmpdir, 'tagmanifest-md5.txt')).read()
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
         self.assertTrue('174c6e94c20dc92d507d7515611ad3dd manifest-md5.txt' in tagmanifest_txt)
-        self.assertTrue('611f630be5d7877dc2af15a8a6dff82e bag-info.txt' in tagmanifest_txt)
+        self.assertTrue('116391b65407a00eaf144ab5c3bd5cf2 bag-info.txt' in tagmanifest_txt)
 
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
