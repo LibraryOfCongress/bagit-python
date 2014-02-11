@@ -28,7 +28,7 @@ class TestBag(unittest.TestCase):
             shutil.rmtree(self.tmpdir)
 
     def test_make_bag(self):
-        info = {'Contact-Email': 'ehs@pobox.com'}
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag(self.tmpdir, bag_info=info)
 
         # data dir should've been created
@@ -53,17 +53,17 @@ class TestBag(unittest.TestCase):
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bag-info.txt')))
         bag_info_txt = open(j(self.tmpdir, 'bag-info.txt')).read()
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
-        today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
-        self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
+        self.assertTrue('Bagging-Date: 1970-01-01' in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
-        self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/edsu/bagit' in bag_info_txt)
+        self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
 
         # check tagmanifest-md5.txt
+        print self.tmpdir
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
         tagmanifest_txt = open(j(self.tmpdir, 'tagmanifest-md5.txt')).read()
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
-        self.assertTrue('174c6e94c20dc92d507d7515611ad3dd manifest-md5.txt' in tagmanifest_txt)
-        self.assertTrue('116391b65407a00eaf144ab5c3bd5cf2 bag-info.txt' in tagmanifest_txt)
+        self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
+        self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
 
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
@@ -301,6 +301,15 @@ class TestBag(unittest.TestCase):
         os.remove(os.path.join(tagdir, "tagfile"))
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate)
+    
+    def test_default_bagging_date(self):
+        info = {'Contact-Email': 'ehs@pobox.com'}
+        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        bag_info_txt = open(j(self.tmpdir, 'bag-info.txt')).read()
+        self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
+        today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
+        self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
+
 
 
 if __name__ == '__main__':
