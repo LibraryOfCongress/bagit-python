@@ -99,6 +99,22 @@ except bagit.BagValidationError, e:
         (e.path, e.algorithm, e.expected, e.found)
 ```
 
+To iterate through the contents of a bag and retrieve checksums for
+the payload files:
+
+```python
+
+import bagit
+
+bag = bagit.Bag("/path/to/bag")
+
+for data_path in bag.payload_files():
+    # path is relative to bag root dir
+    filename = os.path.join(path, data_path)
+    checksum = bag.entries[data_path]['md5']
+    print "%s %s" % (filename, checksum)
+```
+
 Development
 -----------
 
