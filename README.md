@@ -116,3 +116,6 @@ License
 -------
 
 [![cc0](http://i.creativecommons.org/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/)
+
+Note: By contributing to this project, you agree to license your work under the
+same terms as those that govern this project's distribution.
