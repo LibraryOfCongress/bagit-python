@@ -64,7 +64,6 @@ class TestBag(unittest.TestCase):
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
         self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
 
-
     def test_make_bag_sha1_manifest(self):
         bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
         # check manifest
