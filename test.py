@@ -64,6 +64,26 @@ class TestBag(unittest.TestCase):
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
         self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
 
+
+    def test_make_bag_sha1_manifest(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
+        # check manifest
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha1.txt')))
+        manifest_txt = open(j(self.tmpdir, 'manifest-sha1.txt')).read()
+        self.assertTrue('ace19416e605cfb12ab11df4898ca7fd9979ee43  data/README' in manifest_txt)
+        self.assertTrue('4c0a3da57374e8db379145f18601b159f3cad44b  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
+        self.assertTrue('62095aeddae2f3207cb77c85937e13c51641ef71  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
+        self.assertTrue('e592194b3733e25166a631e1ec55bac08066cbc1  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
+        self.assertTrue('db49ef009f85a5d0701829f38d29f8cf9c5df2ea  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
+
+    def test_make_bag_md5_sha1_manifest(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['md5', 'sha1'])
+        # check that both manifests are created
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-md5.txt')))
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha1.txt')))
+        # check valid with two manifests
+        self.assertTrue(bag.validate(fast=True))
+
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
         bag = bagit.make_bag(self.tmpdir)
