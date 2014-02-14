@@ -99,6 +99,16 @@ except bagit.BagValidationError, e:
         (e.path, e.algorithm, e.expected, e.found)
 ```
 
+To iterate through a bag's manifest and retrieve checksums for the payload 
+files use the bag's entries dictionary:
+
+```python
+bag = bagit.Bag("/path/to/bag")
+
+for path, fixity in bag.entries.items():
+  print "path:%s md5:%s" % (path, fixity["md5"])
+```
+
 Development
 -----------
 
