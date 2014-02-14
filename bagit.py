@@ -668,6 +668,10 @@ def _make_tagmanifest_file(tagmanifest_file, bag_dir):
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
+        # if we don't sort here the order of entries is 
+        # non-deterministic which makes it hard to test tagmanifest-md5.txt 
+        filenames.sort()
+        dirnames.sort()
         for fn in filenames:
             path = os.path.join(dirpath, fn)
             # BagIt spec requires manifest to always use '/' as path separator

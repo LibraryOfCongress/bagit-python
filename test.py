@@ -58,7 +58,6 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
 
         # check tagmanifest-md5.txt
-        print self.tmpdir
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
         tagmanifest_txt = open(j(self.tmpdir, 'tagmanifest-md5.txt')).read()
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
