@@ -70,13 +70,16 @@ _bag_info_headers = [
 checksum_algos = ['md5', 'sha1']
 
 
-def make_bag(bag_dir, bag_info=None, processes=1):
+def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
     """
     Convert a given directory into a bag. You can pass in arbitrary
     key/value pairs to put into the bag-info.txt metadata file as
     the bag_info dictionary.
     """
     logging.info("creating bag for directory %s" % bag_dir)
+    # assume md5 checksum if not specified
+    if not checksum:
+        checksum = ['md5']
 
     if not os.path.isdir(bag_dir):
         logging.error("no such bag directory %s" % bag_dir)
@@ -109,8 +112,9 @@ def make_bag(bag_dir, bag_info=None, processes=1):
 
             os.rename(temp_data, 'data')
 
-            logging.info("writing manifest-md5.txt")
-            Oxum = _make_manifest('manifest-md5.txt', 'data', processes)
+            for c in checksum:
+                logging.info("writing manifest-%s.txt" % c)
+                Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, c)
 
             logging.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -620,19 +624,24 @@ def _parse_tags(file):
         yield (tag_name, tag_value)
 
 
-def _make_manifest(manifest_file, data_dir, processes):
+def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     logging.info('writing manifest with %s processes' % processes)
 
     # avoid using multiprocessing unless it is required since
     # multiprocessing doesn't work in some environments (mod_wsgi, etc)
 
+    if algorithm == 'md5':
+        manifest_line = _manifest_line_md5
+    elif algorithm == 'sha1':
+        manifest_line = _manifest_line_sha1
+
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
-        checksums = pool.map(_manifest_line, _walk(data_dir))
+        checksums = pool.map(manifest_line, _walk(data_dir))
         pool.close()
         pool.join()
     else:
-        checksums = map(_manifest_line, _walk(data_dir))
+        checksums = map(manifest_line, _walk(data_dir))
 
     manifest = open(manifest_file, 'wb')
     num_files = 0
@@ -706,9 +715,18 @@ def _can_read(test_dir):
                 unreadable_files.append(os.path.join(dirpath, fn))
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
-def _manifest_line(filename):
+def _manifest_line_md5(filename):
+    return _manifest_line(filename, 'md5')
+
+def _manifest_line_sha1(filename):
+    return _manifest_line(filename, 'sha1')
+
+def _manifest_line(filename, algorithm='md5'):
     fh = open(filename, 'rb')
-    m = hashlib.md5()
+    if algorithm == 'md5':
+        m = hashlib.md5()
+    elif algorithm == 'sha1':
+        m = hashlib.sha1()
     total_bytes = 0
     while True:
         bytes = fh.read(16384)
@@ -740,6 +758,13 @@ def _make_opt_parser():
     parser.add_option('--quiet', action='store_true', dest='quiet')
     parser.add_option('--validate', action='store_true', dest='validate')
     parser.add_option('--fast', action='store_true', dest='fast')
+
+    # optionally specify which checksum algorithm(s) to use when creating a bag
+    # NOTE: could generate from checksum_algos ?
+    parser.add_option('--md5', action='append_const', dest='checksum',
+        const='md5', help='Generate MD5 manifest when creating a bag (default)')
+    parser.add_option('--sha1', action='append_const', dest='checksum',
+        const='sha1', help='Generate SHA1 manifest when creating a bag')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
@@ -791,6 +816,7 @@ if __name__ == '__main__':
         # make the bag
         else:
             make_bag(bag_dir, bag_info=opt_parser.bag_info, 
-                     processes=opts.processes)
+                     processes=opts.processes, 
+                     checksum=opts.checksum)
 
         sys.exit(rc)
