@@ -76,6 +76,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
     key/value pairs to put into the bag-info.txt metadata file as
     the bag_info dictionary.
     """
+    bag_dir = os.path.abspath(bag_dir)
     logging.info("creating bag for directory %s" % bag_dir)
     # assume md5 checksum if not specified
     if not checksum:
@@ -110,6 +111,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
                 logging.info("moving %s to %s" % (f, new_f))
                 os.rename(f, new_f)
 
+            logging.info("moving %s to %s" % (temp_data, 'data'))
             os.rename(temp_data, 'data')
 
             for c in checksum:
