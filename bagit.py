@@ -647,6 +647,9 @@ def _make_manifest(manifest_file, data_dir, processes):
 
 
 def _make_tagmanifest_file(tagmanifest_file, bag_dir):
+    #While getting the absolute path of bag_dir it assumes that
+    # os.path.curdir points to the actual bag directory
+    bag_dir = os.path.abspath(os.path.curdir)
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
