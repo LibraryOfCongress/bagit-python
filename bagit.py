@@ -76,6 +76,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
     key/value pairs to put into the bag-info.txt metadata file as
     the bag_info dictionary.
     """
+    bag_dir = os.path.abspath(bag_dir)
     logging.info("creating bag for directory %s" % bag_dir)
 
     if not os.path.isdir(bag_dir):
@@ -107,6 +108,7 @@ def make_bag(bag_dir, bag_info=None, processes=1):
                 logging.info("moving %s to %s" % (f, new_f))
                 os.rename(f, new_f)
 
+            logging.info("moving %s to %s" % (temp_data, 'data'))
             os.rename(temp_data, 'data')
 
             logging.info("writing manifest-md5.txt")
@@ -647,9 +649,6 @@ def _make_manifest(manifest_file, data_dir, processes):
 
 
 def _make_tagmanifest_file(tagmanifest_file, bag_dir):
-    #While getting the absolute path of bag_dir it assumes that
-    # os.path.curdir points to the actual bag directory
-    bag_dir = os.path.abspath(os.path.curdir)
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
