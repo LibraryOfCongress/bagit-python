@@ -636,6 +636,9 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         manifest_line = _manifest_line_md5
     elif algorithm == 'sha1':
         manifest_line = _manifest_line_sha1
+    elif algorithm == 'sha256':
+        manifest_line = _manifest_line_sha256
+
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
@@ -723,12 +726,18 @@ def _manifest_line_md5(filename):
 def _manifest_line_sha1(filename):
     return _manifest_line(filename, 'sha1')
 
+def _manifest_line_sha256(filename):
+    return _manifest_line(filename, 'sha256')
+
 def _manifest_line(filename, algorithm='md5'):
     fh = open(filename, 'rb')
     if algorithm == 'md5':
         m = hashlib.md5()
     elif algorithm == 'sha1':
         m = hashlib.sha1()
+    elif algorithm == 'sha256':
+        m = hashlib.sha256()
+
     total_bytes = 0
     while True:
         bytes = fh.read(16384)
@@ -767,6 +776,8 @@ def _make_opt_parser():
         const='md5', help='Generate MD5 manifest when creating a bag (default)')
     parser.add_option('--sha1', action='append_const', dest='checksum',
         const='sha1', help='Generate SHA1 manifest when creating a bag')
+    parser.add_option('--sha256', action='append_const', dest='checksum',
+        const='sha256', help='Generate SHA-256 manifest when creating a bag')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
