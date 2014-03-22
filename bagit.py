@@ -382,13 +382,10 @@ class Bag(object):
     def _validate_structure_tag_files(self):
         # Note: we deviate somewhat from v0.96 of the spec in that it allows
         # other files and directories to be present in the base directory
-        # see
         if len(list(self.manifest_files())) == 0:
             raise BagValidationError("Missing manifest file")
         if "bagit.txt" not in os.listdir(self.path):
             raise BagValidationError("Missing bagit.txt")
-        if len(list(self.tagmanifest_files())) == 0:
-            raise BagValidationError("Missing tag manifest file")
 
     def _validate_contents(self, fast=False):
         if fast and not self.has_oxum():
