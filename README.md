@@ -1,7 +1,7 @@
 bagit-python
 ============
 
-[![Build Status](https://secure.travis-ci.org/LibraryOfCongress/bagit-python.png)](http://travis-ci.org/LibraryOfCongress/bagit-python)
+[![Build Status](https://travis-ci.org/LibraryOfCongress/bagit-python.svg)](http://travis-ci.org/LibraryOfCongress/bagit-python)
 
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
