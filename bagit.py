@@ -32,6 +32,7 @@ For more help see:
 """
 
 import os
+import re
 import sys
 import codecs
 import hashlib
@@ -44,7 +45,7 @@ from glob import glob
 from os import listdir
 from datetime import date
 from itertools import chain
-from os.path import isfile, join
+from os.path import isdir, isfile, join
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             temp_data = tempfile.mkdtemp(dir=os.getcwd())
 
             for f in os.listdir('.'):
-                if os.path.abspath(f) == temp_data: continue
+                if os.path.abspath(f) == temp_data:
+                    continue
                 new_f = os.path.join(temp_data, f)
                 logging.info("moving %s to %s" % (f, new_f))
                 os.rename(f, new_f)
@@ -222,7 +224,7 @@ class Bag(object):
                 yield f
 
     def compare_manifests_with_fs(self):
-        files_on_fs = set(self.payload_files())
+        files_on_fs = set(map(_encode_filename, self.payload_files()))
         files_in_manifest = set(self.payload_entries().keys())
 
         if self.version == "0.97":
@@ -652,7 +654,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     for digest, filename, bytes in checksums:
         num_files += 1
         total_bytes += bytes
-        manifest.write("%s  %s\n" % (digest, filename))
+        manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
     manifest.close()
     return "%s.%s" % (total_bytes, num_files)
 
@@ -742,7 +744,18 @@ def _manifest_line(filename, algorithm='md5'):
         if not bytes: break
         m.update(bytes)
     fh.close()
-    return (m.hexdigest(), filename, total_bytes)
+
+    return (m.hexdigest(), _decode_filename(filename), total_bytes)
+
+def _encode_filename(s):
+    s = s.replace("\r", "%0D")
+    s = s.replace("\n", "%0A")
+    return s
+
+def _decode_filename(s):
+    s = re.sub("%0D", "\r", s, re.IGNORECASE)
+    s = re.sub("%0A", "\n", s, re.IGNORECASE)
+    return s
 
 
 # following code is used for command line program
@@ -792,14 +805,6 @@ def _configure_logging(opts):
     else:
         logging.basicConfig(level=level, format=log_format)
 
-def isfile(path):
-    return os.path.isfile(path)
-
-def isdir(path):
-    if path.startswith('http://'):
-        return open(path).getcode() == 200
-    return os.path.isdir(path)
-
 if __name__ == '__main__':
     opt_parser = _make_opt_parser()
     opts, args = opt_parser.parse_args()
@@ -816,17 +821,17 @@ if __name__ == '__main__':
                 # validate throws a BagError or BagValidationError
                 valid = bag.validate(fast=opts.fast)
                 if opts.fast:
-                    log.info("%s valid according to Payload-Oxum" % bag_dir)
+                    log.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
-                    log.info("%s is valid" % bag_dir)
+                    log.info("%s is valid", bag_dir)
             except BagError, e:
-                log.info("%s is invalid: %s" % (bag_dir, e))
+                log.info("%s is invalid: %s", bag_dir, e)
                 rc = 1
 
         # make the bag
         else:
-            make_bag(bag_dir, bag_info=opt_parser.bag_info, 
-                     processes=opts.processes, 
+            make_bag(bag_dir, bag_info=opt_parser.bag_info,
+                     processes=opts.processes,
                      checksum=opts.checksum)
 
         sys.exit(rc)

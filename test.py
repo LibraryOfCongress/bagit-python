@@ -358,5 +358,11 @@ class TestBag(unittest.TestCase):
         os.remove(j(self.tmpdir, 'tagmanifest-md5.txt'))
         self.assertEqual(bag.is_valid(), True)
 
+    def test_carriage_return_manifest(self):
+        open(j(self.tmpdir, "newline\r"), 'w').write("ugh")
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertEqual(bag.is_valid(), True)
+
+
 if __name__ == '__main__':
     unittest.main()
