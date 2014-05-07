@@ -85,6 +85,16 @@ class TestBag(unittest.TestCase):
         self.assertTrue('f065a4ae2bc5d47c6d046c3cba5c8cdfd66b07c96ff3604164e2c31328e41c1a  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
         self.assertTrue('45d257c93e59ec35187c6a34c8e62e72c3e9cfbb548984d6f6e8deb84bac41f4  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
 
+    def test_make_bag_sha512_manifest(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha512'])
+        # check manifest
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha512.txt')))
+        manifest_txt = open(j(self.tmpdir, 'manifest-sha512.txt')).read()
+        self.assertTrue('51fb9236a23795886cf42d539d580739245dc08f72c3748b60ed8803c9cb0e2accdb91b75dbe7d94a0a461827929d720ef45fe80b825941862fcde4c546a376d  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
+        self.assertTrue('627c15be7f9aabc395c8b2e4c3ff0b50fd84b3c217ca38044cde50fd4749621e43e63828201fa66a97975e316033e4748fb7a4a500183b571ecf17715ec3aea3  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
+        self.assertTrue('4cb4dafe39b2539536a9cb31d5addf335734cb91e2d2786d212a9b574e094d7619a84ad53f82bd9421478a7994cf9d3f44fea271d542af09d26ce764edbada46  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
+        self.assertTrue('af1c03483cd1999098cce5f9e7689eea1f81899587508f59ba3c582d376f8bad34e75fed55fd1b1c26bd0c7a06671b85e90af99abac8753ad3d76d8d6bb31ebd  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
+
     def test_make_bag_sha1_sha256_manifest(self):
         bag = bagit.make_bag(self.tmpdir, checksum=['sha1', 'sha256'])
         # check that relevant manifests are created
