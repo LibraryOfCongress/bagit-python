@@ -195,7 +195,7 @@ class Bag(object):
         except KeyError, e:
             raise BagError("Missing required tag in bagit.txt: %s" % e)
 
-        if self.version == "0.95":
+        if self.version in ["0.93", "0.94", "0.95"]:
             self.tag_file_name = "package-info.txt"
         elif self.version in ["0.96", "0.97"]:
             self.tag_file_name = "bag-info.txt"
