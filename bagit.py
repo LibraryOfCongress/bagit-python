@@ -616,6 +616,9 @@ def _parse_tags(file):
             if tag_name:
                 yield (tag_name, tag_value)
 
+            if not ':' in line:
+                raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
+
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
             tag_value = parts[1].strip()
