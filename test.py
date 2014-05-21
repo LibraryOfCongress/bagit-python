@@ -242,6 +242,17 @@ class TestBag(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, bag.validate)
 
+    def test_garbage_in_bagit_txt(self):
+        bagit.make_bag(self.tmpdir)
+        bagfile = """BagIt-Version: 0.97
+Tag-File-Character-Encoding: UTF-8
+==================================
+"""
+        bf = open(j(self.tmpdir, "bagit.txt"), "wb")
+        bf.write(bagfile)
+        bf.close()
+        self.assertRaises(bagit.BagValidationError, bagit.Bag, self.tmpdir)
+
     def test_missing_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, 'data', 'loc', '3314493806_6f1db86d66_o_d.jpg'))
