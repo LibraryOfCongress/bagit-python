@@ -550,7 +550,9 @@ def _calc_hashes((base_path, rel_path, hashes, available_hashes)):
     try:
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError, e:
-        f_hashes = dict()  # continue with no hashes
+        f_hashes = dict(
+            (alg, str(e)) for alg in f_hashers.keys()
+        )
 
     return rel_path, f_hashes, hashes
 
@@ -563,15 +565,24 @@ def _calculate_file_hashes(full_path, f_hashers):
     if not os.path.exists(full_path):
         raise BagValidationError("%s does not exist" % full_path)
 
-    f = open(full_path, 'rb')
-
-    while True:
-        block = f.read(1048576)
-        if not block:
-            break
-        for i in f_hashers.values():
-            i.update(block)
-    f.close()
+    try:
+        try:
+            f = open(full_path, 'rb')
+            while True:
+                block = f.read(1048576)
+                if not block:
+                    break
+                for i in f_hashers.values():
+                    i.update(block)
+        except IOError, e:
+            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        except OSError, e:
+            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+    finally:
+        try:
+            f.close()
+        except:
+            pass
 
     return dict(
         (alg, h.hexdigest()) for alg, h in f_hashers.items()

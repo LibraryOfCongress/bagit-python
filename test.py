@@ -107,8 +107,11 @@ class TestSingleProcessValidation(unittest.TestCase):
         except bagit.BagValidationError, e:
             got_exception = True
 
-            self.assertEqual(str(e), "invalid bag: bag-info.txt exists in manifest but not found on filesystem ; data/extra exists on filesystem but is not in manifest ; data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
-            self.assertEqual(len(e.details), 3)
+            self.assert_("invalid bag: bag-info.txt exists in manifest but not found on filesystem" in str(e))
+            self.assert_("data/extra exists on filesystem but is not in manifest" in str(e))
+            self.assert_("data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)" in str(e))
+            self.assert_("bag-info.txt checksum validation failed (alg=md5 expected=aeba487217e50cc9c63ac5f90a0b87cb found=%s does not exist)" % j(self.tmpdir, "bag-info.txt"))
+            self.assertEqual(len(e.details), 4)
 
             error = e.details[0]
             self.assertEqual(str(error), "bag-info.txt exists in manifest but not found on filesystem")
