@@ -104,7 +104,9 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             sys.exit("\nRead permissions are required to calculate file fixities.")
         else:
             logging.info("creating data dir")
-            temp_data = tempfile.mkdtemp(dir=os.getcwd())
+
+            cwd = os.getcwd()
+            temp_data = tempfile.mkdtemp(dir=cwd)
 
             for f in os.listdir('.'):
                 if os.path.abspath(f) == temp_data:
@@ -115,6 +117,10 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             logging.info("moving %s to %s" % (temp_data, 'data'))
             os.rename(temp_data, 'data')
+
+            # permissions for the payload directory should match those of the 
+            # original directory
+            os.chmod('data', os.stat(cwd).st_mode)
 
             for c in checksum:
                 logging.info("writing manifest-%s.txt" % c)

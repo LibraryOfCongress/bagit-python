@@ -1,15 +1,16 @@
 import os
+import stat
+import bagit
+import codecs
 import shutil
+import hashlib
 import logging
 import datetime
 import tempfile
 import unittest
-import codecs
-import hashlib
 
 from os.path import join as j
 
-import bagit
 
 # don't let < ERROR clutter up test output
 logging.basicConfig(level=logging.ERROR)
@@ -372,6 +373,21 @@ class TestBag(unittest.TestCase):
         open(j(self.tmpdir, "newline\r"), 'w').write("ugh")
         bag = bagit.make_bag(self.tmpdir)
         self.assertEqual(bag.is_valid(), True)
+
+    def test_payload_permissions(self):
+        perms = os.stat(self.tmpdir).st_mode
+
+        # our tmpdir should not be writeable by group
+        self.assertEqual(perms & stat.S_IWGRP, 0)
+
+        # but if we make it writeable by the group then resulting
+        # payload directory should have the same permissions
+        new_perms = perms | stat.S_IWGRP
+        self.assertTrue(perms != new_perms)
+        os.chmod(self.tmpdir, new_perms)
+        bag = bagit.make_bag(self.tmpdir)
+        payload_dir = os.path.join(self.tmpdir, 'data')
+        self.assertEqual(os.stat(payload_dir).st_mode, new_perms)
 
 
 if __name__ == '__main__':
