@@ -389,11 +389,11 @@ Tag-File-Character-Encoding: UTF-8
         perms = os.stat(self.tmpdir).st_mode
 
         # our tmpdir should not be writeable by group
-        self.assertEqual(perms & stat.S_IWGRP, 0)
+        self.assertEqual(perms & stat.S_IWOTH, 0)
 
         # but if we make it writeable by the group then resulting
         # payload directory should have the same permissions
-        new_perms = perms | stat.S_IWGRP
+        new_perms = perms | stat.S_IWOTH
         self.assertTrue(perms != new_perms)
         os.chmod(self.tmpdir, new_perms)
         bag = bagit.make_bag(self.tmpdir)
