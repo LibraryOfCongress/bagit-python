@@ -39,13 +39,10 @@ import hashlib
 import logging
 import optparse
 import tempfile
-import multiprocessing
 import signal
 
-from glob import glob
 from os import listdir
 from datetime import date
-from itertools import chain
 from os.path import isdir, isfile, join
 
 logger = logging.getLogger(__name__)
@@ -468,6 +465,7 @@ class Bag(object):
                 hash_results = map(_calc_hashes, args)
             else:
                 try:
+                    import multiprocessing
                     pool = multiprocessing.Pool(processes if processes else None, _init_worker)
                     hash_results = pool.map(_calc_hashes, args)
                 finally:
@@ -656,9 +654,6 @@ def _parse_tags(file):
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     logging.info('writing manifest with %s processes' % processes)
 
-    # avoid using multiprocessing unless it is required since
-    # multiprocessing doesn't work in some environments (mod_wsgi, etc)
-
     if algorithm == 'md5':
         manifest_line = _manifest_line_md5
     elif algorithm == 'sha1':
@@ -670,6 +665,10 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
 
 
     if processes > 1:
+        # avoid using multiprocessing unless it is required since
+        # multiprocessing doesn't work in some environments (mod_wsgi, etc)
+
+        import multiprocessing
         pool = multiprocessing.Pool(processes=processes)
         checksums = pool.map(manifest_line, _walk(data_dir))
         pool.close()
