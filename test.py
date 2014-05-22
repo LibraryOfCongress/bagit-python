@@ -240,6 +240,11 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
+    def test_validate_unreadable_file(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
+        os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
+
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
     
