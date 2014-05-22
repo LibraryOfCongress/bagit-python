@@ -662,7 +662,8 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         manifest_line = _manifest_line_sha256
     elif algorithm == 'sha512':
         manifest_line = _manifest_line_sha512
-
+    else:
+        raise RuntimeError("unknown algorithm %s" % algorithm)
 
     if processes > 1:
         # avoid using multiprocessing unless it is required since

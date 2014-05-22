@@ -327,6 +327,9 @@ class TestMakeBag(unittest.TestCase):
         self.assertTrue('4cb4dafe39b2539536a9cb31d5addf335734cb91e2d2786d212a9b574e094d7619a84ad53f82bd9421478a7994cf9d3f44fea271d542af09d26ce764edbada46  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
         self.assertTrue('af1c03483cd1999098cce5f9e7689eea1f81899587508f59ba3c582d376f8bad34e75fed55fd1b1c26bd0c7a06671b85e90af99abac8753ad3d76d8d6bb31ebd  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
 
+    def test_make_bag_unknown_algorithm(self):
+        self.assertRaises(RuntimeError, bagit.make_bag, self.tmpdir, checksum=['not-really-a-name'])
+
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
         bag = bagit.make_bag(self.tmpdir)
