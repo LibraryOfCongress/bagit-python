@@ -201,7 +201,7 @@ class Bag(object):
         except KeyError, e:
             raise BagError("Missing required tag in bagit.txt: %s" % e)
 
-        if self.version == "0.95":
+        if self.version in ["0.93", "0.94", "0.95"]:
             self.tag_file_name = "package-info.txt"
         elif self.version in ["0.96", "0.97"]:
             self.tag_file_name = "bag-info.txt"
@@ -621,6 +621,9 @@ def _parse_tags(file):
             # Starting a new tag; yield the last one.
             if tag_name:
                 yield (tag_name, tag_value)
+
+            if not ':' in line:
+                raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
 
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
