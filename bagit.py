@@ -35,11 +35,12 @@ import os
 import re
 import sys
 import codecs
+import signal
 import hashlib
 import logging
 import optparse
 import tempfile
-import signal
+import multiprocessing
 
 from os import listdir
 from datetime import date
@@ -465,7 +466,6 @@ class Bag(object):
                 hash_results = map(_calc_hashes, args)
             else:
                 try:
-                    import multiprocessing
                     pool = multiprocessing.Pool(processes if processes else None, _init_worker)
                     hash_results = pool.map(_calc_hashes, args)
                 finally:
