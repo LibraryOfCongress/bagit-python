@@ -229,8 +229,8 @@ class Bag(object):
                 yield f
 
     def compare_manifests_with_fs(self):
-        files_on_fs = set(map(_encode_filename, self.payload_files()))
-        files_in_manifest = set(map(_encode_filename, self.payload_entries().keys()))
+        files_on_fs = set(self.payload_files())
+        files_in_manifest = set(self.payload_entries().keys())
 
         if self.version == "0.97":
             files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
