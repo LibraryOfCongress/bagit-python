@@ -51,6 +51,11 @@ count and number of files) then use the `--fast` flag.
 
     bagit.py --validate --fast /path/to/bag
 
+And finally, if you'd like to parallelize validation to take advantage of
+multiple CPUs you can:
+
+    bagit.py --validate --processes 4 /path/to/bag
+
 Python Usage
 ------------
 
