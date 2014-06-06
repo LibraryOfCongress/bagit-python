@@ -35,16 +35,15 @@ import os
 import re
 import sys
 import codecs
+import signal
 import hashlib
 import logging
 import optparse
 import tempfile
 import multiprocessing
 
-from glob import glob
 from os import listdir
 from datetime import date
-from itertools import chain
 from os.path import isdir, isfile, join
 
 logger = logging.getLogger(__name__)
@@ -231,7 +230,7 @@ class Bag(object):
 
     def compare_manifests_with_fs(self):
         files_on_fs = set(map(_encode_filename, self.payload_files()))
-        files_in_manifest = set(self.payload_entries().keys())
+        files_in_manifest = set(map(_encode_filename, self.payload_entries().keys()))
 
         if self.version == "0.97":
             files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
@@ -305,7 +304,7 @@ class Bag(object):
     def has_oxum(self):
         return self.info.has_key('Payload-Oxum')
 
-    def validate(self, fast=False):
+    def validate(self, processes=1, fast=False):
         """Checks the structure and contents are valid. If you supply 
         the parameter fast=True the Payload-Oxum (if present) will 
         be used to check that the payload files are present and 
@@ -315,7 +314,7 @@ class Bag(object):
         """
         self._validate_structure()
         self._validate_bagittxt()
-        self._validate_contents(fast=fast)
+        self._validate_contents(processes=processes, fast=fast)
         return True
 
     def is_valid(self, fast=False):
@@ -361,6 +360,7 @@ class Bag(object):
 
                     entry_hash = entry[0]
                     entry_path = os.path.normpath(entry[1].lstrip("*"))
+                    entry_path = _decode_filename(entry_path)
 
                     if self.entries.has_key(entry_path):
                         if self.entries[entry_path].has_key(alg):
@@ -395,12 +395,12 @@ class Bag(object):
         if "bagit.txt" not in os.listdir(self.path):
             raise BagValidationError("Missing bagit.txt")
 
-    def _validate_contents(self, fast=False):
+    def _validate_contents(self, processes=1, fast=False):
         if fast and not self.has_oxum():
             raise BagValidationError("cannot validate Bag with fast=True if Bag lacks a Payload-Oxum")
         self._validate_oxum()    # Fast
         if not fast:
-            self._validate_entries() # *SLOW*
+            self._validate_entries(processes) # *SLOW*
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
@@ -429,7 +429,7 @@ class Bag(object):
         if file_count != total_files or byte_count != total_bytes:
             raise BagValidationError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
 
-    def _validate_entries(self):
+    def _validate_entries(self, processes):
         """
         Verify that the actual file contents match the recorded hashes stored in the manifest files
         """
@@ -452,33 +452,41 @@ class Bag(object):
         # hash objects so we can open a file, read a block and pass it to
         # multiple hash objects
 
-        hashers = {}
+        available_hashers = set()
         for alg in self.algs:
             try:
-                hashers[alg] = hashlib.new(alg)
-            except KeyError:
+                hashlib.new(alg)
+                available_hashers.add(alg)
+            except ValueError:
                 logging.warning("Unable to validate file contents using unknown %s hash algorithm", alg)
 
-        if not hashers:
+        if not available_hashers:
             raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
 
-        for rel_path, hashes in self.entries.items():
-            full_path = os.path.join(self.path, rel_path)
+        def _init_worker():
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-            # Create a clone of the default empty hash objects:
-            f_hashers = dict(
-                (alg, hashlib.new(alg)) for alg, h in hashers.items() if alg in hashes
-            )
+        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in self.entries.items())
 
-            try:
-                f_hashes = self._calculate_file_hashes(full_path, f_hashers)
-            except BagValidationError, e:
-                f_hashes = dict()  # continue with no hashes
-            # Any unhandled exceptions are probably fatal
-            except:
-                logging.exception("unable to calculate file hashes for %s: %s", self, full_path)
-                raise
+        try:
+            if processes == 1:
+                hash_results = map(_calc_hashes, args)
+            else:
+                try:
+                    pool = multiprocessing.Pool(processes if processes else None, _init_worker)
+                    hash_results = pool.map(_calc_hashes, args)
+                finally:
+                    try:
+                        pool.terminate()
+                    except:
+                        # we really don't care about any exception in terminate()
+                        pass
+        # Any unhandled exceptions are probably fatal
+        except:
+            logging.exception("unable to calculate file hashes for %s", self)
+            raise
 
+        for rel_path, f_hashes, hashes in hash_results:
             for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
@@ -502,29 +510,6 @@ class Bag(object):
         finally:
             bagit_file.close()
 
-
-    def _calculate_file_hashes(self, full_path, f_hashers):
-        """
-        Returns a dictionary of (algorithm, hexdigest) values for the provided
-        filename
-        """
-        if not os.path.exists(full_path):
-            raise BagValidationError("%s does not exist" % full_path)
-
-        f = open(full_path, 'rb')
-
-        f_size = os.stat(full_path).st_size
-
-        while True:
-            block = f.read(1048576)
-            if not block:
-                break
-            [ i.update(block) for i in f_hashers.values() ]
-        f.close()
-
-        return dict(
-            (alg, h.hexdigest()) for alg, h in f_hashers.items()
-        )
 
 class BagError(Exception):
     pass
@@ -559,6 +544,56 @@ class FileMissing(ManifestErrorDetail):
 class UnexpectedFile(ManifestErrorDetail):
     def __str__(self):
         return "%s exists on filesystem but is not in manifest" % self.path
+
+
+def _calc_hashes((base_path, rel_path, hashes, available_hashes)):
+    full_path = os.path.join(base_path, rel_path)
+
+    # Create a clone of the default empty hash objects:
+    f_hashers = dict(
+        (alg, hashlib.new(alg)) for alg in hashes if alg in available_hashes
+    )
+
+    try:
+        f_hashes = _calculate_file_hashes(full_path, f_hashers)
+    except BagValidationError, e:
+        f_hashes = dict(
+            (alg, str(e)) for alg in f_hashers.keys()
+        )
+
+    return rel_path, f_hashes, hashes
+
+
+def _calculate_file_hashes(full_path, f_hashers):
+    """
+    Returns a dictionary of (algorithm, hexdigest) values for the provided
+    filename
+    """
+    if not os.path.exists(full_path):
+        raise BagValidationError("%s does not exist" % full_path)
+
+    try:
+        try:
+            f = open(full_path, 'rb')
+            while True:
+                block = f.read(1048576)
+                if not block:
+                    break
+                for i in f_hashers.values():
+                    i.update(block)
+        except IOError, e:
+            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        except OSError, e:
+            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+    finally:
+        try:
+            f.close()
+        except:
+            pass
+
+    return dict(
+        (alg, h.hexdigest()) for alg, h in f_hashers.items()
+    )
 
 
 def _load_tag_file(tag_file_name, duplicates=False):
@@ -637,9 +672,6 @@ def _parse_tags(file):
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     logging.info('writing manifest with %s processes' % processes)
 
-    # avoid using multiprocessing unless it is required since
-    # multiprocessing doesn't work in some environments (mod_wsgi, etc)
-
     if algorithm == 'md5':
         manifest_line = _manifest_line_md5
     elif algorithm == 'sha1':
@@ -648,9 +680,14 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         manifest_line = _manifest_line_sha256
     elif algorithm == 'sha512':
         manifest_line = _manifest_line_sha512
-
+    else:
+        raise RuntimeError("unknown algorithm %s" % algorithm)
 
     if processes > 1:
+        # avoid using multiprocessing unless it is required since
+        # multiprocessing doesn't work in some environments (mod_wsgi, etc)
+
+        import multiprocessing
         pool = multiprocessing.Pool(processes=processes)
         checksums = pool.map(manifest_line, _walk(data_dir))
         pool.close()
@@ -790,7 +827,7 @@ def _make_opt_parser():
     parser = BagOptionParser(usage='usage: %prog [options] dir1 dir2 ...')
     parser.add_option('--processes', action='store', type="int",
                       dest='processes', default=1,
-                      help='parallelize checksums generation')
+                      help='parallelize checksums generation and verification')
     parser.add_option('--log', action='store', dest='log')
     parser.add_option('--quiet', action='store_true', dest='quiet')
     parser.add_option('--validate', action='store_true', dest='validate')
@@ -826,6 +863,10 @@ def _configure_logging(opts):
 if __name__ == '__main__':
     opt_parser = _make_opt_parser()
     opts, args = opt_parser.parse_args()
+
+    if opts.processes < 0:
+        opt_parser.error("number of processes needs to be 0 or more")
+
     _configure_logging(opts)
     log = logging.getLogger()
 
@@ -837,7 +878,7 @@ if __name__ == '__main__':
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                valid = bag.validate(fast=opts.fast)
+                valid = bag.validate(processes=opts.processes, fast=opts.fast)
                 if opts.fast:
                     log.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
