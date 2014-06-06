@@ -130,8 +130,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             open("bagit.txt", "wb").write(txt)
 
             logging.info("writing bag-info.txt")
-            bag_info_txt = open("bag-info.txt", "wb")
-            if bag_info == None:
+            if bag_info is None:
                 bag_info = {}
 
             # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
@@ -140,16 +139,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             if 'Bag-Software-Agent' not in bag_info:
                 bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/libraryofcongress/bagit-python>'
             bag_info['Payload-Oxum'] = Oxum
-            headers = bag_info.keys()
-            headers.sort()
-            for h in headers:
-                # v0.97 support for multiple instances of any meta item.
-                if type(bag_info[h]) == list:
-                    for val in bag_info[h]:
-                        bag_info_txt.write("%s: %s\n"  % (h, val))
-                    continue
-                bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
-            bag_info_txt.close()
+            _make_tag_file('bag-info.txt', bag_info)
+
             _make_tagmanifest_file('tagmanifest-md5.txt', bag_dir)
 
     except Exception, e:
@@ -667,6 +658,19 @@ def _parse_tags(file):
     # Passed the EOF.  All done after this.
     if tag_name:
         yield (tag_name, tag_value)
+
+
+def _make_tag_file(bag_info_path, bag_info):
+    headers = bag_info.keys()
+    headers.sort()
+    with open(bag_info_path, 'wb') as f:
+        for h in headers:
+            # v0.97 support for multiple instances of any meta item.
+            if type(bag_info[h]) == list:
+                for val in bag_info[h]:
+                    f.write("%s: %s\n" % (h, val))
+            else:
+                f.write("%s: %s\n" % (h, bag_info[h]))
 
 
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
