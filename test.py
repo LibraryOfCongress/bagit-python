@@ -249,6 +249,18 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
+    def test_update_payload(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(self.validate(bag))
+        bag.update_payload()
+        self.assertTrue(self.validate(bag))
+        f = j(self.tmpdir, "data", "NEWFILE")
+        with open(f, 'w') as fp:
+            fp.write("NEWFILE")
+        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
+        bag.update_payload()
+        self.assertTrue(self.validate(bag))
+
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
     

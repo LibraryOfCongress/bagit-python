@@ -256,6 +256,53 @@ class Bag(object):
         return dict((key, value) for (key, value) in self.entries.iteritems() \
                      if key.startswith("data" + os.sep))
 
+    def update_payload(self, processes=1):
+        """
+        Update the manifest files and Payload-Oxum.
+
+        If the contents of the payload directory have changed, this will update
+        the bag for the new or removed files.
+        """
+        # Error checking
+        if not self.path:
+            raise BagError("Bag does not have a path.")
+        unbaggable = _can_bag(self.path)
+        if unbaggable:
+            logging.error("no write permissions for the following directories and files: \n%s", unbaggable)
+            raise BagError("Not all files/folders can be moved.")
+        unreadable_dirs, unreadable_files = _can_read(self.path)
+        if unreadable_dirs or unreadable_files:
+            if unreadable_dirs:
+                logging.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
+            if unreadable_files:
+                logging.error("The following files do not have read permissions: \n%s", unreadable_files)
+            raise BagError("Read permissions are required to calculate file fixities.")
+
+        # Change working directory to bag directory so helper functions work
+        old_dir = os.path.abspath(os.path.curdir)
+        os.chdir(self.path)
+
+        # Generate new manifest files
+        oxum = None
+        self.algs = list(set(self.algs))  # Dedupe
+        for alg in self.algs:
+            logging.info('updating manifest-%s.txt', alg)
+            oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes, alg)
+
+        # Update Payload-Oxum
+        logging.info('updating %s', self.tag_file_name)
+        if oxum:
+            self.info['Payload-Oxum'] = oxum
+        _make_tag_file(self.tag_file_name, self.info)
+
+        # Update tag-manifest for changes to manifest & bag-info files
+        _make_tagmanifest_file('tagmanifest-md5.txt', self.path)
+
+        # Reload the manifests
+        self._load_manifests()
+
+        os.chdir(old_dir)
+
     def tagfile_entries(self):
         return dict((key, value) for (key, value) in self.entries.iteritems() \
                      if not key.startswith("data" + os.sep))
