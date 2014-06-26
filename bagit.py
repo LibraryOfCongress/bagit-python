@@ -256,12 +256,11 @@ class Bag(object):
         return dict((key, value) for (key, value) in self.entries.iteritems() \
                      if key.startswith("data" + os.sep))
 
-    def update_payload(self, processes=1):
+    def save(self, processes=1):
         """
-        Update the manifest files and Payload-Oxum.
-
         If the contents of the payload directory have changed, this will update
-        the bag for the new or removed files.
+        the bag for the new or removed files. Any changes made to bag-info
+        metadata will also be saved.
         """
         # Error checking
         if not self.path:
