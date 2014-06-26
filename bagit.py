@@ -44,7 +44,7 @@ import multiprocessing
 
 from os import listdir
 from datetime import date
-from os.path import isdir, isfile, join
+from os.path import isdir, isfile, join, abspath
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ class Bag(object):
         self.entries = {}
         self.algs = []
         self.tag_file_name = None
-        self.path = path
+        self.path = abspath(path)
         if path:
             # if path ends in a path separator, strip it off
             if path[-1] == os.sep:
@@ -203,7 +203,7 @@ class Bag(object):
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path, duplicates=True)
+            self.info = _load_tag_file(info_file_path)
 
         self._load_manifests()
 
@@ -633,23 +633,15 @@ def _calculate_file_hashes(full_path, f_hashers):
     )
 
 
-def _load_tag_file(tag_file_name, duplicates=False):
-    """
-    If duplicates is True then allow duplicate entries
-    for a given tag. This is desirable for bag-info.txt
-    metadata in v0.97 of the spec.
-    """
+def _load_tag_file(tag_file_name):
     tag_file = open(tag_file_name, 'rb')
 
     try:
-        if not duplicates:
-            return dict(_parse_tags(tag_file))
-
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
         for name, value in _parse_tags(tag_file):
-            if not name in tags.keys():
+            if not name in tags:
                 tags[name] = value
                 continue
 
@@ -711,7 +703,6 @@ def _make_tag_file(bag_info_path, bag_info):
     headers.sort()
     with open(bag_info_path, 'wb') as f:
         for h in headers:
-            # v0.97 support for multiple instances of any meta item.
             if type(bag_info[h]) == list:
                 for val in bag_info[h]:
                     f.write("%s: %s\n" % (h, val))

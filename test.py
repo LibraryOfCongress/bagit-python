@@ -263,10 +263,16 @@ class TestSingleProcessValidation(unittest.TestCase):
 
     def test_save_baginfo(self):
         bag = bagit.make_bag(self.tmpdir)
+
         bag.info["foo"] = "bar"
         bag.save()
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info["foo"], "bar")
+
+        bag.info['x'] = ["a", "b", "c"]
+        bag.save()
+        b = bagit.Bag(self.tmpdir)
+        self.assertEqual(b.info["x"], ["a", "b", "c"])
 
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
