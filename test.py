@@ -249,33 +249,6 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
-    def test_save(self):
-        bag = bagit.make_bag(self.tmpdir)
-        self.assertTrue(self.validate(bag))
-        bag.save()
-        self.assertTrue(self.validate(bag))
-        f = j(self.tmpdir, "data", "NEWFILE")
-        with open(f, 'w') as fp:
-            fp.write("NEWFILE")
-        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
-        bag.save()
-        self.assertTrue(bag.is_valid())
-
-    def test_save_baginfo(self):
-        bag = bagit.make_bag(self.tmpdir)
-
-        bag.info["foo"] = "bar"
-        bag.save()
-        bag = bagit.Bag(self.tmpdir)
-        self.assertEqual(bag.info["foo"], "bar")
-
-        bag.info['x'] = ["a", "b", "c"]
-        bag.save()
-        b = bagit.Bag(self.tmpdir)
-        self.assertEqual(b.info["x"], ["a", "b", "c"])
-
-        self.assertTrue(bag.is_valid())
-
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
     
@@ -283,7 +256,7 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
         return super(TestMultiprocessValidation, self).validate(bag, *args, processes=2, **kwargs)
 
 
-class TestMakeBag(unittest.TestCase):
+class TestBag(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
@@ -459,6 +432,33 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.make_bag(self.tmpdir)
         payload_dir = os.path.join(self.tmpdir, 'data')
         self.assertEqual(os.stat(payload_dir).st_mode, new_perms)
+
+    def test_save(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+        bag.save()
+        self.assertTrue(bag.is_valid())
+        f = j(self.tmpdir, "data", "NEWFILE")
+        with open(f, 'w') as fp:
+            fp.write("NEWFILE")
+        self.assertRaises(bagit.BagValidationError, bag.validate, bag, fast=False)
+        bag.save()
+        self.assertTrue(bag.is_valid())
+
+    def test_save_baginfo(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        bag.info["foo"] = "bar"
+        bag.save()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertEqual(bag.info["foo"], "bar")
+
+        bag.info['x'] = ["a", "b", "c"]
+        bag.save()
+        b = bagit.Bag(self.tmpdir)
+        self.assertEqual(b.info["x"], ["a", "b", "c"])
+
+        self.assertTrue(bag.is_valid())
 
 
 if __name__ == '__main__':
