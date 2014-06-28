@@ -56,11 +56,14 @@ multiple CPUs you can:
 
     bagit.py --validate --processes 4 /path/to/bag
 
-Python Usage
-------------
+Library Usage
+-------------
 
-You can also use bagit programatically in your own Python programs. To 
-create a bag you would do this:
+You can also use bagit programatically in your own Python programs. 
+
+### Create
+
+To create a bag you would do this:
 
 ```python
 import bagit
@@ -74,6 +77,39 @@ like to create a Bag instance for it, simply call the constructor directly:
 import bagit
 bag = bagit.Bag('/path/to/bag')
 ```
+
+### Update
+
+If you have a bag that you would like to modify, just load the Bag, add or
+remove files manually, and/or update bag metadata, then call the save method.
+Calling save will regenerate the manifest, and update the respective tag file
+and tag manifests.
+
+```python
+
+import bagit, shutil, os
+
+# load the bag
+bag = bagit.Bag('/path/to/bag')
+
+# add a file to the bag
+shutil.copyfile('newfile', '/path/to/bag/data/newfile')
+
+# remove a file from the bag
+os.remove('/path/to/bag/data/file')
+
+# update bag info metadata
+bag.info['Internal-Sender-Description'] = 'Updated on 2014-06-28.'
+
+# save the bag
+bag.save()
+```
+
+The save method takes an optional processes parameter which will 
+determine how many processes are used to regenerate the checksums.
+This can be handy on multicore machines.
+
+### Validation
 
 If you would like to see if a bag is valid, use its `is_valid` method:
 

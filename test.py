@@ -249,6 +249,33 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
+    def test_save(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(self.validate(bag))
+        bag.save()
+        self.assertTrue(self.validate(bag))
+        f = j(self.tmpdir, "data", "NEWFILE")
+        with open(f, 'w') as fp:
+            fp.write("NEWFILE")
+        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
+        bag.save()
+        self.assertTrue(bag.is_valid())
+
+    def test_save_baginfo(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        bag.info["foo"] = "bar"
+        bag.save()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertEqual(bag.info["foo"], "bar")
+
+        bag.info['x'] = ["a", "b", "c"]
+        bag.save()
+        b = bagit.Bag(self.tmpdir)
+        self.assertEqual(b.info["x"], ["a", "b", "c"])
+
+        self.assertTrue(bag.is_valid())
+
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
     
@@ -409,14 +436,14 @@ Tag-File-Character-Encoding: UTF-8
     def test_missing_tagmanifest_valid(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag(self.tmpdir, bag_info=info)
-        self.assertEqual(bag.is_valid(), True)
+        self.assertTrue(bag.is_valid())
         os.remove(j(self.tmpdir, 'tagmanifest-md5.txt'))
-        self.assertEqual(bag.is_valid(), True)
+        self.assertTrue(bag.is_valid())
 
     def test_carriage_return_manifest(self):
         open(j(self.tmpdir, "newline\r"), 'w').write("ugh")
         bag = bagit.make_bag(self.tmpdir)
-        self.assertEqual(bag.is_valid(), True)
+        self.assertTrue(bag.is_valid())
 
     def test_payload_permissions(self):
         perms = os.stat(self.tmpdir).st_mode

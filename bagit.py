@@ -44,7 +44,7 @@ import multiprocessing
 
 from os import listdir
 from datetime import date
-from os.path import isdir, isfile, join
+from os.path import isdir, isfile, join, abspath
 
 logger = logging.getLogger(__name__)
 
@@ -130,8 +130,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             open("bagit.txt", "wb").write(txt)
 
             logging.info("writing bag-info.txt")
-            bag_info_txt = open("bag-info.txt", "wb")
-            if bag_info == None:
+            if bag_info is None:
                 bag_info = {}
 
             # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
@@ -140,16 +139,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             if 'Bag-Software-Agent' not in bag_info:
                 bag_info['Bag-Software-Agent'] = 'bagit.py <http://github.com/libraryofcongress/bagit-python>'
             bag_info['Payload-Oxum'] = Oxum
-            headers = bag_info.keys()
-            headers.sort()
-            for h in headers:
-                # v0.97 support for multiple instances of any meta item.
-                if type(bag_info[h]) == list:
-                    for val in bag_info[h]:
-                        bag_info_txt.write("%s: %s\n"  % (h, val))
-                    continue
-                bag_info_txt.write("%s: %s\n"  % (h, bag_info[h]))
-            bag_info_txt.close()
+            _make_tag_file('bag-info.txt', bag_info)
+
             _make_tagmanifest_file('tagmanifest-md5.txt', bag_dir)
 
     except Exception, e:
@@ -174,7 +165,7 @@ class Bag(object):
         self.entries = {}
         self.algs = []
         self.tag_file_name = None
-        self.path = path
+        self.path = abspath(path)
         if path:
             # if path ends in a path separator, strip it off
             if path[-1] == os.sep:
@@ -212,7 +203,7 @@ class Bag(object):
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path, duplicates=True)
+            self.info = _load_tag_file(info_file_path)
 
         self._load_manifests()
 
@@ -264,6 +255,52 @@ class Bag(object):
         # Don't use dict comprehension (compatibility with Python < 2.7)
         return dict((key, value) for (key, value) in self.entries.iteritems() \
                      if key.startswith("data" + os.sep))
+
+    def save(self, processes=1):
+        """
+        If the contents of the payload directory have changed, this will update
+        the bag for the new or removed files. Any changes made to bag metadata 
+        will also be saved and tag manifests will be updated.
+        """
+        # Error checking
+        if not self.path:
+            raise BagError("Bag does not have a path.")
+        unbaggable = _can_bag(self.path)
+        if unbaggable:
+            logging.error("no write permissions for the following directories and files: \n%s", unbaggable)
+            raise BagError("Not all files/folders can be moved.")
+        unreadable_dirs, unreadable_files = _can_read(self.path)
+        if unreadable_dirs or unreadable_files:
+            if unreadable_dirs:
+                logging.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
+            if unreadable_files:
+                logging.error("The following files do not have read permissions: \n%s", unreadable_files)
+            raise BagError("Read permissions are required to calculate file fixities.")
+
+        # Change working directory to bag directory so helper functions work
+        old_dir = os.path.abspath(os.path.curdir)
+        os.chdir(self.path)
+
+        # Generate new manifest files
+        oxum = None
+        self.algs = list(set(self.algs))  # Dedupe
+        for alg in self.algs:
+            logging.info('updating manifest-%s.txt', alg)
+            oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes, alg)
+
+        # Update Payload-Oxum
+        logging.info('updating %s', self.tag_file_name)
+        if oxum:
+            self.info['Payload-Oxum'] = oxum
+        _make_tag_file(self.tag_file_name, self.info)
+
+        # Update tag-manifest for changes to manifest & bag-info files
+        _make_tagmanifest_file('tagmanifest-md5.txt', self.path)
+
+        # Reload the manifests
+        self._load_manifests()
+
+        os.chdir(old_dir)
 
     def tagfile_entries(self):
         return dict((key, value) for (key, value) in self.entries.iteritems() \
@@ -363,9 +400,6 @@ class Bag(object):
                     entry_path = _decode_filename(entry_path)
 
                     if self.entries.has_key(entry_path):
-                        if self.entries[entry_path].has_key(alg):
-                            logging.warning("%s: Duplicate %s manifest entry: %s", self, alg, entry_path)
-
                         self.entries[entry_path][alg] = entry_hash
                     else:
                         self.entries[entry_path] = {}
@@ -596,23 +630,15 @@ def _calculate_file_hashes(full_path, f_hashers):
     )
 
 
-def _load_tag_file(tag_file_name, duplicates=False):
-    """
-    If duplicates is True then allow duplicate entries
-    for a given tag. This is desirable for bag-info.txt
-    metadata in v0.97 of the spec.
-    """
+def _load_tag_file(tag_file_name):
     tag_file = open(tag_file_name, 'rb')
 
     try:
-        if not duplicates:
-            return dict(_parse_tags(tag_file))
-
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
         for name, value in _parse_tags(tag_file):
-            if not name in tags.keys():
+            if not name in tags:
                 tags[name] = value
                 continue
 
@@ -667,6 +693,18 @@ def _parse_tags(file):
     # Passed the EOF.  All done after this.
     if tag_name:
         yield (tag_name, tag_value)
+
+
+def _make_tag_file(bag_info_path, bag_info):
+    headers = bag_info.keys()
+    headers.sort()
+    with open(bag_info_path, 'wb') as f:
+        for h in headers:
+            if type(bag_info[h]) == list:
+                for val in bag_info[h]:
+                    f.write("%s: %s\n" % (h, val))
+            else:
+                f.write("%s: %s\n" % (h, bag_info[h]))
 
 
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
