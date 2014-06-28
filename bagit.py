@@ -259,8 +259,8 @@ class Bag(object):
     def save(self, processes=1):
         """
         If the contents of the payload directory have changed, this will update
-        the bag for the new or removed files. Any changes made to bag-info
-        metadata will also be saved.
+        the bag for the new or removed files. Any changes made to bag metadata 
+        will also be saved and tag manifests will be updated.
         """
         # Error checking
         if not self.path:
@@ -400,9 +400,6 @@ class Bag(object):
                     entry_path = _decode_filename(entry_path)
 
                     if self.entries.has_key(entry_path):
-                        if self.entries[entry_path].has_key(alg):
-                            logging.warning("%s: Duplicate %s manifest entry: %s", self, alg, entry_path)
-
                         self.entries[entry_path][alg] = entry_hash
                     else:
                         self.entries[entry_path] = {}
