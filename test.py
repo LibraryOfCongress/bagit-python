@@ -460,6 +460,9 @@ Tag-File-Character-Encoding: UTF-8
 
         self.assertTrue(bag.is_valid())
 
+    def test_make_bag_with_newline(self):
+        bag = bagit.make_bag(self.tmpdir, {"test": "foo\nbar"})
+        self.assertEqual(bag.info["test"], "foobar")
 
 if __name__ == '__main__':
     unittest.main()

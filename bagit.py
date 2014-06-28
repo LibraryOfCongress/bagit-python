@@ -663,9 +663,8 @@ def _parse_tags(file):
     tag_name = None
     tag_value = None
 
-    # Line folding is handled by yielding values
-    # only after we encounter the start of a new
-    # tag, or if we pass the EOF.
+    # Line folding is handled by yielding values only after we encounter 
+    # the start of a new tag, or if we pass the EOF.
     for num, line in enumerate(file):
         # If byte-order mark ignore it for now.
         if 0 == num:
@@ -676,23 +675,23 @@ def _parse_tags(file):
         if len(line) == 0 or line.isspace():
             continue
 
-        if line[0].isspace(): # folded line
-            tag_value += line.strip()
+        if line[0].isspace() and tag_value != None : # folded line
+            tag_value += line
         else:
             # Starting a new tag; yield the last one.
             if tag_name:
-                yield (tag_name, tag_value)
+                yield (tag_name, tag_value.strip())
 
             if not ':' in line:
                 raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
 
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
-            tag_value = parts[1].strip()
+            tag_value = parts[1]
 
     # Passed the EOF.  All done after this.
     if tag_name:
-        yield (tag_name, tag_value)
+        yield (tag_name, tag_value.strip())
 
 
 def _make_tag_file(bag_info_path, bag_info):
@@ -704,7 +703,10 @@ def _make_tag_file(bag_info_path, bag_info):
                 for val in bag_info[h]:
                     f.write("%s: %s\n" % (h, val))
             else:
-                f.write("%s: %s\n" % (h, bag_info[h]))
+                txt = bag_info[h]
+                # strip CR, LF and CRLF so they don't mess up the tag file
+                txt = re.sub('\n|\r|(\r\n)', '', txt) 
+                f.write("%s: %s\n" % (h, txt))
 
 
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
