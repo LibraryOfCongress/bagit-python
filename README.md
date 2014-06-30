@@ -66,7 +66,6 @@ You can also use bagit programatically in your own Python programs.
 To create a bag you would do this:
 
 ```python
-import bagit
 bag = bagit.make_bag('mydir', {'Contact-Name': 'John Kunze'})
 ```
 
@@ -74,7 +73,6 @@ bag = bagit.make_bag('mydir', {'Contact-Name': 'John Kunze'})
 like to create a Bag instance for it, simply call the constructor directly:
 
 ```python
-import bagit
 bag = bagit.Bag('/path/to/bag')
 ```
 
@@ -84,9 +82,6 @@ You can change the metadata persisted to the bag-info.txt by using the `info`
 property on a `Bag`.
 
 ```python
-
-import bagit, shutil, os
-
 # load the bag
 bag = bagit.Bag('/path/to/bag')
 
@@ -146,8 +141,6 @@ So for example if you want to print out checksums that failed to validate
 you can do this:
 
 ```python
-
-import bagit
 
 bag = bagit.Bag("/path/to/bag")
 
