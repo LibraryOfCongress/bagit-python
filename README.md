@@ -78,12 +78,10 @@ import bagit
 bag = bagit.Bag('/path/to/bag')
 ```
 
-### Update
+### Update Bag Metadata
 
-If you have a bag that you would like to modify, just load the Bag, add or
-remove files manually, and/or update bag metadata, then call the save method.
-Calling save will regenerate the manifest, and update the respective tag file
-and tag manifests.
+You can change the metadata persisted to the bag-info.txt by using the `info`
+property on a `Bag`.
 
 ```python
 
@@ -92,17 +90,33 @@ import bagit, shutil, os
 # load the bag
 bag = bagit.Bag('/path/to/bag')
 
-# add a file to the bag
-shutil.copyfile('newfile', '/path/to/bag/data/newfile')
-
-# remove a file from the bag
-os.remove('/path/to/bag/data/file')
-
 # update bag info metadata
 bag.info['Internal-Sender-Description'] = 'Updated on 2014-06-28.'
-
-# save the bag
+bag.info['Authors'] = ['John Kunze', 'Andy Boyko']
 bag.save()
+```
+
+### Update Bag Manifests
+
+By default `save` will not update manifests. This guards against a situation
+where a call to `save` to persist bag metadata accidentally regenerates
+manifests for an invalid bag. If you have modified the payload of a bag by 
+adding, modifying or deleting files in the data directory, and wish to
+regenerate the manifests set the `manifests` parameter to True when calling
+`save`.
+
+```python
+
+import shutil, os
+
+# add a file
+shutil.copyfile('newfile', '/path/to/bag/data/newfile')
+
+# remove a file
+os.remove('/path/to/bag/data/file')
+
+# persist changes
+bag.save(manifests=True)
 ```
 
 The save method takes an optional processes parameter which will 
