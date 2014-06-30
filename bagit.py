@@ -145,7 +145,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
     except Exception, e:
         os.chdir(old_dir)
-        logging.error(e)
+        logging.exception(e)
         raise e
 
     os.chdir(old_dir)
@@ -631,7 +631,7 @@ def _calculate_file_hashes(full_path, f_hashers):
 
 
 def _load_tag_file(tag_file_name):
-    tag_file = open(tag_file_name, 'rb')
+    tag_file = codecs.open(tag_file_name, 'r', 'utf-8-sig')
 
     try:
         # Store duplicate tags as list of vals
@@ -665,17 +665,11 @@ def _parse_tags(file):
 
     # Line folding is handled by yielding values only after we encounter 
     # the start of a new tag, or if we pass the EOF.
-    for num, line in enumerate(file):
-        # If byte-order mark ignore it for now.
-        if 0 == num:
-            if line.startswith(codecs.BOM_UTF8):
-                line = line.lstrip(codecs.BOM_UTF8)
-
+    for line in file:
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
-
-        if line[0].isspace() and tag_value != None : # folded line
+        elif line[0].isspace() and tag_value != None : # folded line
             tag_value += line
         else:
             # Starting a new tag; yield the last one.
@@ -697,7 +691,7 @@ def _parse_tags(file):
 def _make_tag_file(bag_info_path, bag_info):
     headers = bag_info.keys()
     headers.sort()
-    with open(bag_info_path, 'wb') as f:
+    with codecs.open(bag_info_path, 'w', 'utf-8') as f:
         for h in headers:
             if type(bag_info[h]) == list:
                 for val in bag_info[h]:

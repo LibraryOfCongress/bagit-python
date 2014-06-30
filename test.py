@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import stat
 import bagit
@@ -13,7 +15,7 @@ from os.path import join as j
 
 
 # don't let < ERROR clutter up test output
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(filename="test.log", level=logging.DEBUG)
 
 
 class TestSingleProcessValidation(unittest.TestCase):
@@ -463,6 +465,11 @@ Tag-File-Character-Encoding: UTF-8
     def test_make_bag_with_newline(self):
         bag = bagit.make_bag(self.tmpdir, {"test": "foo\nbar"})
         self.assertEqual(bag.info["test"], "foobar")
+
+    def test_unicode_in_tags(self):
+        bag = bagit.make_bag(self.tmpdir, {"test": u'♡'})
+        bag = bagit.Bag(self.tmpdir)
+        self.assertEqual(bag.info['test'], u'♡')
 
 if __name__ == '__main__':
     unittest.main()
