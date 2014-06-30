@@ -81,15 +81,15 @@ bag = bagit.Bag('/path/to/bag')
 You can change the metadata persisted to the bag-info.txt by using the `info`
 property on a `Bag`.
 
-```python
-# load the bag
-bag = bagit.Bag('/path/to/bag')
+    ```python
+    # load the bag
+    bag = bagit.Bag('/path/to/bag')
 
-# update bag info metadata
-bag.info['Internal-Sender-Description'] = 'Updated on 2014-06-28.'
-bag.info['Authors'] = ['John Kunze', 'Andy Boyko']
-bag.save()
-```
+    # update bag info metadata
+    bag.info['Internal-Sender-Description'] = 'Updated on 2014-06-28.'
+    bag.info['Authors'] = ['John Kunze', 'Andy Boyko']
+    bag.save()
+    ```
 
 ### Update Bag Manifests
 
