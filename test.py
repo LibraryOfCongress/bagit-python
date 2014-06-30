@@ -432,19 +432,17 @@ Tag-File-Character-Encoding: UTF-8
         self.assertTrue(perms != new_perms)
         os.chmod(self.tmpdir, new_perms)
         bag = bagit.make_bag(self.tmpdir)
-        payload_dir = os.path.join(self.tmpdir, 'data')
+        payload_dir = j(self.tmpdir, 'data')
         self.assertEqual(os.stat(payload_dir).st_mode, new_perms)
 
-    def test_save(self):
+    def test_save_manifests(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.is_valid())
-        bag.save()
+        bag.save(manifests=True)
         self.assertTrue(bag.is_valid())
-        f = j(self.tmpdir, "data", "NEWFILE")
-        with open(f, 'w') as fp:
-            fp.write("NEWFILE")
+        open(j(self.tmpdir, "data", "newfile"), 'w').write('newfile')
         self.assertRaises(bagit.BagValidationError, bag.validate, bag, fast=False)
-        bag.save()
+        bag.save(manifests=True)
         self.assertTrue(bag.is_valid())
 
     def test_save_baginfo(self):
@@ -454,13 +452,24 @@ Tag-File-Character-Encoding: UTF-8
         bag.save()
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info["foo"], "bar")
+        self.assertTrue(bag.is_valid())
 
         bag.info['x'] = ["a", "b", "c"]
         bag.save()
         b = bagit.Bag(self.tmpdir)
         self.assertEqual(b.info["x"], ["a", "b", "c"])
-
         self.assertTrue(bag.is_valid())
+
+    def test_save_only_baginfo(self):
+        bag = bagit.make_bag(self.tmpdir)
+        open(j(self.tmpdir, 'data', 'newfile'), 'w').write('newfile')
+        bag.info["foo"] = "bar"
+        bag.save()
+        
+        bag = bagit.Bag(self.tmpdir)
+        self.assertEqual(bag.info["foo"], "bar")
+        self.assertFalse(bag.is_valid())
+
 
     def test_make_bag_with_newline(self):
         bag = bagit.make_bag(self.tmpdir, {"test": "foo\nbar"})
