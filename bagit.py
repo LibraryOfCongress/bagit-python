@@ -69,6 +69,10 @@ _bag_info_headers = [
 
 checksum_algos = ['md5', 'sha1', 'sha256', 'sha512']
 
+BOM = codecs.BOM_UTF8
+if sys.version_info[0] >= 3:
+    BOM = BOM.decode('utf-8')
+
 
 def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
     """
@@ -127,7 +131,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             logging.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
-            open("bagit.txt", "wb").write(txt)
+            with open("bagit.txt", "w") as bagit_file:
+                bagit_file.write(txt)
 
             logging.info("writing bag-info.txt")
             if bag_info is None:
@@ -143,7 +148,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             _make_tagmanifest_file('tagmanifest-md5.txt', bag_dir)
 
-    except Exception, e:
+    except Exception as e:
         os.chdir(old_dir)
         logging.exception(e)
         raise e
@@ -188,7 +193,7 @@ class Bag(object):
         try:
             self.version = tags["BagIt-Version"]
             self.encoding = tags["Tag-File-Character-Encoding"]
-        except KeyError, e:
+        except KeyError as e:
             raise BagError("Missing required tag in bagit.txt: %s" % e)
 
         if self.version in ["0.93", "0.94", "0.95"]:
@@ -253,7 +258,7 @@ class Bag(object):
 
     def payload_entries(self):
         # Don't use dict comprehension (compatibility with Python < 2.7)
-        return dict((key, value) for (key, value) in self.entries.iteritems() \
+        return dict((key, value) for (key, value) in self.entries.items() \
                      if key.startswith("data" + os.sep))
 
     def save(self, processes=1, manifests=False):
@@ -314,7 +319,7 @@ class Bag(object):
         os.chdir(old_dir)
 
     def tagfile_entries(self):
-        return dict((key, value) for (key, value) in self.entries.iteritems() \
+        return dict((key, value) for (key, value) in self.entries.items() \
                      if not key.startswith("data" + os.sep))
 
     def missing_optional_tagfiles(self):
@@ -325,7 +330,7 @@ class Bag(object):
         only check for entries with missing files (not missing
         entries for existing files).
         """
-        for tagfilepath in self.tagfile_entries().keys():
+        for tagfilepath in list(self.tagfile_entries().keys()):
             if not os.path.isfile(os.path.join(self.path, tagfilepath)):
                 yield tagfilepath
 
@@ -339,7 +344,7 @@ class Bag(object):
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
-            except Exception, e:
+            except Exception as e:
                 fetch_file.close()
                 raise e
 
@@ -350,7 +355,7 @@ class Bag(object):
             yield f 
 
     def has_oxum(self):
-        return self.info.has_key('Payload-Oxum')
+        return 'Payload-Oxum' in self.info
 
     def validate(self, processes=1, fast=False):
         """Checks the structure and contents are valid. If you supply 
@@ -371,7 +376,7 @@ class Bag(object):
         """
         try:
             self.validate(fast=fast)
-        except BagError, e:
+        except BagError as e:
             return False
         return True
 
@@ -390,9 +395,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
-            manifest_file = open(manifest_file, 'rb')
-
-            try:
+            with open(manifest_file, 'r') as manifest_file:
                 for line in manifest_file:
                     line = line.strip()
 
@@ -410,13 +413,11 @@ class Bag(object):
                     entry_path = os.path.normpath(entry[1].lstrip("*"))
                     entry_path = _decode_filename(entry_path)
 
-                    if self.entries.has_key(entry_path):
+                    if entry_path in self.entries:
                         self.entries[entry_path][alg] = entry_hash
                     else:
                         self.entries[entry_path] = {}
                         self.entries[entry_path][alg] = entry_hash
-            finally:
-                manifest_file.close()
 
     def _validate_structure(self):
         """Checks the structure of the bag, determining if it conforms to the
@@ -461,8 +462,8 @@ class Bag(object):
         if not byte_count.isdigit() or not file_count.isdigit():
             raise BagError("Invalid oxum: %s" % oxum)
 
-        byte_count = long(byte_count)
-        file_count = long(file_count)
+        byte_count = int(byte_count)
+        file_count = int(file_count)
         total_bytes = 0
         total_files = 0
 
@@ -511,11 +512,11 @@ class Bag(object):
         def _init_worker():
             signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in self.entries.items())
+        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in list(self.entries.items()))
 
         try:
             if processes == 1:
-                hash_results = map(_calc_hashes, args)
+                hash_results = list(map(_calc_hashes, args))
             else:
                 try:
                     pool = multiprocessing.Pool(processes if processes else None, _init_worker)
@@ -532,7 +533,7 @@ class Bag(object):
             raise
 
         for rel_path, f_hashes, hashes in hash_results:
-            for alg, computed_hash in f_hashes.items():
+            for alg, computed_hash in list(f_hashes.items()):
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
@@ -547,10 +548,10 @@ class Bag(object):
         Verify that bagit.txt conforms to specification
         """
         bagit_file_path = os.path.join(self.path, "bagit.txt")
-        bagit_file = open(bagit_file_path, 'rb')
+        bagit_file = open(bagit_file_path, 'r')
         try:
             first_line = bagit_file.readline()
-            if first_line.startswith(codecs.BOM_UTF8):
+            if first_line.startswith(BOM):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
         finally:
             bagit_file.close()
@@ -591,7 +592,9 @@ class UnexpectedFile(ManifestErrorDetail):
         return "%s exists on filesystem but is not in manifest" % self.path
 
 
-def _calc_hashes((base_path, rel_path, hashes, available_hashes)):
+def _calc_hashes(args):
+    # auto unpacking of sequences illegal in Python3
+    (base_path, rel_path, hashes, available_hashes) = args
     full_path = os.path.join(base_path, rel_path)
 
     # Create a clone of the default empty hash objects:
@@ -601,9 +604,9 @@ def _calc_hashes((base_path, rel_path, hashes, available_hashes)):
 
     try:
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
-    except BagValidationError, e:
+    except BagValidationError as e:
         f_hashes = dict(
-            (alg, str(e)) for alg in f_hashers.keys()
+            (alg, str(e)) for alg in list(f_hashers.keys())
         )
 
     return rel_path, f_hashes, hashes
@@ -624,11 +627,11 @@ def _calculate_file_hashes(full_path, f_hashers):
                 block = f.read(1048576)
                 if not block:
                     break
-                for i in f_hashers.values():
+                for i in list(f_hashers.values()):
                     i.update(block)
-        except IOError, e:
+        except IOError as e:
             raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
-        except OSError, e:
+        except OSError as e:
             raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
     finally:
         try:
@@ -637,12 +640,12 @@ def _calculate_file_hashes(full_path, f_hashers):
             pass
 
     return dict(
-        (alg, h.hexdigest()) for alg, h in f_hashers.items()
+        (alg, h.hexdigest()) for alg, h in list(f_hashers.items())
     )
 
 
 def _load_tag_file(tag_file_name):
-    tag_file = codecs.open(tag_file_name, 'r', 'utf-8-sig')
+    tag_file = open(tag_file_name, 'r')
 
     try:
         # Store duplicate tags as list of vals
@@ -676,7 +679,11 @@ def _parse_tags(file):
 
     # Line folding is handled by yielding values only after we encounter 
     # the start of a new tag, or if we pass the EOF.
-    for line in file:
+    for num, line in enumerate(file):
+        # If byte-order mark ignore it for now.
+        if num == 0:
+            if line.startswith(BOM):
+                line = line.lstrip(BOM)
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
@@ -700,9 +707,9 @@ def _parse_tags(file):
 
 
 def _make_tag_file(bag_info_path, bag_info):
-    headers = bag_info.keys()
+    headers = list(bag_info.keys())
     headers.sort()
-    with codecs.open(bag_info_path, 'w', 'utf-8') as f:
+    with open(bag_info_path, 'w') as f:
         for h in headers:
             if type(bag_info[h]) == list:
                 for val in bag_info[h]:
@@ -738,18 +745,18 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         pool.close()
         pool.join()
     else:
-        checksums = map(manifest_line, _walk(data_dir))
+        checksums = list(map(manifest_line, _walk(data_dir)))
 
-    manifest = open(manifest_file, 'wb')
-    num_files = 0
-    total_bytes = 0
+    with open(manifest_file, 'w') as manifest:
+        num_files = 0
+        total_bytes = 0
 
-    for digest, filename, bytes in checksums:
-        num_files += 1
-        total_bytes += bytes
-        manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
-    manifest.close()
-    return "%s.%s" % (total_bytes, num_files)
+        for digest, filename, bytes in checksums:
+            num_files += 1
+            total_bytes += bytes
+            manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
+        manifest.close()
+        return "%s.%s" % (total_bytes, num_files)
 
 
 def _make_tagmanifest_file(tagmanifest_file, bag_dir):
@@ -768,10 +775,9 @@ def _make_tagmanifest_file(tagmanifest_file, bag_dir):
         checksums.append((m.hexdigest(), f))
         fh.close()
 
-    tagmanifest = open(join(bag_dir, tagmanifest_file), 'wb')
-    for digest, filename in checksums:
-        tagmanifest.write('%s %s\n' % (digest, filename))
-    tagmanifest.close()
+    with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
+        for digest, filename in checksums:
+            tagmanifest.write('%s %s\n' % (digest, filename))
 
 
 def _walk(data_dir):
@@ -928,7 +934,7 @@ if __name__ == '__main__':
                     log.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
                     log.info("%s is valid", bag_dir)
-            except BagError, e:
+            except BagError as e:
                 log.info("%s is invalid: %s", bag_dir, e)
                 rc = 1
 
