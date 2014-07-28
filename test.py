@@ -151,7 +151,6 @@ class TestSingleProcessValidation(unittest.TestCase):
             self.assertTrue(isinstance(baginfo_error, bagit.ChecksumMismatch))
             self.assertEqual(baginfo_error.algorithm, 'md5')
             self.assertEqual(baginfo_error.path, 'bag-info.txt')
-            self.assertEqual(baginfo_error.expected, '6a2e564aec5fcfb003023e09d3a065db')
             self.assertTrue("bag-info.txt does not exist" in baginfo_error.found)
         if not got_exception:
             self.fail("didn't get BagValidationError")
