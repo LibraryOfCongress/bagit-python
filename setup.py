@@ -1,8 +1,8 @@
 from sys import version, exit
 from setuptools import setup
 
-if version < '2.4.0' or version > '3.0.0':
-    print "python 2.4 - 2.7 is required"
+if version < '2.6.0':
+    print("python 2.6 or higher is required")
     exit(1)
 
 description = \
@@ -42,9 +42,11 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
-        'Programming Language :: Python :: 2.4',
-        'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.1',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
     ],
 )
