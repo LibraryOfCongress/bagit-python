@@ -13,7 +13,7 @@ needed or you can install globally with:
 
     pip install bagit
 
-Python v2.4+ is required.
+Python v2.6+ is required.
 
 Command Line Usage
 ------------------
