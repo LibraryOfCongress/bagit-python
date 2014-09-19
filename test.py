@@ -269,6 +269,10 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
+    def test_sha1_tagfile(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-sha1.txt')))
+        
     def test_validate_unreadable_file(self):
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
@@ -494,10 +498,13 @@ Tag-File-Character-Encoding: UTF-8
         self.assertTrue(bag.is_valid())
 
     def test_save_baginfo_with_sha1(self):
-        bag = bagit.make_bag(self.tmpdir, checksum=["sha1"])
+        bag = bagit.make_bag(self.tmpdir, checksum=["sha1", "md5"])
         self.assertTrue(bag.is_valid())
+        bag.save()
+
         bag.info['foo'] = "bar"
         bag.save()
+
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.is_valid())
 
@@ -511,7 +518,6 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info["foo"], "bar")
         self.assertFalse(bag.is_valid())
-
 
     def test_make_bag_with_newline(self):
         bag = bagit.make_bag(self.tmpdir, {"test": "foo\nbar"})
