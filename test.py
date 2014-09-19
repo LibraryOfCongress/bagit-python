@@ -493,6 +493,14 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual(b.info["x"], ["a", "b", "c"])
         self.assertTrue(bag.is_valid())
 
+    def test_save_baginfo_with_sha1(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=["sha1"])
+        self.assertTrue(bag.is_valid())
+        bag.info['foo'] = "bar"
+        bag.save()
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
     def test_save_only_baginfo(self):
         bag = bagit.make_bag(self.tmpdir)
         with open(j(self.tmpdir, 'data', 'newfile'), 'w') as nf:
