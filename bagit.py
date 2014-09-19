@@ -146,7 +146,9 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             bag_info['Payload-Oxum'] = Oxum
             _make_tag_file('bag-info.txt', bag_info)
 
-            _make_tagmanifest_file('tagmanifest-md5.txt', bag_dir)
+            for c in checksum:
+                _make_tagmanifest_file(c, bag_dir)
+
 
     except Exception as e:
         os.chdir(old_dir)
@@ -311,7 +313,8 @@ class Bag(object):
         _make_tag_file(self.tag_file_name, self.info)
 
         # Update tag-manifest for changes to manifest & bag-info files
-        _make_tagmanifest_file('tagmanifest-md5.txt', self.path)
+        for alg in self.algs:
+            _make_tagmanifest_file(alg, self.path)
 
         # Reload the manifests
         self._load_manifests()
@@ -759,14 +762,16 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         return "%s.%s" % (total_bytes, num_files)
 
 
-def _make_tagmanifest_file(tagmanifest_file, bag_dir):
+def _make_tagmanifest_file(alg, bag_dir):
+    tagmanifest_file = join(bag_dir, "tagmanifest-%s.txt" % alg)
+    logging.info("writing %s", tagmanifest_file)
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
-        if f == tagmanifest_file:
+        if re.match('^tagmanifest-.+\.txt$', f):
             continue
         fh = open(join(bag_dir, f), 'rb')
-        m = hashlib.md5()
+        m = _hasher(alg)
         while True:
             bytes = fh.read(16384)
             if not bytes:
@@ -830,8 +835,7 @@ def _manifest_line_sha256(filename):
 def _manifest_line_sha512(filename):
     return _manifest_line(filename, 'sha512')
 
-def _manifest_line(filename, algorithm='md5'):
-    fh = open(filename, 'rb')
+def _hasher(algorithm='md5'):
     if algorithm == 'md5':
         m = hashlib.md5()
     elif algorithm == 'sha1':
@@ -840,6 +844,11 @@ def _manifest_line(filename, algorithm='md5'):
         m = hashlib.sha256()
     elif algorithm == 'sha512':
         m = hashlib.sha512()
+    return m
+
+def _manifest_line(filename, algorithm='md5'):
+    fh = open(filename, 'rb')
+    m = _hasher(algorithm)
 
     total_bytes = 0
     while True:
