@@ -272,6 +272,7 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_sha1_tagfile(self):
         bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-sha1.txt')))
+        self.assertEqual(bag.entries['bag-info.txt']['sha1'], 'b537642e07abc0c22c428aee65180e97f78e61dc')
         
     def test_validate_unreadable_file(self):
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
