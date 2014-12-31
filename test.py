@@ -270,10 +270,11 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
     def test_sha1_tagfile(self):
-        bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha1'], bag_info=info)
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-sha1.txt')))
-        self.assertEqual(bag.entries['bag-info.txt']['sha1'], 'b537642e07abc0c22c428aee65180e97f78e61dc')
-        
+        self.assertEqual(bag.entries['bag-info.txt']['sha1'], 'd7f086508df433e5d7464b5a3835d5501df14404')
+
     def test_validate_unreadable_file(self):
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
@@ -281,7 +282,7 @@ class TestSingleProcessValidation(unittest.TestCase):
 
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
-    
+
     def validate(self, bag, *args, **kwargs):
         return super(TestMultiprocessValidation, self).validate(bag, *args, processes=2, **kwargs)
 
