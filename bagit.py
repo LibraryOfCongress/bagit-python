@@ -97,14 +97,14 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
         unbaggable = _can_bag(os.curdir)
         if unbaggable:
             logger.error("no write permissions for the following directories and files: \n%s", unbaggable)
-            sys.exit("\nNot all files/folders can be moved.")
+            raise BagError("Not all files/folders can be moved.")
         unreadable_dirs, unreadable_files = _can_read(os.curdir)
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
                 logger.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
             if unreadable_files:
                 logger.error("The following files do not have read permissions: \n%s", unreadable_files)
-            sys.exit("\nRead permissions are required to calculate file fixities.")
+            raise BagError("Read permissions are required to calculate file fixities.")
         else:
             logger.info("creating data dir")
 
@@ -148,14 +148,12 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             for c in checksum:
                 _make_tagmanifest_file(c, bag_dir)
-
-
-    except Exception as e:
+    except Exception:
+        logger.exception("An error occurred creating the bag")
+        raise
+    finally:
         os.chdir(old_dir)
-        logger.exception(e)
-        raise e
 
-    os.chdir(old_dir)
     return Bag(bag_dir)
 
 
@@ -347,9 +345,9 @@ class Bag(object):
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
-            except Exception as e:
+            except Exception:
                 fetch_file.close()
-                raise e
+                raise
 
             fetch_file.close()
 
@@ -573,7 +571,7 @@ class BagValidationError(BagError):
             return "%s: %s" % (self.message, details)
         return self.message
 
-class ManifestErrorDetail():
+class ManifestErrorDetail(BagError):
     def __init__(self, path):
         self.path = path
 
@@ -948,8 +946,12 @@ if __name__ == '__main__':
 
         # make the bag
         else:
-            make_bag(bag_dir, bag_info=opt_parser.bag_info,
-                     processes=opts.processes,
-                     checksum=opts.checksum)
+            try:
+                make_bag(bag_dir, bag_info=opt_parser.bag_info,
+                         processes=opts.processes,
+                         checksum=opts.checksum)
+            except Exception:
+                logger.info("%s failed to create: %s", bag_dir, e)
+                rc = 1
 
         sys.exit(rc)
