@@ -339,17 +339,10 @@ class Bag(object):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
-            fetch_file = open(fetch_file_path, 'rb')
-
-            try:
+            with open(fetch_file_path, 'rb') as fetch_file:
                 for line in fetch_file:
                     parts = line.strip().split(None, 2)
                     yield (parts[0], parts[1], parts[2])
-            except Exception:
-                fetch_file.close()
-                raise
-
-            fetch_file.close()
 
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
@@ -549,13 +542,10 @@ class Bag(object):
         Verify that bagit.txt conforms to specification
         """
         bagit_file_path = os.path.join(self.path, "bagit.txt")
-        bagit_file = open(bagit_file_path, 'r')
-        try:
+        with open(bagit_file_path, 'r') as bagit_file:
             first_line = bagit_file.readline()
             if first_line.startswith(BOM):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
-        finally:
-            bagit_file.close()
 
 
 class BagError(Exception):
@@ -622,23 +612,17 @@ def _calculate_file_hashes(full_path, f_hashers):
         raise BagValidationError("%s does not exist" % full_path)
 
     try:
-        try:
-            f = open(full_path, 'rb')
+        with open(full_path, 'rb') as f:
             while True:
                 block = f.read(1048576)
                 if not block:
                     break
                 for i in list(f_hashers.values()):
                     i.update(block)
-        except IOError as e:
-            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
-        except OSError as e:
-            raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
-    finally:
-        try:
-            f.close()
-        except:
-            pass
+    except IOError as e:
+        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+    except OSError as e:
+        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
 
     return dict(
         (alg, h.hexdigest()) for alg, h in list(f_hashers.items())
@@ -646,9 +630,7 @@ def _calculate_file_hashes(full_path, f_hashers):
 
 
 def _load_tag_file(tag_file_name):
-    tag_file = open(tag_file_name, 'r')
-
-    try:
+    with open(tag_file_name, 'r') as tag_file:
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
@@ -662,9 +644,6 @@ def _load_tag_file(tag_file_name):
             else:
                 tags[name].append(value)
         return tags
-
-    finally:
-        tag_file.close()
 
 def _parse_tags(file):
     """Parses a tag file, according to RFC 2822.  This
@@ -768,15 +747,14 @@ def _make_tagmanifest_file(alg, bag_dir):
     for f in files:
         if re.match('^tagmanifest-.+\.txt$', f):
             continue
-        fh = open(join(bag_dir, f), 'rb')
-        m = _hasher(alg)
-        while True:
-            bytes = fh.read(16384)
-            if not bytes:
-                break
-            m.update(bytes)
-        checksums.append((m.hexdigest(), f))
-        fh.close()
+        with open(join(bag_dir, f), 'rb') as fh:
+            m = _hasher(alg)
+            while True:
+                bytes = fh.read(16384)
+                if not bytes:
+                    break
+                m.update(bytes)
+            checksums.append((m.hexdigest(), f))
 
     with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
         for digest, filename in checksums:
@@ -845,16 +823,16 @@ def _hasher(algorithm='md5'):
     return m
 
 def _manifest_line(filename, algorithm='md5'):
-    fh = open(filename, 'rb')
-    m = _hasher(algorithm)
+    with open(filename, 'rb') as fh:
+        m = _hasher(algorithm)
 
-    total_bytes = 0
-    while True:
-        bytes = fh.read(16384)
-        total_bytes += len(bytes)
-        if not bytes: break
-        m.update(bytes)
-    fh.close()
+        total_bytes = 0
+        while True:
+            bytes = fh.read(16384)
+            total_bytes += len(bytes)
+            if not bytes:
+                break
+            m.update(bytes)
 
     return (m.hexdigest(), _decode_filename(filename), total_bytes)
 
