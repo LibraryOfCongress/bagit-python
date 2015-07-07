@@ -31,20 +31,19 @@ For more help see:
     % bagit.py --help
 """
 
-import os
-import re
-import sys
 import codecs
-import signal
 import hashlib
 import logging
-import optparse
-import tempfile
 import multiprocessing
-
-from os import listdir
+import optparse
+import os
+import re
+import signal
+import sys
+import tempfile
 from datetime import date
-from os.path import isdir, isfile, join, abspath
+from os import listdir
+from os.path import abspath, isdir, isfile, join
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +120,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             logger.info("moving %s to %s" % (temp_data, 'data'))
             os.rename(temp_data, 'data')
 
-            # permissions for the payload directory should match those of the 
+            # permissions for the payload directory should match those of the
             # original directory
             os.chmod('data', os.stat(cwd).st_mode)
 
@@ -232,7 +231,7 @@ class Bag(object):
             files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
 
         return (list(files_in_manifest - files_on_fs),
-             list(files_on_fs - files_in_manifest))
+                list(files_on_fs - files_in_manifest))
 
     def compare_fetch_with_fs(self):
         """Compares the fetch entries with the files actually
@@ -258,20 +257,20 @@ class Bag(object):
 
     def payload_entries(self):
         # Don't use dict comprehension (compatibility with Python < 2.7)
-        return dict((key, value) for (key, value) in self.entries.items() \
-                     if key.startswith("data" + os.sep))
+        return dict((key, value) for (key, value) in self.entries.items()
+                    if key.startswith("data" + os.sep))
 
     def save(self, processes=1, manifests=False):
         """
-        save will persist any changes that have been made to the bag 
-        metadata (self.info). 
-        
-        If you have modified the payload of the bag (added, modified, 
+        save will persist any changes that have been made to the bag
+        metadata (self.info).
+
+        If you have modified the payload of the bag (added, modified,
         removed files in the data directory) and want to regenerate manifests
-        set the manifests parameter to True. The default is False since you 
-        wouldn't want a save to accidentally create a new manifest for 
-        a corrupted bag. 
-        
+        set the manifests parameter to True. The default is False since you
+        wouldn't want a save to accidentally create a new manifest for
+        a corrupted bag.
+
         If you want to control the number of processes that are used when
         recalculating checksums use the processes parameter.
         """
@@ -320,8 +319,8 @@ class Bag(object):
         os.chdir(old_dir)
 
     def tagfile_entries(self):
-        return dict((key, value) for (key, value) in self.entries.items() \
-                     if not key.startswith("data" + os.sep))
+        return dict((key, value) for (key, value) in self.entries.items()
+                    if not key.startswith("data" + os.sep))
 
     def missing_optional_tagfiles(self):
         """
@@ -346,16 +345,16 @@ class Bag(object):
 
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
-            yield f 
+            yield f
 
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
     def validate(self, processes=1, fast=False):
-        """Checks the structure and contents are valid. If you supply 
-        the parameter fast=True the Payload-Oxum (if present) will 
-        be used to check that the payload files are present and 
-        accounted for, instead of re-calculating fixities and 
+        """Checks the structure and contents are valid. If you supply
+        the parameter fast=True the Payload-Oxum (if present) will
+        be used to check that the payload files are present and
+        accounted for, instead of re-calculating fixities and
         comparing them against the manifest. By default validate()
         will re-calculate fixities (fast=False).
         """
@@ -370,7 +369,7 @@ class Bag(object):
         """
         try:
             self.validate(fast=fast)
-        except BagError as e:
+        except BagError:
             return False
         return True
 
@@ -394,7 +393,8 @@ class Bag(object):
                     line = line.strip()
 
                     # Ignore blank lines and comments.
-                    if line == "" or line.startswith("#"): continue
+                    if line == "" or line.startswith("#"):
+                        continue
 
                     entry = line.split(None, 1)
 
@@ -440,15 +440,17 @@ class Bag(object):
             raise BagValidationError("cannot validate Bag with fast=True if Bag lacks a Payload-Oxum")
         self._validate_oxum()    # Fast
         if not fast:
-            self._validate_entries(processes) # *SLOW*
+            self._validate_entries(processes)  # *SLOW*
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
-        if oxum == None: return
+
+        if oxum is None:
+            return
 
         # If multiple Payload-Oxum tags (bad idea)
         # use the first listed in bag-info.txt
-        if type(oxum) is list:
+        if isinstance(oxum, list):
             oxum = oxum[0]
 
         byte_count, file_count = oxum.split('.', 1)
@@ -551,19 +553,26 @@ class Bag(object):
 class BagError(Exception):
     pass
 
+
 class BagValidationError(BagError):
-    def __init__(self, message, details=[]):
+    def __init__(self, message, details=None):
+        if details is None:
+            details = []
+
         self.message = message
         self.details = details
+
     def __str__(self):
         if len(self.details) > 0:
             details = " ; ".join([str(e) for e in self.details])
             return "%s: %s" % (self.message, details)
         return self.message
 
+
 class ManifestErrorDetail(BagError):
     def __init__(self, path):
         self.path = path
+
 
 class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
@@ -571,12 +580,15 @@ class ChecksumMismatch(ManifestErrorDetail):
         self.algorithm = algorithm
         self.expected = expected
         self.found = found
+
     def __str__(self):
         return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
+
 
 class FileMissing(ManifestErrorDetail):
     def __str__(self):
         return "%s exists in manifest but not found on filesystem" % self.path
+
 
 class UnexpectedFile(ManifestErrorDetail):
     def __str__(self):
@@ -635,7 +647,7 @@ def _load_tag_file(tag_file_name):
         # in order of parsing under the same key.
         tags = {}
         for name, value in _parse_tags(tag_file):
-            if not name in tags:
+            if name not in tags:
                 tags[name] = value
                 continue
 
@@ -657,7 +669,7 @@ def _parse_tags(file):
     tag_name = None
     tag_value = None
 
-    # Line folding is handled by yielding values only after we encounter 
+    # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
     for num, line in enumerate(file):
         # If byte-order mark ignore it for now.
@@ -667,14 +679,14 @@ def _parse_tags(file):
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
-        elif line[0].isspace() and tag_value != None : # folded line
+        elif line[0].isspace() and tag_value is not None:  # folded line
             tag_value += line
         else:
             # Starting a new tag; yield the last one.
             if tag_name:
                 yield (tag_name, tag_value.strip())
 
-            if not ':' in line:
+            if ':' not in line:
                 raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
 
             parts = line.strip().split(':', 1)
@@ -697,7 +709,7 @@ def _make_tag_file(bag_info_path, bag_info):
             else:
                 txt = bag_info[h]
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub('\n|\r|(\r\n)', '', txt) 
+                txt = re.sub('\n|\r|(\r\n)', '', txt)
                 f.write("%s: %s\n" % (h, txt))
 
 
@@ -716,10 +728,6 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         raise RuntimeError("unknown algorithm %s" % algorithm)
 
     if processes > 1:
-        # avoid using multiprocessing unless it is required since
-        # multiprocessing doesn't work in some environments (mod_wsgi, etc)
-
-        import multiprocessing
         pool = multiprocessing.Pool(processes=processes)
         checksums = pool.map(manifest_line, _walk(data_dir))
         pool.close()
@@ -763,8 +771,8 @@ def _make_tagmanifest_file(alg, bag_dir):
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
-        # if we don't sort here the order of entries is non-deterministic 
-        # which makes it hard to test the fixity of tagmanifest-md5.txt 
+        # if we don't sort here the order of entries is non-deterministic
+        # which makes it hard to test the fixity of tagmanifest-md5.txt
         filenames.sort()
         dirnames.sort()
         for fn in filenames:
@@ -775,6 +783,7 @@ def _walk(data_dir):
                 path = '/'.join(parts)
             yield path
 
+
 def _can_bag(test_dir):
     """returns (unwriteable files/folders)
     """
@@ -783,6 +792,7 @@ def _can_bag(test_dir):
         if not os.access(os.path.join(test_dir, inode), os.W_OK):
             unwriteable.append(os.path.join(os.path.abspath(test_dir), inode))
     return tuple(unwriteable)
+
 
 def _can_read(test_dir):
     """
@@ -799,17 +809,22 @@ def _can_read(test_dir):
                 unreadable_files.append(os.path.join(dirpath, fn))
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
+
 def _manifest_line_md5(filename):
     return _manifest_line(filename, 'md5')
+
 
 def _manifest_line_sha1(filename):
     return _manifest_line(filename, 'sha1')
 
+
 def _manifest_line_sha256(filename):
     return _manifest_line(filename, 'sha256')
 
+
 def _manifest_line_sha512(filename):
     return _manifest_line(filename, 'sha512')
+
 
 def _hasher(algorithm='md5'):
     if algorithm == 'md5':
@@ -821,6 +836,7 @@ def _hasher(algorithm='md5'):
     elif algorithm == 'sha512':
         m = hashlib.sha512()
     return m
+
 
 def _manifest_line(filename, algorithm='md5'):
     with open(filename, 'rb') as fh:
@@ -836,10 +852,12 @@ def _manifest_line(filename, algorithm='md5'):
 
     return (m.hexdigest(), _decode_filename(filename), total_bytes)
 
+
 def _encode_filename(s):
     s = s.replace("\r", "%0D")
     s = s.replace("\n", "%0A")
     return s
+
 
 def _decode_filename(s):
     s = re.sub("%0D", "\r", s, re.IGNORECASE)
@@ -854,10 +872,12 @@ class BagOptionParser(optparse.OptionParser):
         self.bag_info = {}
         optparse.OptionParser.__init__(self, *args, **opts)
 
+
 def _bag_info_store(option, opt, value, parser):
     opt = opt.lstrip('--')
     opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
     parser.bag_info[opt_caps] = value
+
 
 def _make_opt_parser():
     parser = BagOptionParser(usage='usage: %prog [options] dir1 dir2 ...')
@@ -871,22 +891,23 @@ def _make_opt_parser():
 
     # optionally specify which checksum algorithm(s) to use when creating a bag
     # NOTE: could generate from checksum_algos ?
-    parser.add_option('--md5', action='append_const', dest='checksum',
-        const='md5', help='Generate MD5 manifest when creating a bag (default)')
-    parser.add_option('--sha1', action='append_const', dest='checksum',
-        const='sha1', help='Generate SHA1 manifest when creating a bag')
-    parser.add_option('--sha256', action='append_const', dest='checksum',
-        const='sha256', help='Generate SHA-256 manifest when creating a bag')
-    parser.add_option('--sha512', action='append_const', dest='checksum',
-        const='sha512', help='Generate SHA-512 manifest when creating a bag')
+    parser.add_option('--md5', action='append_const', dest='checksum', const='md5',
+                      help='Generate MD5 manifest when creating a bag (default)')
+    parser.add_option('--sha1', action='append_const', dest='checksum', const='sha1',
+                      help='Generate SHA1 manifest when creating a bag')
+    parser.add_option('--sha256', action='append_const', dest='checksum', const='sha256',
+                      help='Generate SHA-256 manifest when creating a bag')
+    parser.add_option('--sha512', action='append_const', dest='checksum', const='sha512',
+                      help='Generate SHA-512 manifest when creating a bag')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
                           action='callback', callback=_bag_info_store)
     return parser
 
+
 def _configure_logging(opts):
-    log_format="%(asctime)s - %(levelname)s - %(message)s"
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
     if opts.quiet:
         level = logging.ERROR
     else:
