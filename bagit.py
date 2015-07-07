@@ -121,7 +121,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             logger.info("moving %s to %s" % (temp_data, 'data'))
             os.rename(temp_data, 'data')
 
-            # permissions for the payload directory should match those of the 
+            # permissions for the payload directory should match those of the
             # original directory
             os.chmod('data', os.stat(cwd).st_mode)
 
@@ -346,16 +346,16 @@ class Bag(object):
 
     def files_to_be_fetched(self):
         for f, size, path in self.fetch_entries():
-            yield f 
+            yield f
 
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
     def validate(self, processes=1, fast=False):
-        """Checks the structure and contents are valid. If you supply 
-        the parameter fast=True the Payload-Oxum (if present) will 
-        be used to check that the payload files are present and 
-        accounted for, instead of re-calculating fixities and 
+        """Checks the structure and contents are valid. If you supply
+        the parameter fast=True the Payload-Oxum (if present) will
+        be used to check that the payload files are present and
+        accounted for, instead of re-calculating fixities and
         comparing them against the manifest. By default validate()
         will re-calculate fixities (fast=False).
         """
@@ -657,7 +657,7 @@ def _parse_tags(file):
     tag_name = None
     tag_value = None
 
-    # Line folding is handled by yielding values only after we encounter 
+    # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
     for num, line in enumerate(file):
         # If byte-order mark ignore it for now.
@@ -697,7 +697,7 @@ def _make_tag_file(bag_info_path, bag_info):
             else:
                 txt = bag_info[h]
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub('\n|\r|(\r\n)', '', txt) 
+                txt = re.sub('\n|\r|(\r\n)', '', txt)
                 f.write("%s: %s\n" % (h, txt))
 
 
@@ -759,8 +759,8 @@ def _make_tagmanifest_file(alg, bag_dir):
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
-        # if we don't sort here the order of entries is non-deterministic 
-        # which makes it hard to test the fixity of tagmanifest-md5.txt 
+        # if we don't sort here the order of entries is non-deterministic
+        # which makes it hard to test the fixity of tagmanifest-md5.txt
         filenames.sort()
         dirnames.sort()
         for fn in filenames:
