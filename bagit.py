@@ -657,7 +657,7 @@ def _load_tag_file(tag_file_name):
                 tags[name] = value
                 continue
 
-            if not type(tags[name]) is list:
+            if not isinstance(tags[name], list):
                 tags[name] = [tags[name], value]
             else:
                 tags[name].append(value)
@@ -711,7 +711,7 @@ def _make_tag_file(bag_info_path, bag_info):
     headers.sort()
     with open(bag_info_path, 'w') as f:
         for h in headers:
-            if type(bag_info[h]) == list:
+            if isinstance(bag_info[h], list):
                 for val in bag_info[h]:
                     f.write("%s: %s\n" % (h, val))
             else:
