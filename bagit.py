@@ -645,7 +645,7 @@ def _load_tag_file(tag_file_name):
         # in order of parsing under the same key.
         tags = {}
         for name, value in _parse_tags(tag_file):
-            if not name in tags:
+            if name not in tags:
                 tags[name] = value
                 continue
 
@@ -684,7 +684,7 @@ def _parse_tags(file):
             if tag_name:
                 yield (tag_name, tag_value.strip())
 
-            if not ':' in line:
+            if ':' not in line:
                 raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
 
             parts = line.strip().split(':', 1)
