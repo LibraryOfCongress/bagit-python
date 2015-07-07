@@ -553,7 +553,10 @@ class BagError(Exception):
 
 
 class BagValidationError(BagError):
-    def __init__(self, message, details=[]):
+    def __init__(self, message, details=None):
+        if details is None:
+            details = []
+
         self.message = message
         self.details = details
 
