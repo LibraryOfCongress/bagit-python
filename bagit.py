@@ -232,7 +232,7 @@ class Bag(object):
             files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
 
         return (list(files_in_manifest - files_on_fs),
-             list(files_on_fs - files_in_manifest))
+                list(files_on_fs - files_in_manifest))
 
     def compare_fetch_with_fs(self):
         """Compares the fetch entries with the files actually
@@ -258,20 +258,20 @@ class Bag(object):
 
     def payload_entries(self):
         # Don't use dict comprehension (compatibility with Python < 2.7)
-        return dict((key, value) for (key, value) in self.entries.items() \
-                     if key.startswith("data" + os.sep))
+        return dict((key, value) for (key, value) in self.entries.items()
+                    if key.startswith("data" + os.sep))
 
     def save(self, processes=1, manifests=False):
         """
-        save will persist any changes that have been made to the bag 
-        metadata (self.info). 
-        
-        If you have modified the payload of the bag (added, modified, 
+        save will persist any changes that have been made to the bag
+        metadata (self.info).
+
+        If you have modified the payload of the bag (added, modified,
         removed files in the data directory) and want to regenerate manifests
-        set the manifests parameter to True. The default is False since you 
-        wouldn't want a save to accidentally create a new manifest for 
-        a corrupted bag. 
-        
+        set the manifests parameter to True. The default is False since you
+        wouldn't want a save to accidentally create a new manifest for
+        a corrupted bag.
+
         If you want to control the number of processes that are used when
         recalculating checksums use the processes parameter.
         """
@@ -320,8 +320,8 @@ class Bag(object):
         os.chdir(old_dir)
 
     def tagfile_entries(self):
-        return dict((key, value) for (key, value) in self.entries.items() \
-                     if not key.startswith("data" + os.sep))
+        return dict((key, value) for (key, value) in self.entries.items()
+                    if not key.startswith("data" + os.sep))
 
     def missing_optional_tagfiles(self):
         """
@@ -871,14 +871,14 @@ def _make_opt_parser():
 
     # optionally specify which checksum algorithm(s) to use when creating a bag
     # NOTE: could generate from checksum_algos ?
-    parser.add_option('--md5', action='append_const', dest='checksum',
-        const='md5', help='Generate MD5 manifest when creating a bag (default)')
-    parser.add_option('--sha1', action='append_const', dest='checksum',
-        const='sha1', help='Generate SHA1 manifest when creating a bag')
-    parser.add_option('--sha256', action='append_const', dest='checksum',
-        const='sha256', help='Generate SHA-256 manifest when creating a bag')
-    parser.add_option('--sha512', action='append_const', dest='checksum',
-        const='sha512', help='Generate SHA-512 manifest when creating a bag')
+    parser.add_option('--md5', action='append_const', dest='checksum', const='md5',
+                      help='Generate MD5 manifest when creating a bag (default)')
+    parser.add_option('--sha1', action='append_const', dest='checksum', const='sha1',
+                      help='Generate SHA1 manifest when creating a bag')
+    parser.add_option('--sha256', action='append_const', dest='checksum', const='sha256',
+                      help='Generate SHA-256 manifest when creating a bag')
+    parser.add_option('--sha512', action='append_const', dest='checksum', const='sha512',
+                      help='Generate SHA-512 manifest when creating a bag')
 
     for header in _bag_info_headers:
         parser.add_option('--%s' % header.lower(), type="string",
