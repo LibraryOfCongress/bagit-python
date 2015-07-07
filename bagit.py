@@ -451,7 +451,7 @@ class Bag(object):
 
         # If multiple Payload-Oxum tags (bad idea)
         # use the first listed in bag-info.txt
-        if type(oxum) is list:
+        if isinstance(oxum, list):
             oxum = oxum[0]
 
         byte_count, file_count = oxum.split('.', 1)
