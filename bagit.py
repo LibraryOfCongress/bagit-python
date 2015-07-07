@@ -31,20 +31,19 @@ For more help see:
     % bagit.py --help
 """
 
-import os
-import re
-import sys
 import codecs
-import signal
 import hashlib
 import logging
-import optparse
-import tempfile
 import multiprocessing
-
-from os import listdir
+import optparse
+import os
+import re
+import signal
+import sys
+import tempfile
 from datetime import date
-from os.path import isdir, isfile, join, abspath
+from os import listdir
+from os.path import abspath, isdir, isfile, join
 
 logger = logging.getLogger(__name__)
 
