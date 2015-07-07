@@ -908,7 +908,7 @@ def _make_opt_parser():
 
 
 def _configure_logging(opts):
-    log_format="%(asctime)s - %(levelname)s - %(message)s"
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
     if opts.quiet:
         level = logging.ERROR
     else:
