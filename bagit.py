@@ -556,6 +556,8 @@ class BagError(Exception):
 
 class BagValidationError(BagError):
     def __init__(self, message, details=None):
+        super(BagValidationError, self).__init__()
+
         if details is None:
             details = []
 
@@ -571,11 +573,15 @@ class BagValidationError(BagError):
 
 class ManifestErrorDetail(BagError):
     def __init__(self, path):
+        super(ManifestErrorDetail, self).__init__()
+
         self.path = path
 
 
 class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
+        super(ChecksumMismatch, self).__init__(path)
+
         self.path = path
         self.algorithm = algorithm
         self.expected = expected
