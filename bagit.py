@@ -657,7 +657,8 @@ def _load_tag_file(tag_file_name):
                 tags[name].append(value)
         return tags
 
-def _parse_tags(file):
+
+def _parse_tags(tag_file):
     """Parses a tag file, according to RFC 2822.  This
        includes line folding, permitting extra-long
        field values.
@@ -671,7 +672,7 @@ def _parse_tags(file):
 
     # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
-    for num, line in enumerate(file):
+    for num, line in enumerate(tag_file):
         # If byte-order mark ignore it for now.
         if num == 0:
             if line.startswith(BOM):
@@ -687,7 +688,8 @@ def _parse_tags(file):
                 yield (tag_name, tag_value.strip())
 
             if ':' not in line:
-                raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
+                raise BagValidationError("invalid line '%s' in %s" % (line.strip(),
+                                                                      os.path.basename(tag_file.name)))
 
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
@@ -739,9 +741,9 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         num_files = 0
         total_bytes = 0
 
-        for digest, filename, bytes in checksums:
+        for digest, filename, byte_count in checksums:
             num_files += 1
-            total_bytes += bytes
+            total_bytes += byte_count
             manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
         manifest.close()
         return "%s.%s" % (total_bytes, num_files)
@@ -758,10 +760,10 @@ def _make_tagmanifest_file(alg, bag_dir):
         with open(join(bag_dir, f), 'rb') as fh:
             m = _hasher(alg)
             while True:
-                bytes = fh.read(16384)
-                if not bytes:
+                block = fh.read(16384)
+                if not block:
                     break
-                m.update(bytes)
+                m.update(block)
             checksums.append((m.hexdigest(), f))
 
     with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
@@ -844,11 +846,11 @@ def _manifest_line(filename, algorithm='md5'):
 
         total_bytes = 0
         while True:
-            bytes = fh.read(16384)
-            total_bytes += len(bytes)
-            if not bytes:
+            block = fh.read(16384)
+            total_bytes += len(block)
+            if not block:
                 break
-            m.update(bytes)
+            m.update(block)
 
     return (m.hexdigest(), _decode_filename(filename), total_bytes)
 
