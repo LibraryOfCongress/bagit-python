@@ -711,7 +711,7 @@ def _make_tag_file(bag_info_path, bag_info):
             else:
                 txt = bag_info[h]
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub('\n|\r|(\r\n)', '', txt)
+                txt = re.sub(r'\n|\r|(\r\n)', '', txt)
                 f.write("%s: %s\n" % (h, txt))
 
 
@@ -755,7 +755,7 @@ def _make_tagmanifest_file(alg, bag_dir):
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
-        if re.match('^tagmanifest-.+\.txt$', f):
+        if re.match(r'^tagmanifest-.+\.txt$', f):
             continue
         with open(join(bag_dir, f), 'rb') as fh:
             m = _hasher(alg)
@@ -862,8 +862,8 @@ def _encode_filename(s):
 
 
 def _decode_filename(s):
-    s = re.sub("%0D", "\r", s, re.IGNORECASE)
-    s = re.sub("%0A", "\n", s, re.IGNORECASE)
+    s = re.sub(r"%0D", "\r", s, re.IGNORECASE)
+    s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
     return s
 
 
