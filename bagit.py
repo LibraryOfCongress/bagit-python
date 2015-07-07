@@ -394,7 +394,8 @@ class Bag(object):
                     line = line.strip()
 
                     # Ignore blank lines and comments.
-                    if line == "" or line.startswith("#"): continue
+                    if line == "" or line.startswith("#"):
+                        continue
 
                     entry = line.split(None, 1)
 
@@ -444,7 +445,9 @@ class Bag(object):
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
-        if oxum == None: return
+
+        if oxum is None:
+            return
 
         # If multiple Payload-Oxum tags (bad idea)
         # use the first listed in bag-info.txt
