@@ -80,13 +80,13 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
     the bag_info dictionary.
     """
     bag_dir = os.path.abspath(bag_dir)
-    logger.info("creating bag for directory %s" % bag_dir)
+    logger.info("creating bag for directory %s", bag_dir)
     # assume md5 checksum if not specified
     if not checksum:
         checksum = ['md5']
 
     if not os.path.isdir(bag_dir):
-        logger.error("no such bag directory %s" % bag_dir)
+        logger.error("no such bag directory %s", bag_dir)
         raise RuntimeError("no such bag directory %s" % bag_dir)
 
     old_dir = os.path.abspath(os.path.curdir)
@@ -114,10 +114,10 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
                 if os.path.abspath(f) == temp_data:
                     continue
                 new_f = os.path.join(temp_data, f)
-                logger.info("moving %s to %s" % (f, new_f))
+                logger.info("moving %s to %s", f, new_f)
                 os.rename(f, new_f)
 
-            logger.info("moving %s to %s" % (temp_data, 'data'))
+            logger.info("moving %s to %s", temp_data, 'data')
             os.rename(temp_data, 'data')
 
             # permissions for the payload directory should match those of the
@@ -125,7 +125,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             os.chmod('data', os.stat(cwd).st_mode)
 
             for c in checksum:
-                logger.info("writing manifest-%s.txt" % c)
+                logger.info("writing manifest-%s.txt", c)
                 Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, c)
 
             logger.info("writing bagit.txt")
@@ -714,7 +714,7 @@ def _make_tag_file(bag_info_path, bag_info):
 
 
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
-    logger.info('writing manifest with %s processes' % processes)
+    logger.info('writing manifest with %s processes', processes)
 
     if algorithm == 'md5':
         manifest_line = _manifest_line_md5
