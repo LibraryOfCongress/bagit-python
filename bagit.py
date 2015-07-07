@@ -680,7 +680,7 @@ def _parse_tags(file):
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
-        elif line[0].isspace() and tag_value != None:  # folded line
+        elif line[0].isspace() and tag_value is not None:  # folded line
             tag_value += line
         else:
             # Starting a new tag; yield the last one.
