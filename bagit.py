@@ -716,10 +716,6 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         raise RuntimeError("unknown algorithm %s" % algorithm)
 
     if processes > 1:
-        # avoid using multiprocessing unless it is required since
-        # multiprocessing doesn't work in some environments (mod_wsgi, etc)
-
-        import multiprocessing
         pool = multiprocessing.Pool(processes=processes)
         checksums = pool.map(manifest_line, _walk(data_dir))
         pool.close()
