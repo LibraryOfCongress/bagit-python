@@ -551,19 +551,23 @@ class Bag(object):
 class BagError(Exception):
     pass
 
+
 class BagValidationError(BagError):
     def __init__(self, message, details=[]):
         self.message = message
         self.details = details
+
     def __str__(self):
         if len(self.details) > 0:
             details = " ; ".join([str(e) for e in self.details])
             return "%s: %s" % (self.message, details)
         return self.message
 
+
 class ManifestErrorDetail(BagError):
     def __init__(self, path):
         self.path = path
+
 
 class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
@@ -571,12 +575,15 @@ class ChecksumMismatch(ManifestErrorDetail):
         self.algorithm = algorithm
         self.expected = expected
         self.found = found
+
     def __str__(self):
         return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
+
 
 class FileMissing(ManifestErrorDetail):
     def __str__(self):
         return "%s exists in manifest but not found on filesystem" % self.path
+
 
 class UnexpectedFile(ManifestErrorDetail):
     def __str__(self):
@@ -771,6 +778,7 @@ def _walk(data_dir):
                 path = '/'.join(parts)
             yield path
 
+
 def _can_bag(test_dir):
     """returns (unwriteable files/folders)
     """
@@ -779,6 +787,7 @@ def _can_bag(test_dir):
         if not os.access(os.path.join(test_dir, inode), os.W_OK):
             unwriteable.append(os.path.join(os.path.abspath(test_dir), inode))
     return tuple(unwriteable)
+
 
 def _can_read(test_dir):
     """
@@ -795,17 +804,22 @@ def _can_read(test_dir):
                 unreadable_files.append(os.path.join(dirpath, fn))
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
+
 def _manifest_line_md5(filename):
     return _manifest_line(filename, 'md5')
+
 
 def _manifest_line_sha1(filename):
     return _manifest_line(filename, 'sha1')
 
+
 def _manifest_line_sha256(filename):
     return _manifest_line(filename, 'sha256')
 
+
 def _manifest_line_sha512(filename):
     return _manifest_line(filename, 'sha512')
+
 
 def _hasher(algorithm='md5'):
     if algorithm == 'md5':
@@ -817,6 +831,7 @@ def _hasher(algorithm='md5'):
     elif algorithm == 'sha512':
         m = hashlib.sha512()
     return m
+
 
 def _manifest_line(filename, algorithm='md5'):
     with open(filename, 'rb') as fh:
@@ -832,10 +847,12 @@ def _manifest_line(filename, algorithm='md5'):
 
     return (m.hexdigest(), _decode_filename(filename), total_bytes)
 
+
 def _encode_filename(s):
     s = s.replace("\r", "%0D")
     s = s.replace("\n", "%0A")
     return s
+
 
 def _decode_filename(s):
     s = re.sub("%0D", "\r", s, re.IGNORECASE)
@@ -850,10 +867,12 @@ class BagOptionParser(optparse.OptionParser):
         self.bag_info = {}
         optparse.OptionParser.__init__(self, *args, **opts)
 
+
 def _bag_info_store(option, opt, value, parser):
     opt = opt.lstrip('--')
     opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
     parser.bag_info[opt_caps] = value
+
 
 def _make_opt_parser():
     parser = BagOptionParser(usage='usage: %prog [options] dir1 dir2 ...')
@@ -880,6 +899,7 @@ def _make_opt_parser():
         parser.add_option('--%s' % header.lower(), type="string",
                           action='callback', callback=_bag_info_store)
     return parser
+
 
 def _configure_logging(opts):
     log_format="%(asctime)s - %(levelname)s - %(message)s"
