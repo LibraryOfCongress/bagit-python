@@ -369,7 +369,7 @@ class Bag(object):
         """
         try:
             self.validate(fast=fast)
-        except BagError as e:
+        except BagError:
             return False
         return True
 
