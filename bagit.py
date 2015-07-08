@@ -80,13 +80,13 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
     the bag_info dictionary.
     """
     bag_dir = os.path.abspath(bag_dir)
-    logger.info("creating bag for directory %s" % bag_dir)
+    logger.info("creating bag for directory %s", bag_dir)
     # assume md5 checksum if not specified
     if not checksum:
         checksum = ['md5']
 
     if not os.path.isdir(bag_dir):
-        logger.error("no such bag directory %s" % bag_dir)
+        logger.error("no such bag directory %s", bag_dir)
         raise RuntimeError("no such bag directory %s" % bag_dir)
 
     old_dir = os.path.abspath(os.path.curdir)
@@ -114,10 +114,10 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
                 if os.path.abspath(f) == temp_data:
                     continue
                 new_f = os.path.join(temp_data, f)
-                logger.info("moving %s to %s" % (f, new_f))
+                logger.info("moving %s to %s", f, new_f)
                 os.rename(f, new_f)
 
-            logger.info("moving %s to %s" % (temp_data, 'data'))
+            logger.info("moving %s to %s", temp_data, 'data')
             os.rename(temp_data, 'data')
 
             # permissions for the payload directory should match those of the
@@ -125,7 +125,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             os.chmod('data', os.stat(cwd).st_mode)
 
             for c in checksum:
-                logger.info("writing manifest-%s.txt" % c)
+                logger.info("writing manifest-%s.txt", c)
                 Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, c)
 
             logger.info("writing bagit.txt")
@@ -556,6 +556,8 @@ class BagError(Exception):
 
 class BagValidationError(BagError):
     def __init__(self, message, details=None):
+        super(BagValidationError, self).__init__()
+
         if details is None:
             details = []
 
@@ -571,11 +573,15 @@ class BagValidationError(BagError):
 
 class ManifestErrorDetail(BagError):
     def __init__(self, path):
+        super(ManifestErrorDetail, self).__init__()
+
         self.path = path
 
 
 class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
+        super(ChecksumMismatch, self).__init__(path)
+
         self.path = path
         self.algorithm = algorithm
         self.expected = expected
@@ -651,13 +657,14 @@ def _load_tag_file(tag_file_name):
                 tags[name] = value
                 continue
 
-            if not type(tags[name]) is list:
+            if not isinstance(tags[name], list):
                 tags[name] = [tags[name], value]
             else:
                 tags[name].append(value)
         return tags
 
-def _parse_tags(file):
+
+def _parse_tags(tag_file):
     """Parses a tag file, according to RFC 2822.  This
        includes line folding, permitting extra-long
        field values.
@@ -671,7 +678,7 @@ def _parse_tags(file):
 
     # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
-    for num, line in enumerate(file):
+    for num, line in enumerate(tag_file):
         # If byte-order mark ignore it for now.
         if num == 0:
             if line.startswith(BOM):
@@ -687,7 +694,8 @@ def _parse_tags(file):
                 yield (tag_name, tag_value.strip())
 
             if ':' not in line:
-                raise BagValidationError("invalid line '%s' in %s" % (line.strip(), os.path.basename(file.name)))
+                raise BagValidationError("invalid line '%s' in %s" % (line.strip(),
+                                                                      os.path.basename(tag_file.name)))
 
             parts = line.strip().split(':', 1)
             tag_name = parts[0].strip()
@@ -703,18 +711,18 @@ def _make_tag_file(bag_info_path, bag_info):
     headers.sort()
     with open(bag_info_path, 'w') as f:
         for h in headers:
-            if type(bag_info[h]) == list:
+            if isinstance(bag_info[h], list):
                 for val in bag_info[h]:
                     f.write("%s: %s\n" % (h, val))
             else:
                 txt = bag_info[h]
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub('\n|\r|(\r\n)', '', txt)
+                txt = re.sub(r'\n|\r|(\r\n)', '', txt)
                 f.write("%s: %s\n" % (h, txt))
 
 
 def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
-    logger.info('writing manifest with %s processes' % processes)
+    logger.info('writing manifest with %s processes', processes)
 
     if algorithm == 'md5':
         manifest_line = _manifest_line_md5
@@ -739,9 +747,9 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         num_files = 0
         total_bytes = 0
 
-        for digest, filename, bytes in checksums:
+        for digest, filename, byte_count in checksums:
             num_files += 1
-            total_bytes += bytes
+            total_bytes += byte_count
             manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
         manifest.close()
         return "%s.%s" % (total_bytes, num_files)
@@ -753,15 +761,15 @@ def _make_tagmanifest_file(alg, bag_dir):
     files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
     checksums = []
     for f in files:
-        if re.match('^tagmanifest-.+\.txt$', f):
+        if re.match(r'^tagmanifest-.+\.txt$', f):
             continue
         with open(join(bag_dir, f), 'rb') as fh:
             m = _hasher(alg)
             while True:
-                bytes = fh.read(16384)
-                if not bytes:
+                block = fh.read(16384)
+                if not block:
                     break
-                m.update(bytes)
+                m.update(block)
             checksums.append((m.hexdigest(), f))
 
     with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
@@ -844,11 +852,11 @@ def _manifest_line(filename, algorithm='md5'):
 
         total_bytes = 0
         while True:
-            bytes = fh.read(16384)
-            total_bytes += len(bytes)
-            if not bytes:
+            block = fh.read(16384)
+            total_bytes += len(block)
+            if not block:
                 break
-            m.update(bytes)
+            m.update(block)
 
     return (m.hexdigest(), _decode_filename(filename), total_bytes)
 
@@ -860,8 +868,8 @@ def _encode_filename(s):
 
 
 def _decode_filename(s):
-    s = re.sub("%0D", "\r", s, re.IGNORECASE)
-    s = re.sub("%0A", "\n", s, re.IGNORECASE)
+    s = re.sub(r"%0D", "\r", s, re.IGNORECASE)
+    s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
     return s
 
 
