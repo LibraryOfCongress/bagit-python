@@ -948,7 +948,7 @@ if __name__ == '__main__':
                 else:
                     logger.info("%s is valid", bag_dir)
             except BagError as e:
-                logger.info("%s is invalid: %s", bag_dir, e)
+                logger.error("%s is invalid: %s", bag_dir, e)
                 rc = 1
 
         # make the bag
@@ -957,8 +957,8 @@ if __name__ == '__main__':
                 make_bag(bag_dir, bag_info=opt_parser.bag_info,
                          processes=opts.processes,
                          checksum=opts.checksum)
-            except Exception:
-                logger.info("%s failed to create: %s", bag_dir, e)
+            except Exception as exc:
+                logger.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1
 
         sys.exit(rc)
