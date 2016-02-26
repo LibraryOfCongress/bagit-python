@@ -1,4 +1,7 @@
-# -*- coding: utf-8 -*-
+# encoding: utf-8
+
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import codecs
 import datetime
@@ -535,9 +538,9 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual(bag.info["test"], "foobar")
 
     def test_unicode_in_tags(self):
-        bag = bagit.make_bag(self.tmpdir, {"test": '♡'})
+        bag = bagit.make_bag(self.tmpdir, {"test": u'♡'})
         bag = bagit.Bag(self.tmpdir)
-        self.assertEqual(bag.info['test'], '♡')
+        self.assertEqual(bag.info['test'], u'♡')
 
 if __name__ == '__main__':
     unittest.main()
