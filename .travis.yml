@@ -5,8 +5,9 @@ python:
  - "3.2"
  - "3.3"
  - "3.4"
+ - "3.5"
 script: python setup.py test
 install:
   # this can go away when this is resolved satisfactorily
-  # https://github.com/travis-ci/travis-cookbooks/issues/155 
+  # https://github.com/travis-ci/travis-cookbooks/issues/155
   - "sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm"
