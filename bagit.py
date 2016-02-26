@@ -330,7 +330,7 @@ class Bag(object):
         only check for entries with missing files (not missing
         entries for existing files).
         """
-        for tagfilepath in list(self.tagfile_entries().keys()):
+        for tagfilepath in self.tagfile_entries().keys():
             if not os.path.isfile(os.path.join(self.path, tagfilepath)):
                 yield tagfilepath
 
@@ -508,11 +508,11 @@ class Bag(object):
         def _init_worker():
             signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in list(self.entries.items()))
+        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in self.entries.items())
 
         try:
             if processes == 1:
-                hash_results = list(map(_calc_hashes, args))
+                hash_results = [_calc_hashes(i) for i in args]
             else:
                 try:
                     pool = multiprocessing.Pool(processes if processes else None, _init_worker)
@@ -529,7 +529,7 @@ class Bag(object):
             raise
 
         for rel_path, f_hashes, hashes in hash_results:
-            for alg, computed_hash in list(f_hashes.items()):
+            for alg, computed_hash in f_hashes.items():
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
@@ -615,7 +615,7 @@ def _calc_hashes(args):
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError as e:
         f_hashes = dict(
-            (alg, str(e)) for alg in list(f_hashers.keys())
+            (alg, str(e)) for alg in f_hashers.keys()
         )
 
     return rel_path, f_hashes, hashes
@@ -635,7 +635,7 @@ def _calculate_file_hashes(full_path, f_hashers):
                 block = f.read(1048576)
                 if not block:
                     break
-                for i in list(f_hashers.values()):
+                for i in f_hashers.values():
                     i.update(block)
     except IOError as e:
         raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
@@ -643,7 +643,7 @@ def _calculate_file_hashes(full_path, f_hashers):
         raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
 
     return dict(
-        (alg, h.hexdigest()) for alg, h in list(f_hashers.items())
+        (alg, h.hexdigest()) for alg, h in f_hashers.items()
     )
 
 
@@ -707,8 +707,8 @@ def _parse_tags(tag_file):
 
 
 def _make_tag_file(bag_info_path, bag_info):
-    headers = list(bag_info.keys())
-    headers.sort()
+    headers = sorted(bag_info.keys())
+
     with open(bag_info_path, 'w') as f:
         for h in headers:
             if isinstance(bag_info[h], list):
@@ -741,7 +741,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
         pool.close()
         pool.join()
     else:
-        checksums = list(map(manifest_line, _walk(data_dir)))
+        checksums = [manifest_line(i) for i in _walk(data_dir)]
 
     with open(manifest_file, 'w') as manifest:
         num_files = 0
