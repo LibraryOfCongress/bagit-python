@@ -572,9 +572,9 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual(bag.info["test"], "foobar")
 
     def test_unicode_in_tags(self):
-        bag = bagit.make_bag(self.tmpdir, {"test": u'♡'})
+        bag = bagit.make_bag(self.tmpdir, {"test": '♡'})
         bag = bagit.Bag(self.tmpdir)
-        self.assertEqual(bag.info['test'], u'♡')
+        self.assertEqual(bag.info['test'], '♡')
 
 if __name__ == '__main__':
     unittest.main()
