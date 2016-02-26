@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# encoding: utf-8
 """
 BagIt is a directory, filename convention for bundling an arbitrary set of
 files with a manifest, checksums, and additional metadata. More about BagIt
@@ -31,6 +31,9 @@ For more help see:
     % bagit.py --help
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import argparse
 import codecs
 import hashlib
@@ -42,6 +45,7 @@ import signal
 import sys
 import tempfile
 from datetime import date
+from functools import partial
 from os import listdir
 from os.path import abspath, isdir, isfile, join
 from pkg_resources import DistributionNotFound, get_distribution
@@ -76,9 +80,9 @@ STANDARD_BAG_INFO_HEADERS = [
 
 CHECKSUM_ALGOS = ['md5', 'sha1', 'sha256', 'sha512']
 
-BOM = codecs.BOM_UTF8
-if sys.version_info[0] >= 3:
-    BOM = BOM.decode('utf-8')
+#: Convenience function used everywhere we want to open
+#: a file to read text rather than undecoded bytes.
+open_text_file = partial(codecs.open, encoding='utf-8')
 
 
 def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
@@ -138,7 +142,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             LOGGER.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
-            with open("bagit.txt", "w") as bagit_file:
+            with open_text_file('bagit.txt', 'w') as bagit_file:
                 bagit_file.write(txt)
 
             LOGGER.info("writing bag-info.txt")
@@ -397,7 +401,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
-            with open(manifest_file, 'r') as manifest_file:
+            with open_text_file(manifest_file, 'r', encoding='utf-8-sig') as manifest_file:
                 for line in manifest_file:
                     line = line.strip()
 
@@ -555,9 +559,12 @@ class Bag(object):
         Verify that bagit.txt conforms to specification
         """
         bagit_file_path = os.path.join(self.path, "bagit.txt")
-        with open(bagit_file_path, 'r') as bagit_file:
-            first_line = bagit_file.readline()
-            if first_line.startswith(BOM):
+
+        # Note that we are intentionally opening this file in binary mode so we can confirm
+        # that it does not start with the UTF-8 byte-order-mark
+        with open(bagit_file_path, 'rb') as bagit_file:
+            first_line = bagit_file.read(4)
+            if first_line.startswith(codecs.BOM_UTF8):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
 
 
@@ -665,7 +672,7 @@ def _calculate_file_hashes(full_path, f_hashers):
 
 
 def _load_tag_file(tag_file_name):
-    with open(tag_file_name, 'r') as tag_file:
+    with open_text_file(tag_file_name, 'r', encoding='utf-8-sig') as tag_file:
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
@@ -678,6 +685,7 @@ def _load_tag_file(tag_file_name):
                 tags[name] = [tags[name], value]
             else:
                 tags[name].append(value)
+
         return tags
 
 
@@ -696,10 +704,6 @@ def _parse_tags(tag_file):
     # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
     for num, line in enumerate(tag_file):
-        # If byte-order mark ignore it for now.
-        if num == 0:
-            if line.startswith(BOM):
-                line = line.lstrip(BOM)
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
@@ -725,8 +729,7 @@ def _parse_tags(tag_file):
 
 def _make_tag_file(bag_info_path, bag_info):
     headers = sorted(bag_info.keys())
-
-    with open(bag_info_path, 'w') as f:
+    with open_text_file(bag_info_path, 'w') as f:
         for h in headers:
             if isinstance(bag_info[h], list):
                 for val in bag_info[h]:
@@ -760,7 +763,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     else:
         checksums = [manifest_line(i) for i in _walk(data_dir)]
 
-    with open(manifest_file, 'w') as manifest:
+    with open_text_file(manifest_file, 'w') as manifest:
         num_files = 0
         total_bytes = 0
 
@@ -788,7 +791,7 @@ def _make_tagmanifest_file(alg, bag_dir):
                 m.update(block)
             checksums.append((m.hexdigest(), f))
 
-    with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
+    with open_text_file(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
         for digest, filename in checksums:
             tagmanifest.write('%s %s\n' % (digest, filename))
 
