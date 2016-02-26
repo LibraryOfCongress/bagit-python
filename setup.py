@@ -1,4 +1,5 @@
-from sys import version, exit
+from sys import exit, version
+
 from setuptools import setup
 
 if version < '2.6.0':

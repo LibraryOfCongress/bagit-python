@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import stat
-import bagit
 import codecs
-import shutil
+import datetime
 import hashlib
 import logging
-import datetime
+import os
+import shutil
+import stat
+import sys
 import tempfile
 import unittest
-
 from os.path import join as j
 
+import bagit
 
 # don't let < ERROR clutter up test output
 logging.basicConfig(filename="test.log", level=logging.DEBUG)
