@@ -15,6 +15,9 @@ import tempfile
 import unittest
 from os.path import join as j
 
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+
 import bagit
 import mock
 

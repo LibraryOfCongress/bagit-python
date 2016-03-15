@@ -1,12 +1,9 @@
-from sys import exit, version
-
+import sys
 from setuptools import setup
 
-import bagit
-
-if version < '2.6.0':
-    print("python 2.6 or higher is required")
-    exit(1)
+if sys.version_info < (2, 6):
+    print("Python 2.6 or higher is required")
+    sys.exit(1)
 
 description = \
 """
@@ -26,7 +23,10 @@ try:
 except:
     requirements.append("hashlib")
 
-version = bagit.VERSION
+tests_require = ['mock']
+
+if sys.version_info < (2, 7):
+    tests_require.append('unittest2')
 
 setup(
     name = 'bagit',
@@ -40,7 +40,7 @@ setup(
     platforms = ['POSIX'],
     test_suite = 'test',
     setup_requires=['setuptools_scm'],
-    tests_require=['mock'],
+    tests_require=tests_require,
     install_requires = requirements,
     classifiers = [
         'License :: Public Domain',
