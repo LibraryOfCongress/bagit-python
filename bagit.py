@@ -495,11 +495,11 @@ class Bag(object):
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
             e = FileMissing(path)
-            LOGGER.warning(str(e))
+            LOGGER.warning(force_unicode(e))
             errors.append(e)
         for path in only_on_fs:
             e = UnexpectedFile(path)
-            LOGGER.warning(str(e))
+            LOGGER.warning(force_unicode(e))
             errors.append(e)
 
         # To avoid the overhead of reading the file more than once or loading
@@ -548,7 +548,7 @@ class Bag(object):
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
-                    LOGGER.warning(str(e))
+                    LOGGER.warning(force_unicode(e))
                     errors.append(e)
 
         if errors:
@@ -584,8 +584,8 @@ class BagValidationError(BagError):
 
     def __str__(self):
         if len(self.details) > 0:
-            details = " ; ".join([str(e) for e in self.details])
-            return "%s: %s" % (self.message, details)
+            details = u" ; ".join([force_unicode(e) for e in self.details])
+            return u"%s: %s" % (self.message, details)
         return self.message
 
 
@@ -638,7 +638,7 @@ def _calc_hashes(args):
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError as e:
         f_hashes = dict(
-            (alg, str(e)) for alg in f_hashers.keys()
+            (alg, force_unicode(e)) for alg in f_hashers.keys()
         )
 
     return rel_path, f_hashes, hashes
@@ -662,9 +662,9 @@ def _calculate_file_hashes(full_path, f_hashers):
                 for i in f_hashers.values():
                     i.update(block)
     except IOError as e:
-        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        raise BagValidationError(u"could not read %s: %s" % (full_path, force_unicode(e)))
     except OSError as e:
-        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        raise BagValidationError(u"could not read %s: %s" % (full_path, force_unicode(e)))
 
     return dict(
         (alg, h.hexdigest()) for alg, h in f_hashers.items()
@@ -904,6 +904,19 @@ def _decode_filename(s):
     s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
     return s
 
+
+def force_unicode_py2(s):
+    """Reliably return a Unicode string given a possible unicode or byte string"""
+    if isinstance(s, str):
+        s = s.decode('utf-8')
+    else:
+        return unicode(s)
+
+
+if sys.version_info > (3, 0):
+    force_unicode = str
+else:
+    force_unicode = force_unicode_py2
 
 # following code is used for command line program
 
