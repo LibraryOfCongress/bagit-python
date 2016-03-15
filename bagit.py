@@ -505,8 +505,10 @@ class Bag(object):
         if not available_hashers:
             raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
 
-        def _init_worker():
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
+        if os.name == 'posix':
+            worker_init = posix_multiprocessing_worker_initializer
+        else:
+            worker_init = None
 
         args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in self.entries.items())
 
@@ -515,7 +517,7 @@ class Bag(object):
                 hash_results = [_calc_hashes(i) for i in args]
             else:
                 try:
-                    pool = multiprocessing.Pool(processes if processes else None, _init_worker)
+                    pool = multiprocessing.Pool(processes if processes else None, initializer=worker_init)
                     hash_results = pool.map(_calc_hashes, args)
                 finally:
                     try:
@@ -599,6 +601,11 @@ class FileMissing(ManifestErrorDetail):
 class UnexpectedFile(ManifestErrorDetail):
     def __str__(self):
         return "%s exists on filesystem but is not in manifest" % self.path
+
+
+def posix_multiprocessing_worker_initializer():
+    """Ignore SIGINT in multiprocessing workers on POSIX systems"""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def _calc_hashes(args):
