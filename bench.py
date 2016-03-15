@@ -6,10 +6,12 @@ bagit.validate using 1-8 parallel processes. It will download some images
 from NASA for use in bagging the first time it is run.
 """
 
-import os
 import ftplib
+import os
 import shutil
 import timeit
+
+import bagit
 
 # fetch some images from NASA to bag up
 
@@ -51,7 +53,6 @@ for p in range(1, 9):
 
 # validate a bag with 1-8 processes
 
-import bagit
 shutil.copytree('bench-data', 'bench-data-bag')
 bagit.make_bag('bench-data-bag')
 
