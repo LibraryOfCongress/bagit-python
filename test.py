@@ -285,6 +285,19 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
+    def test_unicode_normalization(self):
+        decomposed = u'\N{LATIN SMALL LETTER I}\N{COMBINING ACUTE ACCENT}'
+        composed = u'\N{LATIN SMALL LETTER I WITH ACUTE}'
+
+        open(j(self.tmpdir, decomposed), 'w').write('')
+        bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
+        manifest_txt = codecs.open(j(self.tmpdir, 'manifest-md5.txt'), 'r', 'utf8').read()
+        os.rename(j(self.tmpdir, 'data', decomposed),
+                  j(self.tmpdir, 'data', composed))
+        # FIXME: use assertIn once we finally drop Python 2.6
+        self.assertTrue(u'd41d8cd98f00b204e9800998ecf8427e  data/%s' % decomposed in manifest_txt)
+        self.assertTrue(self.validate(bag))
+
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
 

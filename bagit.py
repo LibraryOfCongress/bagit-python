@@ -44,6 +44,7 @@ import re
 import signal
 import sys
 import tempfile
+import unicodedata
 from datetime import date
 from functools import partial
 from os import listdir
@@ -878,14 +879,39 @@ def _manifest_line(filename, algorithm='md5'):
 def _encode_filename(s):
     s = s.replace("\r", "%0D")
     s = s.replace("\n", "%0A")
+    s = normalize_unicode(s)
     return s
 
 
 def _decode_filename(s):
     s = re.sub(r"%0D", "\r", s, re.IGNORECASE)
     s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
+    s = normalize_unicode(s)
     return s
 
+# The specification declares filenames to be encoded using UTF-8 but validation can fail and other odd
+# behaviour may occur when a bag is created on one platform and validated on another where Unicode
+# normalization is either enforced by the underlying filesystem:
+# * OS X, using HFS+: NFD
+#   https://developer.apple.com/legacy/library/technotes/tn/tn1150.html#UnicodeSubtleties
+# * Linux: filesystem dependent, usually unmodified input
+# * Windows, NTFS: unmodified input
+#   https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+
+def normalize_unicode_py3(s):
+    return unicodedata.normalize('NFD', s)
+
+
+def normalize_unicode_py2(s):
+    if isinstance(s, str):
+        s = s.decode('utf-8')
+    return unicodedata.normalize('NFD', s)
+
+
+if sys.version_info > (3, 0):
+    normalize_unicode = normalize_unicode_py3
+else:
+    normalize_unicode = normalize_unicode_py2
 
 def force_unicode_py2(s):
     """Reliably return a Unicode string given a possible unicode or byte string"""
