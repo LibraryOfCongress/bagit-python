@@ -584,8 +584,8 @@ class BagValidationError(BagError):
 
     def __str__(self):
         if len(self.details) > 0:
-            details = u" ; ".join([force_unicode(e) for e in self.details])
-            return u"%s: %s" % (self.message, details)
+            details = " ; ".join([force_unicode(e) for e in self.details])
+            return "%s: %s" % (self.message, details)
         return self.message
 
 
@@ -662,9 +662,9 @@ def _calculate_file_hashes(full_path, f_hashers):
                 for i in f_hashers.values():
                     i.update(block)
     except IOError as e:
-        raise BagValidationError(u"could not read %s: %s" % (full_path, force_unicode(e)))
+        raise BagValidationError("could not read %s: %s" % (full_path, force_unicode(e)))
     except OSError as e:
-        raise BagValidationError(u"could not read %s: %s" % (full_path, force_unicode(e)))
+        raise BagValidationError("could not read %s: %s" % (full_path, force_unicode(e)))
 
     return dict(
         (alg, h.hexdigest()) for alg, h in f_hashers.items()
