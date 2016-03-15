@@ -943,7 +943,7 @@ def main():
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                valid = bag.validate(processes=opts.processes, fast=opts.fast)
+                bag.validate(processes=opts.processes, fast=opts.fast)
                 if opts.fast:
                     LOGGER.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
