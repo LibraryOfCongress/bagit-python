@@ -925,7 +925,8 @@ def _configure_logging(opts):
     else:
         logging.basicConfig(level=level, format=log_format)
 
-if __name__ == '__main__':
+
+def main():
     opt_parser = _make_opt_parser()
     opts, args = opt_parser.parse_args()
 
@@ -962,3 +963,7 @@ if __name__ == '__main__':
                 rc = 1
 
         sys.exit(rc)
+
+
+if __name__ == '__main__':
+    main()
