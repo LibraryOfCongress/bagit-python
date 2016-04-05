@@ -847,6 +847,7 @@ def _hasher(algorithm='md5'):
 
 
 def _manifest_line(filename, algorithm='md5'):
+    LOGGER.info("Generating checksum for file %s", filename)
     with open(filename, 'rb') as fh:
         m = _hasher(algorithm)
 
@@ -892,7 +893,7 @@ def _make_opt_parser():
     parser.add_option('--processes', action='store', type="int",
                       dest='processes', default=1,
                       help='parallelize checksums generation and verification')
-    parser.add_option('--log', action='store', dest='log')
+    parser.add_option('--log', action='store', dest='log', help='The name of the log file')
     parser.add_option('--quiet', action='store_true', dest='quiet')
     parser.add_option('--validate', action='store_true', dest='validate')
     parser.add_option('--fast', action='store_true', dest='fast')
