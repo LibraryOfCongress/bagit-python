@@ -633,6 +633,7 @@ def _calculate_file_hashes(full_path, f_hashers):
     Returns a dictionary of (algorithm, hexdigest) values for the provided
     filename
     """
+    LOGGER.info("Verifying checksum for file %s", full_path)
     if not os.path.exists(full_path):
         raise BagValidationError("%s does not exist" % full_path)
 
