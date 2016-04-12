@@ -751,8 +751,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
             num_files += 1
             total_bytes += byte_count
             manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
-        manifest.close()
-        return "%s.%s" % (total_bytes, num_files)
+    return "%s.%s" % (total_bytes, num_files)
 
 
 def _make_tagmanifest_file(alg, bag_dir):
