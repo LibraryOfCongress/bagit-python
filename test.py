@@ -181,7 +181,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(self.validate(bag))
         f = j(self.tmpdir, "IGNOREFILE")
-        with open(f, 'w') as whatever:
+        with open(f, 'w'):
             self.assertTrue(self.validate(bag))
 
     def test_allow_extraneous_dirs_in_base(self):
@@ -206,7 +206,7 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_mixed_case_checksums(self):
         bag = bagit.make_bag(self.tmpdir)
         hashstr = {}
-        #Extract entries only for the payload and ignore
+        # Extract entries only for the payload and ignore
         # entries from the tagmanifest file
         for key in bag.entries.keys():
             if key.startswith('data' + os.sep):
@@ -218,7 +218,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         with open(j(self.tmpdir, "manifest-md5.txt"), "w") as m:
             m.write(manifest)
 
-        #Since manifest-md5.txt file is updated, re-calculate its
+        # Since manifest-md5.txt file is updated, re-calculate its
         # md5 checksum and update it in the tagmanifest-md5.txt file
         hasher = hashlib.new('md5')
         with open(j(self.tmpdir, "manifest-md5.txt"), "r") as manifest:
@@ -300,7 +300,7 @@ class TestBag(unittest.TestCase):
 
     def test_make_bag(self):
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        bagit.make_bag(self.tmpdir, bag_info=info)
 
         # data dir should've been created
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
@@ -340,7 +340,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
 
     def test_make_bag_sha1_manifest(self):
-        bag = bagit.make_bag(self.tmpdir, checksum=['sha1'])
+        bagit.make_bag(self.tmpdir, checksum=['sha1'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha1.txt')))
         with open(j(self.tmpdir, 'manifest-sha1.txt')) as m:
@@ -352,7 +352,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('db49ef009f85a5d0701829f38d29f8cf9c5df2ea  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
 
     def test_make_bag_sha256_manifest(self):
-        bag = bagit.make_bag(self.tmpdir, checksum=['sha256'])
+        bagit.make_bag(self.tmpdir, checksum=['sha256'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha256.txt')))
         with open(j(self.tmpdir, 'manifest-sha256.txt')) as m:
@@ -363,7 +363,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('45d257c93e59ec35187c6a34c8e62e72c3e9cfbb548984d6f6e8deb84bac41f4  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
 
     def test_make_bag_sha512_manifest(self):
-        bag = bagit.make_bag(self.tmpdir, checksum=['sha512'])
+        bagit.make_bag(self.tmpdir, checksum=['sha512'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha512.txt')))
         with open(j(self.tmpdir, 'manifest-sha512.txt')) as m:
@@ -378,7 +378,7 @@ class TestBag(unittest.TestCase):
 
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
 
         # data dir should now contain another data dir
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data', 'data')))
@@ -425,7 +425,7 @@ Tag-File-Character-Encoding: UTF-8
         self.assertRaises(bagit.BagValidationError, bagit.Bag, self.tmpdir)
 
     def test_make_bag_multiprocessing(self):
-        bag = bagit.make_bag(self.tmpdir, processes=2)
+        bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
 
     def test_multiple_meta_values(self):
@@ -437,7 +437,7 @@ Tag-File-Character-Encoding: UTF-8
 
     def test_default_bagging_date(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        bagit.make_bag(self.tmpdir, bag_info=info)
         with open(j(self.tmpdir, 'bag-info.txt')) as bi:
             bag_info_txt = bi.read()
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
@@ -468,7 +468,7 @@ Tag-File-Character-Encoding: UTF-8
         new_perms = perms | stat.S_IWOTH
         self.assertTrue(perms != new_perms)
         os.chmod(self.tmpdir, new_perms)
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         payload_dir = j(self.tmpdir, 'data')
         self.assertEqual(os.stat(payload_dir).st_mode, new_perms)
 
@@ -515,7 +515,7 @@ Tag-File-Character-Encoding: UTF-8
             nf.write('newfile')
         bag.info["foo"] = "bar"
         bag.save()
-        
+
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info["foo"], "bar")
         self.assertFalse(bag.is_valid())

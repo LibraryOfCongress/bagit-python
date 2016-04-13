@@ -247,7 +247,7 @@ class Bag(object):
     def payload_files(self):
         payload_dir = os.path.join(self.path, "data")
 
-        for dirpath, dirnames, filenames in os.walk(payload_dir):
+        for dirpath, _, filenames in os.walk(payload_dir):
             for f in filenames:
                 # Jump through some hoops here to make the payload files come out
                 # looking like data/dir/file, rather than having the entire path.
@@ -344,7 +344,7 @@ class Bag(object):
                     yield (parts[0], parts[1], parts[2])
 
     def files_to_be_fetched(self):
-        for f, size, path in self.fetch_entries():
+        for f, _, _ in self.fetch_entries():
             yield f
 
     def has_oxum(self):
@@ -520,7 +520,7 @@ class Bag(object):
                 finally:
                     try:
                         pool.terminate()
-                    except:
+                    except Exception:
                         # we really don't care about any exception in terminate()
                         pass
         # Any unhandled exceptions are probably fatal
@@ -882,7 +882,7 @@ class BagOptionParser(optparse.OptionParser):
         optparse.OptionParser.__init__(self, *args, **opts)
 
 
-def _bag_info_store(option, opt, value, parser):
+def _bag_info_store(_, opt, value, parser):
     opt = opt.lstrip('--')
     opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
     parser.bag_info[opt_caps] = value
