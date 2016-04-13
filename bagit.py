@@ -374,6 +374,7 @@ class Bag(object):
         return True
 
     def _load_manifests(self):
+        self.entries = {}
         manifests = list(self.manifest_files())
 
         if self.version == "0.97":
