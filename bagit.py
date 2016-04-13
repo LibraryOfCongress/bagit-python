@@ -31,11 +31,11 @@ For more help see:
     % bagit.py --help
 """
 
+import argparse
 import codecs
 import hashlib
 import logging
 import multiprocessing
-import optparse
 import os
 import re
 import signal
@@ -876,42 +876,45 @@ def _decode_filename(s):
 
 # following code is used for command line program
 
-class BagOptionParser(optparse.OptionParser):
-    def __init__(self, *args, **opts):
+class BagArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
         self.bag_info = {}
-        optparse.OptionParser.__init__(self, *args, **opts)
+        argparse.ArgumentParser.__init__(self, *args, **kwargs)
 
 
-def _bag_info_store(_, opt, value, parser):
-    opt = opt.lstrip('--')
-    opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
-    parser.bag_info[opt_caps] = value
+class BagHeaderAction(argparse.Action):
+    def __call__(self, parser, _, values, option_string=None):
+        opt = option_string.lstrip('--')
+        opt_caps = '-'.join([o.capitalize() for o in opt.split('-')])
+        parser.bag_info[opt_caps] = values
 
 
-def _make_opt_parser():
-    parser = BagOptionParser(usage='usage: %prog [options] dir1 dir2 ...')
-    parser.add_option('--processes', action='store', type="int",
-                      dest='processes', default=1,
+def _make_parser():
+    parser = BagArgumentParser()
+    parser.add_argument('--processes', type=int, dest='processes', default=1,
                       help='parallelize checksums generation and verification')
-    parser.add_option('--log', action='store', dest='log', help='The name of the log file')
-    parser.add_option('--quiet', action='store_true', dest='quiet')
-    parser.add_option('--validate', action='store_true', dest='validate')
-    parser.add_option('--fast', action='store_true', dest='fast')
+    parser.add_argument('--log', help='The name of the log file')
+    parser.add_argument('--quiet', action='store_true')
+    parser.add_argument('--validate', action='store_true')
+    parser.add_argument('--fast', action='store_true')
 
     # optionally specify which checksum algorithm(s) to use when creating a bag
     # NOTE: could generate from checksum_algos ?
-    parser.add_option('--md5', action='append_const', dest='checksum', const='md5',
+    parser.add_argument('--md5', action='append_const', dest='checksum', const='md5',
                       help='Generate MD5 manifest when creating a bag (default)')
-    parser.add_option('--sha1', action='append_const', dest='checksum', const='sha1',
+    parser.add_argument('--sha1', action='append_const', dest='checksum', const='sha1',
                       help='Generate SHA1 manifest when creating a bag')
-    parser.add_option('--sha256', action='append_const', dest='checksum', const='sha256',
+    parser.add_argument('--sha256', action='append_const', dest='checksum', const='sha256',
                       help='Generate SHA-256 manifest when creating a bag')
-    parser.add_option('--sha512', action='append_const', dest='checksum', const='sha512',
+    parser.add_argument('--sha512', action='append_const', dest='checksum', const='sha512',
                       help='Generate SHA-512 manifest when creating a bag')
 
     for header in STANDARD_BAG_INFO_HEADERS:
-        parser.add_option('--%s' % header.lower(), type="string",
-                          action='callback', callback=_bag_info_store)
+        parser.add_argument('--%s' % header.lower(), type=str,
+                          action=BagHeaderAction)
+
+    parser.add_argument('directory', nargs='+', help='directory to make a bag from')
+
     return parser
 
 
@@ -928,24 +931,24 @@ def _configure_logging(opts):
 
 
 def main():
-    opt_parser = _make_opt_parser()
-    opts, args = opt_parser.parse_args()
+    parser = _make_parser()
+    args = parser.parse_args()
 
-    if opts.processes < 0:
-        opt_parser.error("number of processes needs to be 0 or more")
+    if args.processes < 0:
+        parser.error("number of processes needs to be 0 or more")
 
-    _configure_logging(opts)
+    _configure_logging(args)
 
     rc = 0
-    for bag_dir in args:
+    for bag_dir in args.directory:
 
         # validate the bag
-        if opts.validate:
+        if args.validate:
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                bag.validate(processes=opts.processes, fast=opts.fast)
-                if opts.fast:
+                bag.validate(processes=args.processes, fast=args.fast)
+                if args.fast:
                     LOGGER.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
                     LOGGER.info("%s is valid", bag_dir)
@@ -956,9 +959,9 @@ def main():
         # make the bag
         else:
             try:
-                make_bag(bag_dir, bag_info=opt_parser.bag_info,
-                         processes=opts.processes,
-                         checksum=opts.checksum)
+                make_bag(bag_dir, bag_info=parser.bag_info,
+                         processes=args.processes,
+                         checksum=args.checksum)
             except Exception as exc:
                 LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1
