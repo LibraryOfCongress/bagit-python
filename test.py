@@ -483,6 +483,16 @@ Tag-File-Character-Encoding: UTF-8
         bag.save(manifests=True)
         self.assertTrue(bag.is_valid())
 
+    def test_save_manifests_deleted_files(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+        bag.save(manifests=True)
+        self.assertTrue(bag.is_valid())
+        os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
+        self.assertRaises(bagit.BagValidationError, bag.validate, bag, fast=False)
+        bag.save(manifests=True)
+        self.assertTrue(bag.is_valid())
+
     def test_save_baginfo(self):
         bag = bagit.make_bag(self.tmpdir)
 
