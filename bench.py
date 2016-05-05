@@ -21,7 +21,7 @@ if not os.path.isdir('bench-data'):
     ftp = ftplib.FTP('nssdcftp.gsfc.nasa.gov')
     ftp.login()
 
-    ftp.cwd('/photo_gallery/hi-res/planetary/mars/')
+    ftp.cwd('/pub/misc/photo_gallery/hi-res/planetary/mars/')
     files = []
     ftp.retrlines('NLST', files.append)
 
