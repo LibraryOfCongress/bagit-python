@@ -21,9 +21,13 @@ if sys.version_info < (2, 7):
 import bagit
 import mock
 
-# don't let < ERROR clutter up test output
-logging.basicConfig(filename="test.log", level=logging.DEBUG)
+logging.basicConfig(filename='test.log', level=logging.DEBUG)
+stderr = logging.StreamHandler()
+stderr.setLevel(logging.WARNING)
+logging.getLogger().addHandler(stderr)
 
+# But we do want any exceptions raised in the logging path to be raised:
+logging.raiseExceptions = True
 
 @mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
 class TestSingleProcessValidation(unittest.TestCase):
@@ -279,10 +283,10 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_validate_optional_tagfile_in_directory(self):
         bag = bagit.make_bag(self.tmpdir)
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
-        
+
         if not os.path.exists(j(tagdir, "tagfolder")):
             os.makedirs(j(tagdir, "tagfolder"))
-        
+
         with open(j(tagdir, "tagfolder", "tagfile"), "w") as tagfile:
             tagfile.write("test")
         relpath = j(tagdir, "tagfolder", "tagfile").replace(self.tmpdir + os.sep, "")

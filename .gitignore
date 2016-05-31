@@ -1,5 +1,4 @@
 *.pyc
-*.log
 bench-data
 build
 dist
