@@ -206,7 +206,9 @@ class Bag(object):
         else:
             raise BagError("Unsupported bag version: %s" % self.version)
 
-        if not self.encoding.lower() == "utf-8":
+        try:
+            codecs.lookup(self.encoding)
+        except codecs.LookupError:
             raise BagValidationError("Unsupported encoding: %s" % self.encoding)
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
