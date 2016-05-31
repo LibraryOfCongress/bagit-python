@@ -219,7 +219,7 @@ class Bag(object):
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path)
+            self.info = _load_tag_file(info_file_path, encoding=self.encoding)
 
         self._load_manifests()
 
@@ -401,7 +401,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
-            with open_text_file(manifest_file, 'r', encoding='utf-8-sig') as manifest_file:
+            with open_text_file(manifest_file, 'r', encoding=self.encoding) as manifest_file:
                 for line in manifest_file:
                     line = line.strip()
 
@@ -671,8 +671,8 @@ def _calculate_file_hashes(full_path, f_hashers):
     )
 
 
-def _load_tag_file(tag_file_name):
-    with open_text_file(tag_file_name, 'r', encoding='utf-8-sig') as tag_file:
+def _load_tag_file(tag_file_name, encoding='utf-8-sig'):
+    with open_text_file(tag_file_name, 'r', encoding=encoding) as tag_file:
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
