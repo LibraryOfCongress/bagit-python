@@ -308,9 +308,13 @@ class TestSingleProcessValidation(unittest.TestCase):
         decomposed = u'\N{LATIN SMALL LETTER I}\N{COMBINING ACUTE ACCENT}'
         composed = u'\N{LATIN SMALL LETTER I WITH ACUTE}'
 
-        open(j(self.tmpdir, decomposed), 'w').write('')
+        with open(j(self.tmpdir, decomposed), 'w') as f:
+            f.write('')
+
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
-        manifest_txt = codecs.open(j(self.tmpdir, 'manifest-md5.txt'), 'r', 'utf8').read()
+
+        manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-md5.txt'))
+
         os.rename(j(self.tmpdir, 'data', decomposed),
                   j(self.tmpdir, 'data', composed))
         # FIXME: use assertIn once we finally drop Python 2.6
