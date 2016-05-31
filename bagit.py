@@ -47,6 +47,7 @@ import tempfile
 import unicodedata
 from datetime import date
 from functools import partial
+from itertools import chain
 from os import listdir
 from os.path import abspath, isdir, isfile, join
 
@@ -488,10 +489,31 @@ class Bag(object):
         # First we'll make sure there's no mismatch between the filesystem
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
+
+        # This is probably the wrong place for this:
+        self.normalized_filename_map = filename_map = {}
+        for i in chain(only_in_manifests, only_on_fs):
+            filename_map[normalize_unicode(i)] = i
+
+        msg = '%s is on the filesystem and in the manifests but has inconsistent Unicode normalization'
+
+        for i in only_in_manifests:
+            j = filename_map.get(i)
+            if j in only_on_fs and os.path.exists(os.path.join(self.path, j)):
+                LOGGER.warning(msg, i)
+                only_in_manifests.remove(j)
+
+        for i in only_on_fs:
+            j = filename_map.get(i)
+            if j in only_in_manifests and os.path.exists(os.path.join(self.path, j)):
+                LOGGER.warning(msg, i)
+                only_on_fs.remove(j)
+
         for path in only_in_manifests:
             e = FileMissing(path)
             LOGGER.warning(force_unicode(e))
             errors.append(e)
+
         for path in only_on_fs:
             e = UnexpectedFile(path)
             LOGGER.warning(force_unicode(e))
