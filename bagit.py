@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# encoding: utf-8
 """
 BagIt is a directory, filename convention for bundling an arbitrary set of
 files with a manifest, checksums, and additional metadata. More about BagIt
@@ -31,6 +31,9 @@ For more help see:
     % bagit.py --help
 """
 
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import argparse
 import codecs
 import hashlib
@@ -41,7 +44,10 @@ import re
 import signal
 import sys
 import tempfile
+import unicodedata
 from datetime import date
+from functools import partial
+from itertools import chain
 from os import listdir
 from os.path import abspath, isdir, isfile, join
 
@@ -68,9 +74,9 @@ STANDARD_BAG_INFO_HEADERS = [
 
 CHECKSUM_ALGOS = ['md5', 'sha1', 'sha256', 'sha512']
 
-BOM = codecs.BOM_UTF8
-if sys.version_info[0] >= 3:
-    BOM = BOM.decode('utf-8')
+#: Convenience function used everywhere we want to open
+#: a file to read text rather than undecoded bytes.
+open_text_file = partial(codecs.open, encoding='utf-8')
 
 
 def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
@@ -130,7 +136,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             LOGGER.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
-            with open("bagit.txt", "w") as bagit_file:
+            with open_text_file('bagit.txt', 'w') as bagit_file:
                 bagit_file.write(txt)
 
             LOGGER.info("writing bag-info.txt")
@@ -202,12 +208,14 @@ class Bag(object):
         else:
             raise BagError("Unsupported bag version: %s" % self.version)
 
-        if not self.encoding.lower() == "utf-8":
+        try:
+            codecs.lookup(self.encoding)
+        except codecs.LookupError:
             raise BagValidationError("Unsupported encoding: %s" % self.encoding)
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
         if os.path.exists(info_file_path):
-            self.info = _load_tag_file(info_file_path)
+            self.info = _load_tag_file(info_file_path, encoding=self.encoding)
 
         self._load_manifests()
 
@@ -389,7 +397,7 @@ class Bag(object):
             alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
             self.algs.append(alg)
 
-            with open(manifest_file, 'r') as manifest_file:
+            with open_text_file(manifest_file, 'r', encoding=self.encoding) as manifest_file:
                 for line in manifest_file:
                     line = line.strip()
 
@@ -481,13 +489,34 @@ class Bag(object):
         # First we'll make sure there's no mismatch between the filesystem
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
+
+        # This is probably the wrong place for this:
+        self.normalized_filename_map = filename_map = {}
+        for i in chain(only_in_manifests, only_on_fs):
+            filename_map[normalize_unicode(i)] = i
+
+        msg = '%s is on the filesystem and in the manifests but has inconsistent Unicode normalization'
+
+        for i in only_in_manifests:
+            j = filename_map.get(i)
+            if j in only_on_fs and os.path.exists(os.path.join(self.path, j)):
+                LOGGER.warning(msg, i)
+                only_in_manifests.remove(j)
+
+        for i in only_on_fs:
+            j = filename_map.get(i)
+            if j in only_in_manifests and os.path.exists(os.path.join(self.path, j)):
+                LOGGER.warning(msg, i)
+                only_on_fs.remove(j)
+
         for path in only_in_manifests:
             e = FileMissing(path)
-            LOGGER.warning(str(e))
+            LOGGER.warning(force_unicode(e))
             errors.append(e)
+
         for path in only_on_fs:
             e = UnexpectedFile(path)
-            LOGGER.warning(str(e))
+            LOGGER.warning(force_unicode(e))
             errors.append(e)
 
         # To avoid the overhead of reading the file more than once or loading
@@ -536,7 +565,7 @@ class Bag(object):
                 stored_hash = hashes[alg]
                 if stored_hash.lower() != computed_hash:
                     e = ChecksumMismatch(rel_path, alg, stored_hash.lower(), computed_hash)
-                    LOGGER.warning(str(e))
+                    LOGGER.warning(force_unicode(e))
                     errors.append(e)
 
         if errors:
@@ -547,9 +576,12 @@ class Bag(object):
         Verify that bagit.txt conforms to specification
         """
         bagit_file_path = os.path.join(self.path, "bagit.txt")
-        with open(bagit_file_path, 'r') as bagit_file:
-            first_line = bagit_file.readline()
-            if first_line.startswith(BOM):
+
+        # Note that we are intentionally opening this file in binary mode so we can confirm
+        # that it does not start with the UTF-8 byte-order-mark
+        with open(bagit_file_path, 'rb') as bagit_file:
+            first_line = bagit_file.read(4)
+            if first_line.startswith(codecs.BOM_UTF8):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
 
 
@@ -569,7 +601,7 @@ class BagValidationError(BagError):
 
     def __str__(self):
         if len(self.details) > 0:
-            details = " ; ".join([str(e) for e in self.details])
+            details = " ; ".join([force_unicode(e) for e in self.details])
             return "%s: %s" % (self.message, details)
         return self.message
 
@@ -623,7 +655,7 @@ def _calc_hashes(args):
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError as e:
         f_hashes = dict(
-            (alg, str(e)) for alg in f_hashers.keys()
+            (alg, force_unicode(e)) for alg in f_hashers.keys()
         )
 
     return rel_path, f_hashes, hashes
@@ -647,17 +679,17 @@ def _calculate_file_hashes(full_path, f_hashers):
                 for i in f_hashers.values():
                     i.update(block)
     except IOError as e:
-        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        raise BagValidationError("could not read %s: %s" % (full_path, force_unicode(e)))
     except OSError as e:
-        raise BagValidationError("could not read %s: %s" % (full_path, str(e)))
+        raise BagValidationError("could not read %s: %s" % (full_path, force_unicode(e)))
 
     return dict(
         (alg, h.hexdigest()) for alg, h in f_hashers.items()
     )
 
 
-def _load_tag_file(tag_file_name):
-    with open(tag_file_name, 'r') as tag_file:
+def _load_tag_file(tag_file_name, encoding='utf-8-sig'):
+    with open_text_file(tag_file_name, 'r', encoding=encoding) as tag_file:
         # Store duplicate tags as list of vals
         # in order of parsing under the same key.
         tags = {}
@@ -670,6 +702,7 @@ def _load_tag_file(tag_file_name):
                 tags[name] = [tags[name], value]
             else:
                 tags[name].append(value)
+
         return tags
 
 
@@ -688,10 +721,6 @@ def _parse_tags(tag_file):
     # Line folding is handled by yielding values only after we encounter
     # the start of a new tag, or if we pass the EOF.
     for num, line in enumerate(tag_file):
-        # If byte-order mark ignore it for now.
-        if num == 0:
-            if line.startswith(BOM):
-                line = line.lstrip(BOM)
         # Skip over any empty or blank lines.
         if len(line) == 0 or line.isspace():
             continue
@@ -717,8 +746,7 @@ def _parse_tags(tag_file):
 
 def _make_tag_file(bag_info_path, bag_info):
     headers = sorted(bag_info.keys())
-
-    with open(bag_info_path, 'w') as f:
+    with open_text_file(bag_info_path, 'w') as f:
         for h in headers:
             if isinstance(bag_info[h], list):
                 for val in bag_info[h]:
@@ -752,7 +780,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     else:
         checksums = [manifest_line(i) for i in _walk(data_dir)]
 
-    with open(manifest_file, 'w') as manifest:
+    with open_text_file(manifest_file, 'w') as manifest:
         num_files = 0
         total_bytes = 0
 
@@ -780,7 +808,7 @@ def _make_tagmanifest_file(alg, bag_dir):
                 m.update(block)
             checksums.append((m.hexdigest(), f))
 
-    with open(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
+    with open_text_file(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
         for digest, filename in checksums:
             tagmanifest.write('%s %s\n' % (digest, filename))
 
@@ -873,14 +901,52 @@ def _manifest_line(filename, algorithm='md5'):
 def _encode_filename(s):
     s = s.replace("\r", "%0D")
     s = s.replace("\n", "%0A")
+    s = normalize_unicode(s)
     return s
 
 
 def _decode_filename(s):
     s = re.sub(r"%0D", "\r", s, re.IGNORECASE)
     s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
+    s = normalize_unicode(s)
     return s
 
+# The specification declares filenames to be encoded using UTF-8 but validation can fail and other odd
+# behaviour may occur when a bag is created on one platform and validated on another where Unicode
+# normalization is either enforced by the underlying filesystem:
+# * OS X, using HFS+: NFD
+#   https://developer.apple.com/legacy/library/technotes/tn/tn1150.html#UnicodeSubtleties
+# * Linux: filesystem dependent, usually unmodified input
+# * Windows, NTFS: unmodified input
+#   https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+
+def normalize_unicode_py3(s):
+    return unicodedata.normalize('NFD', s)
+
+
+def normalize_unicode_py2(s):
+    if isinstance(s, str):
+        s = s.decode('utf-8')
+    return unicodedata.normalize('NFD', s)
+
+
+if sys.version_info > (3, 0):
+    normalize_unicode = normalize_unicode_py3
+else:
+    normalize_unicode = normalize_unicode_py2
+
+def force_unicode_py2(s):
+    """Reliably return a Unicode string given a possible unicode or byte string"""
+    if isinstance(s, str):
+        s = s.decode('utf-8')
+    else:
+        return unicode(s)
+
+
+if sys.version_info > (3, 0):
+    force_unicode = str
+else:
+    force_unicode = force_unicode_py2
 
 # following code is used for command line program
 
