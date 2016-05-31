@@ -21,9 +21,13 @@ if sys.version_info < (2, 7):
 
 import bagit
 
-# don't let < ERROR clutter up test output
-logging.basicConfig(filename="test.log", level=logging.DEBUG)
+logging.basicConfig(filename='test.log', level=logging.DEBUG)
+stdout = logging.StreamHandler(stream=sys.stdout)
+stdout.setLevel(logging.WARNING)
+logging.getLogger().addHandler(stdout)
 
+# But we do want any exceptions raised in the logging path to be raised:
+logging.raiseExceptions = True
 
 def slurp_text_file(filename):
     with bagit.open_text_file(filename) as f:
