@@ -29,6 +29,12 @@ logging.getLogger().addHandler(stderr)
 # But we do want any exceptions raised in the logging path to be raised:
 logging.raiseExceptions = True
 
+
+def slurp_text_file(filename):
+    with bagit.open_text_file(filename) as f:
+        return f.read()
+
+
 @mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
 class TestSingleProcessValidation(unittest.TestCase):
 
@@ -73,8 +79,7 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
-        with open(readme) as r:
-            txt = r.read()
+        txt = slurp_text_file(readme)
         txt = 'A' + txt[1:]
         with open(readme, "w") as r:
             r.write(txt)
@@ -107,8 +112,7 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_validation_error_details(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
-        with open(readme) as r:
-            txt = r.read()
+        txt = slurp_text_file(readme)
         txt = 'A' + txt[1:]
         with open(readme, "w") as r:
             r.write(txt)
@@ -224,18 +228,18 @@ class TestSingleProcessValidation(unittest.TestCase):
             if key.startswith('data' + os.sep):
                 hashstr = bag.entries[key]
         hashstr = next(iter(hashstr.values()))
-        with open(j(self.tmpdir, "manifest-md5.txt"), "r") as m:
-            manifest = m.read()
+        manifest = slurp_text_file(j(self.tmpdir, "manifest-md5.txt"))
+
         manifest = manifest.replace(hashstr, hashstr.upper())
-        with open(j(self.tmpdir, "manifest-md5.txt"), "w") as m:
-            m.write(manifest)
+
+        with open(j(self.tmpdir, "manifest-md5.txt"), "wb") as m:
+            m.write(manifest.encode('utf-8'))
 
         # Since manifest-md5.txt file is updated, re-calculate its
         # md5 checksum and update it in the tagmanifest-md5.txt file
         hasher = hashlib.new('md5')
-        with open(j(self.tmpdir, "manifest-md5.txt"), "r") as manifest:
-            contents = manifest.read().encode('utf-8')
-            hasher.update(contents)
+        contents = slurp_text_file(j(self.tmpdir, "manifest-md5.txt")).encode('utf-8')
+        hasher.update(contents)
         with open(j(self.tmpdir, "tagmanifest-md5.txt"), "r") as tagmanifest:
             tagman_contents = tagmanifest.read()
             tagman_contents = tagman_contents.replace(
@@ -267,8 +271,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
         hasher = hashlib.new("md5")
-        with open(j(tagdir, "tagfile"), "r") as tf:
-            contents = tf.read().encode('utf-8')
+        contents = slurp_text_file(j(tagdir, "tagfile")).encode('utf-8')
         hasher.update(contents)
         with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
             tagman.write(hasher.hexdigest() + " " + relpath + "\n")
@@ -351,15 +354,13 @@ class TestBag(unittest.TestCase):
 
         # check bagit.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bagit.txt')))
-        with open(j(self.tmpdir, 'bagit.txt')) as b:
-            bagit_txt = b.read()
+        bagit_txt = slurp_text_file(j(self.tmpdir, 'bagit.txt'))
         self.assertTrue('BagIt-Version: 0.97' in bagit_txt)
         self.assertTrue('Tag-File-Character-Encoding: UTF-8' in bagit_txt)
 
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-md5.txt')))
-        with open(j(self.tmpdir, 'manifest-md5.txt')) as m:
-            manifest_txt = m.read()
+        manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-md5.txt'))
         self.assertTrue('8e2af7a0143c7b8f4de0b3fc90f27354  data/README' in manifest_txt)
         self.assertTrue('9a2b89e9940fea6ac3a0cc71b0a933a0  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
         self.assertTrue('6172e980c2767c12135e3b9d246af5a3  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
@@ -368,8 +369,7 @@ class TestBag(unittest.TestCase):
 
         # check bag-info.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'bag-info.txt')))
-        with open(j(self.tmpdir, 'bag-info.txt')) as bi:
-            bag_info_txt = bi.read()
+        bag_info_txt = slurp_text_file(j(self.tmpdir, 'bag-info.txt'))
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         self.assertTrue('Bagging-Date: 1970-01-01' in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
@@ -377,8 +377,7 @@ class TestBag(unittest.TestCase):
 
         # check tagmanifest-md5.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
-        with open(j(self.tmpdir, 'tagmanifest-md5.txt')) as tm:
-            tagmanifest_txt = tm.read()
+        tagmanifest_txt = slurp_text_file(j(self.tmpdir, 'tagmanifest-md5.txt'))
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
         self.assertTrue('bfe59ad8af1a227d27c191b4178c399f bag-info.txt' in tagmanifest_txt)
@@ -387,8 +386,7 @@ class TestBag(unittest.TestCase):
         bagit.make_bag(self.tmpdir, checksum=['sha1'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha1.txt')))
-        with open(j(self.tmpdir, 'manifest-sha1.txt')) as m:
-            manifest_txt = m.read()
+        manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-sha1.txt'))
         self.assertTrue('ace19416e605cfb12ab11df4898ca7fd9979ee43  data/README' in manifest_txt)
         self.assertTrue('4c0a3da57374e8db379145f18601b159f3cad44b  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
         self.assertTrue('62095aeddae2f3207cb77c85937e13c51641ef71  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
@@ -399,8 +397,7 @@ class TestBag(unittest.TestCase):
         bagit.make_bag(self.tmpdir, checksum=['sha256'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha256.txt')))
-        with open(j(self.tmpdir, 'manifest-sha256.txt')) as m:
-            manifest_txt = m.read()
+        manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-sha256.txt'))
         self.assertTrue('b6df8058fa818acfd91759edffa27e473f2308d5a6fca1e07a79189b95879953  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
         self.assertTrue('1af90c21e72bb0575ae63877b3c69cfb88284f6e8c7820f2c48dc40a08569da5  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
         self.assertTrue('f065a4ae2bc5d47c6d046c3cba5c8cdfd66b07c96ff3604164e2c31328e41c1a  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
@@ -410,8 +407,7 @@ class TestBag(unittest.TestCase):
         bagit.make_bag(self.tmpdir, checksum=['sha512'])
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha512.txt')))
-        with open(j(self.tmpdir, 'manifest-sha512.txt')) as m:
-            manifest_txt = m.read()
+        manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-sha512.txt'))
         self.assertTrue('51fb9236a23795886cf42d539d580739245dc08f72c3748b60ed8803c9cb0e2accdb91b75dbe7d94a0a461827929d720ef45fe80b825941862fcde4c546a376d  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
         self.assertTrue('627c15be7f9aabc395c8b2e4c3ff0b50fd84b3c217ca38044cde50fd4749621e43e63828201fa66a97975e316033e4748fb7a4a500183b571ecf17715ec3aea3  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
         self.assertTrue('4cb4dafe39b2539536a9cb31d5addf335734cb91e2d2786d212a9b574e094d7619a84ad53f82bd9421478a7994cf9d3f44fea271d542af09d26ce764edbada46  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
@@ -482,8 +478,7 @@ Tag-File-Character-Encoding: UTF-8
     def test_default_bagging_date(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
         bagit.make_bag(self.tmpdir, bag_info=info)
-        with open(j(self.tmpdir, 'bag-info.txt')) as bi:
-            bag_info_txt = bi.read()
+        bag_info_txt = slurp_text_file(j(self.tmpdir, 'bag-info.txt'))
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         today = datetime.date.strftime(datetime.date.today(), "%Y-%m-%d")
         self.assertTrue('Bagging-Date: %s' % today in bag_info_txt)
