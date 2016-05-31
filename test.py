@@ -13,6 +13,7 @@ import stat
 import sys
 import tempfile
 import unittest
+import unicodedata
 from os.path import join as j
 
 if sys.version_info < (2, 7):
@@ -304,7 +305,9 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.chmod(j(self.tmpdir, "data/loc/2478433644_2839c5e8b8_o_d.jpg"), 0)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
-    def test_unicode_normalization(self):
+    def test_unicode_normalization_using_filesystem(self):
+        """Rename a file on the local filesystem to a different normalization form"""
+
         decomposed = u'\N{LATIN SMALL LETTER I}\N{COMBINING ACUTE ACCENT}'
         composed = u'\N{LATIN SMALL LETTER I WITH ACUTE}'
 
@@ -312,14 +315,51 @@ class TestSingleProcessValidation(unittest.TestCase):
             f.write('')
 
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
-
         manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-md5.txt'))
 
         os.rename(j(self.tmpdir, 'data', decomposed),
                   j(self.tmpdir, 'data', composed))
-        # FIXME: use assertIn once we finally drop Python 2.6
-        self.assertTrue(u'd41d8cd98f00b204e9800998ecf8427e  data/%s' % decomposed in manifest_txt)
+
+        self.assertIn(u'd41d8cd98f00b204e9800998ecf8427e  data/%s' % decomposed, manifest_txt)
         self.assertTrue(self.validate(bag))
+
+    def test_unicode_normalization_using_manifest(self):
+        """Test when a the manifest has a different normalization than the filesystem"""
+
+        # Since we cannot test the local filesystem / version control system not to
+        # normalize filenames behind the scenes, we have two test files created and
+        # will rewrite the manifest to use the specified normalized form:
+
+        bagit.make_bag(self.tmpdir, checksum=["md5"])
+
+        original_manifest = slurp_text_file(j(self.tmpdir, 'manifest-md5.txt'))
+        new_manifest = []
+        for line in original_manifest.splitlines():
+            if line.endswith('NFC.txt'):
+                line = unicodedata.normalize('NFC', line)
+            elif line.endswith('NFD.txt'):
+                line = unicodedata.normalize('NFD', line)
+
+            new_manifest.append(line)
+
+        new_manifest = '%s\n' % '\n'.join(new_manifest)
+        new_manifest_bytes = new_manifest.encode('utf-8')
+
+        with open(j(self.tmpdir, 'manifest-md5.txt'), 'wb') as f:
+            f.write(new_manifest_bytes)
+
+        # At this point normal bag validation would fail because the checksums on the tag file do not
+        # match. Fortunately, all we want to do now is compare the lists of filenames to confirm that
+        # everything matches:
+
+        bag = bagit.Bag(self.tmpdir)
+        only_in_manifests, only_on_fs = bag.compare_manifests_with_fs()
+        self.assertEqual([], only_in_manifests)
+        self.assertEqual([], only_on_fs)
+
+        # Sanity check in case something has gone badly awry:
+        self.assertNotEqual([], list(bag.payload_files()))
+        self.assertNotEqual([], list(bag.payload_entries().keys()))
 
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
