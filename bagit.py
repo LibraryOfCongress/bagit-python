@@ -925,6 +925,8 @@ def _make_parser():
                       help='Generate SHA-256 manifest when creating a bag')
     parser.add_argument('--sha512', action='append_const', dest='checksum', const='sha512',
                       help='Generate SHA-512 manifest when creating a bag')
+    parser.add_argument('--no-move-payload', action='store_false', dest='move_payload',
+                      help='Do not move the payload in a subdirectory of the bag directory, assume the payload directory to be already set up')
 
     for header in STANDARD_BAG_INFO_HEADERS:
         parser.add_argument('--%s' % header.lower(), type=str,
@@ -978,7 +980,8 @@ def main():
             try:
                 make_bag(bag_dir, bag_info=parser.bag_info,
                          processes=args.processes,
-                         checksum=args.checksum)
+                         checksum=args.checksum,
+                         move_payload=args.move_payload)
             except Exception as exc:
                 LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1
