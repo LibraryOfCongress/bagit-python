@@ -540,9 +540,7 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual(bag.info['test'], '♡')
 
 class TestBagNoMovePayload(unittest.TestCase):
-    """Same test as test_make_bag (test.TestBag), but with the payload
-    in the right place in the data directory already from the
-    beginning and setting move_payload=False.
+    """Tests for creating a bag with move_payload=False.
     """
 
     def setUp(self):
@@ -594,6 +592,19 @@ class TestBagNoMovePayload(unittest.TestCase):
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
         self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
+
+    def test_make_bag_err_no_payload(self):
+        os.rename(j(self.tmpdir, 'data'), j(self.tmpdir, 'foo'))
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        with self.assertRaises(bagit.BagError):
+            bagit.make_bag(self.tmpdir, bag_info=info, move_payload=False)
+
+    def test_make_bag_err_spurious_files(self):
+        with open(j(self.tmpdir, 'bogus'), 'wt'):
+            pass
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        with self.assertRaises(bagit.BagError):
+            bagit.make_bag(self.tmpdir, bag_info=info, move_payload=False)
 
 if __name__ == '__main__':
     unittest.main()
