@@ -129,9 +129,10 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None,
 
             else:
 
-                if not (os.listdir('.') == ['data'] and
-                        isdir('data') and not islink('data')):
-                    raise BagError("Bag directory must have the payload subdirectory and no other entries.")
+                if not (isdir('data') and not islink('data')):
+                    raise BagError("Bag directory must have the payload subdirectory.")
+                if os.listdir('.') != ['data']:
+                    raise BagError("Bag directory must not have any entries other then the payload subdirectory.")
 
             for c in checksum:
                 LOGGER.info("writing manifest-%s.txt", c)
