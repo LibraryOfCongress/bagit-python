@@ -596,15 +596,13 @@ class TestBagNoMovePayload(unittest.TestCase):
     def test_make_bag_err_no_payload(self):
         os.rename(j(self.tmpdir, 'data'), j(self.tmpdir, 'foo'))
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
-        with self.assertRaises(bagit.BagError):
-            bagit.make_bag(self.tmpdir, bag_info=info, move_payload=False)
+        self.assertRaises(bagit.BagError, bagit.make_bag, self.tmpdir, bag_info=info, move_payload=False)
 
     def test_make_bag_err_spurious_files(self):
         with open(j(self.tmpdir, 'bogus'), 'wt'):
             pass
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
-        with self.assertRaises(bagit.BagError):
-            bagit.make_bag(self.tmpdir, bag_info=info, move_payload=False)
+        self.assertRaises(bagit.BagError, bagit.make_bag, self.tmpdir, bag_info=info, move_payload=False)
 
 if __name__ == '__main__':
     unittest.main()
