@@ -786,12 +786,13 @@ def _make_tagmanifest_file(alg, bag_dir):
 
 def _find_tag_files(bag_dir):
     for dirName, subdirList, fileList in os.walk(bag_dir):
-        if not re.match(join(bag_dir, 'data$'), dirName):
+        if not re.match(r'.*data$', dirName):
             for filename in fileList:
                 if re.match(r'^tagmanifest-.+\.txt$', filename):
                     continue
+                #remove everything up to the bag_dir directory
                 p=join(dirName, filename)
-                yield join(*p.split(os.path.sep)[1:])
+                yield p[len(bag_dir)+1:]
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):

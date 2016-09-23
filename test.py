@@ -271,6 +271,10 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_validate_optional_tagfile_in_directory(self):
         bag = bagit.make_bag(self.tmpdir)
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
+        
+        if not os.path.exists(j(tagdir, "tagfolder")):
+            os.makedirs(j(tagdir, "tagfolder"))
+        
         with open(j(tagdir, "tagfolder", "tagfile"), "w") as tagfile:
             tagfile.write("test")
         relpath = j(tagdir, "tagfolder", "tagfile").replace(self.tmpdir + os.sep, "")
