@@ -267,7 +267,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         os.remove(j(tagdir, "tagfile"))
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
-        
+
     def test_validate_optional_tagfile_in_directory(self):
         bag = bagit.make_bag(self.tmpdir)
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
