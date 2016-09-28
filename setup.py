@@ -2,6 +2,8 @@ from sys import exit, version
 
 from setuptools import setup
 
+import bagit
+
 if version < '2.6.0':
     print("python 2.6 or higher is required")
     exit(1)
@@ -24,10 +26,11 @@ try:
 except:
     requirements.append("hashlib")
 
+version = bagit.VERSION
 
 setup(
     name = 'bagit',
-    version = '1.5.4',
+    version = version,
     url = 'https://libraryofcongress.github.io/bagit-python/',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
