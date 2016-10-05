@@ -268,6 +268,37 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
+    def test_validate_optional_tagfile_in_directory(self):
+        bag = bagit.make_bag(self.tmpdir)
+        tagdir = tempfile.mkdtemp(dir=self.tmpdir)
+        
+        if not os.path.exists(j(tagdir, "tagfolder")):
+            os.makedirs(j(tagdir, "tagfolder"))
+        
+        with open(j(tagdir, "tagfolder", "tagfile"), "w") as tagfile:
+            tagfile.write("test")
+        relpath = j(tagdir, "tagfolder", "tagfile").replace(self.tmpdir + os.sep, "")
+        relpath.replace("\\", "/")
+        with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
+            # Incorrect checksum.
+            tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+
+        hasher = hashlib.new("md5")
+        with open(j(tagdir, "tagfolder", "tagfile"), "r") as tf:
+            contents = tf.read().encode('utf-8')
+        hasher.update(contents)
+        with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
+            tagman.write(hasher.hexdigest() + " " + relpath + "\n")
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(self.validate(bag))
+
+        # Missing tagfile.
+        os.remove(j(tagdir, "tagfolder", "tagfile"))
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+
     def test_sha1_tagfile(self):
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag(self.tmpdir, checksum=['sha1'], bag_info=info)

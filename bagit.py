@@ -766,9 +766,9 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
 def _make_tagmanifest_file(alg, bag_dir):
     tagmanifest_file = join(bag_dir, "tagmanifest-%s.txt" % alg)
     LOGGER.info("writing %s", tagmanifest_file)
-    files = [f for f in listdir(bag_dir) if isfile(join(bag_dir, f))]
+
     checksums = []
-    for f in files:
+    for f in _find_tag_files(bag_dir):
         if re.match(r'^tagmanifest-.+\.txt$', f):
             continue
         with open(join(bag_dir, f), 'rb') as fh:
@@ -784,6 +784,15 @@ def _make_tagmanifest_file(alg, bag_dir):
         for digest, filename in checksums:
             tagmanifest.write('%s %s\n' % (digest, filename))
 
+def _find_tag_files(bag_dir):
+    for dir_name, _, filenames in os.walk(bag_dir):
+        if not re.match(r'.*data$', dir_name):
+            for filename in filenames:
+                if filename.startswith('tagmanifest-'):
+                    continue
+                #remove everything up to the bag_dir directory
+                p = join(dir_name, filename)
+                yield os.path.relpath(p, bag_dir)
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
