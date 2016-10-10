@@ -58,19 +58,6 @@ class TestSingleProcessValidation(unittest.TestCase):
         # check valid with three manifests
         self.assertTrue(self.validate(bag, fast=True))
 
-    def test_validate_flipped_bit(self):
-        bag = bagit.make_bag(self.tmpdir)
-        readme = j(self.tmpdir, "data", "README")
-        with open(readme) as r:
-            txt = r.read()
-        txt = 'A' + txt[1:]
-        with open(readme, "w") as r:
-            r.write(txt)
-        bag = bagit.Bag(self.tmpdir)
-        self.assertRaises(bagit.BagValidationError, self.validate, bag)
-        # fast doesn't catch the flipped bit, since oxsum is the same
-        self.assertTrue(self.validate(bag, fast=True))
-
     def test_validate_fast(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertEqual(self.validate(bag, fast=True), True)
@@ -84,6 +71,44 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
+    def test_validate_completeness(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        os.remove(j(self.tmpdir, "data", "README"))
+        with open(j(self.tmpdir, "data", "extra_file"), "w") as ef:
+            ef.write("foo")
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True, completeness=True)
+
+    def test_validate_completeness_error_details(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        os.rename(j(self.tmpdir, "data", "README"), j(self.tmpdir, "data", "extra_file"))
+
+        bag = bagit.Bag(self.tmpdir)
+        got_exception = False
+        try:
+            self.validate(bag, fast=True, completeness=True)
+        except bagit.BagValidationError as e:
+            got_exception = True
+
+            self.assertTrue("incomplete bag: data/README exists in manifest but not found on filesystem" in str(e))
+            self.assertTrue("data/extra_file exists on filesystem but is not in manifest" in str(e))
+            self.assertEqual(len(e.details), 2)
+
+            error = e.details[0]
+            self.assertEqual(str(error), "data/README exists in manifest but not found on filesystem")
+            self.assertTrue(isinstance(error, bagit.FileMissing))
+            self.assertEqual(error.path, "data/README")
+
+            error = e.details[1]
+            self.assertEqual(str(error), "data/extra_file exists on filesystem but is not in manifest")
+            self.assertTrue(isinstance(error, bagit.UnexpectedFile))
+            self.assertEqual(error.path, "data/extra_file")
+        if not got_exception:
+            self.fail("didn't get BagValidationError")
+
     def test_validate_slow_without_oxum_extra_file(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, "bag-info.txt"))
@@ -92,7 +117,20 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
-    def test_validation_error_details(self):
+    def test_validate_flipped_bit(self):
+        bag = bagit.make_bag(self.tmpdir)
+        readme = j(self.tmpdir, "data", "README")
+        with open(readme) as r:
+            txt = r.read()
+        txt = 'A' + txt[1:]
+        with open(readme, "w") as r:
+            r.write(txt)
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+        # fast doesn't catch the flipped bit, since oxsum is the same
+        self.assertTrue(self.validate(bag, fast=True))
+
+    def test_validate_flipped_bit_error_details(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
         with open(readme) as r:
@@ -101,56 +139,23 @@ class TestSingleProcessValidation(unittest.TestCase):
         with open(readme, "w") as r:
             r.write(txt)
 
-        extra_file = j(self.tmpdir, "data", "extra")
-        with open(extra_file, "w") as ef:
-            ef.write('foo')
-
-        # remove the bag-info.txt which contains the oxum to force a full
-        # check of the manifest
-        os.remove(j(self.tmpdir, "bag-info.txt"))
-
         bag = bagit.Bag(self.tmpdir)
         got_exception = False
         try:
-            self.validate(bag)
+            self.validate(bag, fast = False)
         except bagit.BagValidationError as e:
             got_exception = True
 
-            self.assertTrue("invalid bag: bag-info.txt exists in manifest but not found on filesystem" in str(e))
-            self.assertTrue("data/extra exists on filesystem but is not in manifest" in str(e))
             self.assertTrue("data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)" in str(e))
-            self.assertTrue("bag-info.txt checksum validation failed (alg=md5 expected=aeba487217e50cc9c63ac5f90a0b87cb found=%s does not exist)" % j(self.tmpdir, "bag-info.txt"))
-            self.assertEqual(len(e.details), 4)
+            self.assertEqual(len(e.details), 1)
 
             error = e.details[0]
-            self.assertEqual(str(error), "bag-info.txt exists in manifest but not found on filesystem")
-            self.assertTrue(isinstance(error, bagit.FileMissing))
-            self.assertEqual(error.path, "bag-info.txt")
-
-            error = e.details[1]
-            self.assertEqual(str(error), "data/extra exists on filesystem but is not in manifest")
-            self.assertTrue(isinstance(error, bagit.UnexpectedFile))
-            self.assertEqual(error.path, "data/extra")
-
-            if e.details[2].path == 'data/README':
-                readme_error = e.details[2]
-                baginfo_error = e.details[3]
-            else:
-                readme_error = e.details[3]
-                baginfo_error = e.details[2]
-            self.assertEqual(str(readme_error), "data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
-            self.assertTrue(isinstance(readme_error, bagit.ChecksumMismatch))
-            self.assertEqual(readme_error.algorithm, 'md5')
-            self.assertEqual(readme_error.path, 'data/README')
-            self.assertEqual(readme_error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
-            self.assertEqual(readme_error.found, 'fd41543285d17e7c29cd953f5cf5b955')
-
-            # cannot test full value of baginfo error as it contains random name for tmp dir
-            self.assertTrue("bag-info.txt does not exist" in str(baginfo_error))
-            self.assertTrue(isinstance(baginfo_error, bagit.ChecksumMismatch))
-            self.assertEqual(baginfo_error.algorithm, 'md5')
-            self.assertEqual(baginfo_error.path, 'bag-info.txt')
-            self.assertTrue("bag-info.txt does not exist" in baginfo_error.found)
+            self.assertEqual(str(error), "data/README checksum validation failed (alg=md5 expected=8e2af7a0143c7b8f4de0b3fc90f27354 found=fd41543285d17e7c29cd953f5cf5b955)")
+            self.assertTrue(isinstance(error, bagit.ChecksumMismatch))
+            self.assertEqual(error.algorithm, 'md5')
+            self.assertEqual(error.path, "data/README")
+            self.assertEqual(error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
+            self.assertEqual(error.found, 'fd41543285d17e7c29cd953f5cf5b955')
         if not got_exception:
             self.fail("didn't get BagValidationError")
 
@@ -271,10 +276,10 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_validate_optional_tagfile_in_directory(self):
         bag = bagit.make_bag(self.tmpdir)
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
-        
+
         if not os.path.exists(j(tagdir, "tagfolder")):
             os.makedirs(j(tagdir, "tagfolder"))
-        
+
         with open(j(tagdir, "tagfolder", "tagfile"), "w") as tagfile:
             tagfile.write("test")
         relpath = j(tagdir, "tagfolder", "tagfile").replace(self.tmpdir + os.sep, "")
