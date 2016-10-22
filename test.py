@@ -614,7 +614,7 @@ class TestBagNoMovePayload(unittest.TestCase):
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         self.assertTrue('Bagging-Date: 1970-01-01' in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
-        self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
+        self.assertTrue('Bag-Software-Agent: bagit.py v1.5.4 <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
 
         # check tagmanifest-md5.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
@@ -622,7 +622,7 @@ class TestBagNoMovePayload(unittest.TestCase):
             tagmanifest_txt = tm.read()
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
-        self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
+        self.assertTrue('bfe59ad8af1a227d27c191b4178c399f bag-info.txt' in tagmanifest_txt)
 
     def test_make_bag_err_no_payload(self):
         os.rename(j(self.tmpdir, 'data'), j(self.tmpdir, 'foo'))
