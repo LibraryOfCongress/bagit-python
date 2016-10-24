@@ -572,7 +572,7 @@ Tag-File-Character-Encoding: UTF-8
 
 
 class TestTagFiles(unittest.TestCase):
-    """Test Issue #75: The selection of tag files is thoroughly broken.
+    """Test Issue #75: The selection of tag files is broken.
     """
 
     def setUp(self):
