@@ -570,5 +570,38 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info['test'], '♡')
 
+
+class TestTagFiles(unittest.TestCase):
+    """Test Issue #75: The selection of tag files is broken.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        if os.path.isdir(self.tmpdir):
+            shutil.rmtree(self.tmpdir)
+        self.bagdir = j(self.tmpdir, 'test-data')
+        shutil.copytree('test-data', self.bagdir)
+
+    def tearDown(self):
+        if os.path.isdir(self.tmpdir):
+            shutil.rmtree(self.tmpdir)
+
+    def test_make_bag(self):
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        bagit.make_bag(self.bagdir, bag_info=info)
+
+        # data dir should've been created
+        self.assertTrue(os.path.isdir(j(self.bagdir, 'data')))
+
+        # check tagmanifest-md5.txt
+        self.assertTrue(os.path.isfile(j(self.bagdir, 'tagmanifest-md5.txt')))
+        with open(j(self.bagdir, 'tagmanifest-md5.txt'), 'rt') as tm:
+            tagmanifest_txt = tm.readlines()
+        self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt\n' in tagmanifest_txt)
+        self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt\n' in tagmanifest_txt)
+        self.assertTrue('bfe59ad8af1a227d27c191b4178c399f bag-info.txt\n' in tagmanifest_txt)
+        self.assertEqual(len(tagmanifest_txt), 3)
+
+
 if __name__ == '__main__':
     unittest.main()
