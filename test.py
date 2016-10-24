@@ -268,11 +268,42 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
+    def test_validate_optional_tagfile_in_directory(self):
+        bag = bagit.make_bag(self.tmpdir)
+        tagdir = tempfile.mkdtemp(dir=self.tmpdir)
+        
+        if not os.path.exists(j(tagdir, "tagfolder")):
+            os.makedirs(j(tagdir, "tagfolder"))
+        
+        with open(j(tagdir, "tagfolder", "tagfile"), "w") as tagfile:
+            tagfile.write("test")
+        relpath = j(tagdir, "tagfolder", "tagfile").replace(self.tmpdir + os.sep, "")
+        relpath.replace("\\", "/")
+        with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
+            # Incorrect checksum.
+            tagman.write("8e2af7a0143c7b8f4de0b3fc90f27354 " + relpath + "\n")
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+
+        hasher = hashlib.new("md5")
+        with open(j(tagdir, "tagfolder", "tagfile"), "r") as tf:
+            contents = tf.read().encode('utf-8')
+        hasher.update(contents)
+        with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
+            tagman.write(hasher.hexdigest() + " " + relpath + "\n")
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(self.validate(bag))
+
+        # Missing tagfile.
+        os.remove(j(tagdir, "tagfolder", "tagfile"))
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+
     def test_sha1_tagfile(self):
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
         bag = bagit.make_bag(self.tmpdir, checksum=['sha1'], bag_info=info)
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-sha1.txt')))
-        self.assertEqual(bag.entries['bag-info.txt']['sha1'], 'd7f086508df433e5d7464b5a3835d5501df14404')
+        self.assertEqual(bag.entries['bag-info.txt']['sha1'], 'ec70407d895d4e550bc0a7ea40a82ad653d136e5')
 
     def test_validate_unreadable_file(self):
         bag = bagit.make_bag(self.tmpdir, checksum=["md5"])
@@ -329,7 +360,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
         self.assertTrue('Bagging-Date: 1970-01-01' in bag_info_txt)
         self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
-        self.assertTrue('Bag-Software-Agent: bagit.py <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
+        self.assertTrue('Bag-Software-Agent: bagit.py v1.5.4 <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
 
         # check tagmanifest-md5.txt
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
@@ -337,7 +368,7 @@ class TestBag(unittest.TestCase):
             tagmanifest_txt = tm.read()
         self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
         self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
-        self.assertTrue('6a5090e27cb29d5dda8a0142fbbdf37e bag-info.txt' in tagmanifest_txt)
+        self.assertTrue('bfe59ad8af1a227d27c191b4178c399f bag-info.txt' in tagmanifest_txt)
 
     def test_make_bag_sha1_manifest(self):
         bagit.make_bag(self.tmpdir, checksum=['sha1'])
