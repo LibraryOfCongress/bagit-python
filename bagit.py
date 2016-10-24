@@ -43,7 +43,7 @@ import sys
 import tempfile
 from datetime import date
 from os import listdir
-from os.path import abspath, isdir, isfile, join
+from os.path import abspath, isdir, isfile, islink, join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +75,8 @@ if sys.version_info[0] >= 3:
     BOM = BOM.decode('utf-8')
 
 
-def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
+def make_bag(bag_dir, bag_info=None, processes=1, checksum=None, 
+             move_payload=True):
     """
     Convert a given directory into a bag. You can pass in arbitrary
     key/value pairs to put into the bag-info.txt metadata file as
@@ -107,24 +108,33 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
                 LOGGER.error("The following files do not have read permissions: \n%s", unreadable_files)
             raise BagError("Read permissions are required to calculate file fixities.")
         else:
-            LOGGER.info("creating data dir")
+            if move_payload:
 
-            cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=cwd)
+                LOGGER.info("creating data dir")
 
-            for f in os.listdir('.'):
-                if os.path.abspath(f) == temp_data:
-                    continue
-                new_f = os.path.join(temp_data, f)
-                LOGGER.info("moving %s to %s", f, new_f)
-                os.rename(f, new_f)
+                cwd = os.getcwd()
+                temp_data = tempfile.mkdtemp(dir=cwd)
 
-            LOGGER.info("moving %s to %s", temp_data, 'data')
-            os.rename(temp_data, 'data')
+                for f in os.listdir('.'):
+                    if os.path.abspath(f) == temp_data:
+                        continue
+                    new_f = os.path.join(temp_data, f)
+                    LOGGER.info("moving %s to %s", f, new_f)
+                    os.rename(f, new_f)
 
-            # permissions for the payload directory should match those of the
-            # original directory
-            os.chmod('data', os.stat(cwd).st_mode)
+                LOGGER.info("moving %s to %s", temp_data, 'data')
+                os.rename(temp_data, 'data')
+
+                # permissions for the payload directory should match
+                # those of the original directory
+                os.chmod('data', os.stat(cwd).st_mode)
+
+            else:
+
+                if not (isdir('data') and not islink('data')):
+                    raise BagError("Bag directory must have the payload subdirectory.")
+                if os.listdir('.') != ['data']:
+                    raise BagError("Bag directory must not have any entries other then the payload subdirectory.")
 
             for c in checksum:
                 LOGGER.info("writing manifest-%s.txt", c)
@@ -930,6 +940,8 @@ def _make_parser():
                       help='Generate SHA-256 manifest when creating a bag')
     parser.add_argument('--sha512', action='append_const', dest='checksum', const='sha512',
                       help='Generate SHA-512 manifest when creating a bag')
+    parser.add_argument('--no-move-payload', action='store_false', dest='move_payload',
+                      help='Do not move the payload in a subdirectory of the bag directory, assume the payload directory to be already set up')
 
     for header in STANDARD_BAG_INFO_HEADERS:
         parser.add_argument('--%s' % header.lower(), type=str,
@@ -983,7 +995,8 @@ def main():
             try:
                 make_bag(bag_dir, bag_info=parser.bag_info,
                          processes=args.processes,
-                         checksum=args.checksum)
+                         checksum=args.checksum,
+                         move_payload=args.move_payload)
             except Exception as exc:
                 LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1

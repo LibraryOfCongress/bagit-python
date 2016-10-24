@@ -570,5 +570,70 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info['test'], '♡')
 
+class TestBagNoMovePayload(unittest.TestCase):
+    """Tests for creating a bag with move_payload=False.
+    """
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        datadir = os.path.join(self.tmpdir, 'data')
+        shutil.copytree('test-data', datadir)
+
+    def tearDown(self):
+        if os.path.isdir(self.tmpdir):
+            shutil.rmtree(self.tmpdir)
+
+    def test_make_bag(self):
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        bagit.make_bag(self.tmpdir, bag_info=info, move_payload=False)
+
+        # data dir should've been created
+        self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
+
+        # check bagit.txt
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'bagit.txt')))
+        with open(j(self.tmpdir, 'bagit.txt')) as b:
+            bagit_txt = b.read()
+        self.assertTrue('BagIt-Version: 0.97' in bagit_txt)
+        self.assertTrue('Tag-File-Character-Encoding: UTF-8' in bagit_txt)
+
+        # check manifest
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-md5.txt')))
+        with open(j(self.tmpdir, 'manifest-md5.txt')) as m:
+            manifest_txt = m.read()
+        self.assertTrue('8e2af7a0143c7b8f4de0b3fc90f27354  data/README' in manifest_txt)
+        self.assertTrue('9a2b89e9940fea6ac3a0cc71b0a933a0  data/loc/2478433644_2839c5e8b8_o_d.jpg' in manifest_txt)
+        self.assertTrue('6172e980c2767c12135e3b9d246af5a3  data/loc/3314493806_6f1db86d66_o_d.jpg' in manifest_txt)
+        self.assertTrue('38a84cd1c41de793a0bccff6f3ec8ad0  data/si/2584174182_ffd5c24905_b_d.jpg' in manifest_txt)
+        self.assertTrue('5580eaa31ad1549739de12df819e9af8  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
+
+        # check bag-info.txt
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'bag-info.txt')))
+        with open(j(self.tmpdir, 'bag-info.txt')) as bi:
+            bag_info_txt = bi.read()
+        self.assertTrue('Contact-Email: ehs@pobox.com' in bag_info_txt)
+        self.assertTrue('Bagging-Date: 1970-01-01' in bag_info_txt)
+        self.assertTrue('Payload-Oxum: 991765.5' in bag_info_txt)
+        self.assertTrue('Bag-Software-Agent: bagit.py v1.5.4 <http://github.com/libraryofcongress/bagit-python>' in bag_info_txt)
+
+        # check tagmanifest-md5.txt
+        self.assertTrue(os.path.isfile(j(self.tmpdir, 'tagmanifest-md5.txt')))
+        with open(j(self.tmpdir, 'tagmanifest-md5.txt')) as tm:
+            tagmanifest_txt = tm.read()
+        self.assertTrue('9e5ad981e0d29adc278f6a294b8c2aca bagit.txt' in tagmanifest_txt)
+        self.assertTrue('a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt' in tagmanifest_txt)
+        self.assertTrue('bfe59ad8af1a227d27c191b4178c399f bag-info.txt' in tagmanifest_txt)
+
+    def test_make_bag_err_no_payload(self):
+        os.rename(j(self.tmpdir, 'data'), j(self.tmpdir, 'foo'))
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        self.assertRaises(bagit.BagError, bagit.make_bag, self.tmpdir, bag_info=info, move_payload=False)
+
+    def test_make_bag_err_spurious_files(self):
+        with open(j(self.tmpdir, 'bogus'), 'wt'):
+            pass
+        info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
+        self.assertRaises(bagit.BagError, bagit.make_bag, self.tmpdir, bag_info=info, move_payload=False)
+
 if __name__ == '__main__':
     unittest.main()
