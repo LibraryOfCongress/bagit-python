@@ -959,6 +959,10 @@ def _configure_logging(opts):
 
 
 def main():
+    if '--version' in sys.argv:
+        print('bagit-python version %s' % VERSION)
+        sys.exit(0)
+
     parser = _make_parser()
     args = parser.parse_args()
 
