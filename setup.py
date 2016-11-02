@@ -40,6 +40,7 @@ setup(
     platforms = ['POSIX'],
     test_suite = 'test',
     setup_requires=['setuptools_scm'],
+    tests_require=['mock'],
     install_requires = requirements,
     classifiers = [
         'License :: Public Domain',
