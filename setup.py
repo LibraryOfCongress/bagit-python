@@ -30,7 +30,7 @@ version = bagit.VERSION
 
 setup(
     name = 'bagit',
-    version = version,
+    use_scm_version=True,
     url = 'https://libraryofcongress.github.io/bagit-python/',
     author = 'Ed Summers',
     author_email = 'ehs@pobox.com',
@@ -39,6 +39,8 @@ setup(
     description = description,
     platforms = ['POSIX'],
     test_suite = 'test',
+    setup_requires=['setuptools_scm'],
+    tests_require=['mock'],
     install_requires = requirements,
     classifiers = [
         'License :: Public Domain',

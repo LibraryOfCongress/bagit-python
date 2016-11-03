@@ -13,11 +13,13 @@ import unittest
 from os.path import join as j
 
 import bagit
+import mock
 
 # don't let < ERROR clutter up test output
 logging.basicConfig(filename="test.log", level=logging.DEBUG)
 
 
+@mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
 class TestSingleProcessValidation(unittest.TestCase):
 
     def setUp(self):
@@ -317,6 +319,7 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
         return super(TestMultiprocessValidation, self).validate(bag, *args, processes=2, **kwargs)
 
 
+@mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
 class TestBag(unittest.TestCase):
 
     def setUp(self):

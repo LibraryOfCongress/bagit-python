@@ -44,10 +44,16 @@ import tempfile
 from datetime import date
 from os import listdir
 from os.path import abspath, isdir, isfile, join
+from pkg_resources import DistributionNotFound, get_distribution
 
-LOGGER = logging.getLogger(__name__)
+MODULE_NAME = 'bagit' if __name__ == '__main__' else __name__
 
-VERSION = '1.5.4'
+LOGGER = logging.getLogger(MODULE_NAME)
+
+try:
+    VERSION = get_distribution(MODULE_NAME).version
+except DistributionNotFound:
+    VERSION = '0.0.dev0'
 
 # standard bag-info.txt metadata
 STANDARD_BAG_INFO_HEADERS = [
@@ -912,7 +918,7 @@ class BagHeaderAction(argparse.Action):
 
 
 def _make_parser():
-    parser = BagArgumentParser()
+    parser = BagArgumentParser(description='bagit-python version %s' % VERSION)
     parser.add_argument('--processes', type=int, dest='processes', default=1,
                       help='parallelize checksums generation and verification')
     parser.add_argument('--log', help='The name of the log file')
@@ -953,6 +959,10 @@ def _configure_logging(opts):
 
 
 def main():
+    if '--version' in sys.argv:
+        print('bagit-python version %s' % VERSION)
+        sys.exit(0)
+
     parser = _make_parser()
     args = parser.parse_args()
 
