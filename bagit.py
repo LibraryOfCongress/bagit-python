@@ -358,7 +358,7 @@ class Bag(object):
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
-    def validate(self, processes=1, fast=False):
+    def validate(self, processes=1, fast=False, completeness=False):
         """Checks the structure and contents are valid. If you supply
         the parameter fast=True the Payload-Oxum (if present) will
         be used to check that the payload files are present and
@@ -368,7 +368,7 @@ class Bag(object):
         """
         self._validate_structure()
         self._validate_bagittxt()
-        self._validate_contents(processes=processes, fast=fast)
+        self._validate_contents(processes=processes, fast=fast, completeness=completeness)
         return True
 
     def is_valid(self, fast=False):
@@ -444,11 +444,14 @@ class Bag(object):
         if "bagit.txt" not in os.listdir(self.path):
             raise BagValidationError("Missing bagit.txt")
 
-    def _validate_contents(self, processes=1, fast=False):
+    def _validate_contents(self, processes=1, fast=False, completeness=False):
         if fast and not self.has_oxum():
             raise BagValidationError("cannot validate Bag with fast=True if Bag lacks a Payload-Oxum")
         self._validate_oxum()    # Fast
+        if fast and completeness:
+            self._validate_completeness()
         if not fast:
+            self._validate_completeness()
             self._validate_entries(processes)  # *SLOW*
 
     def _validate_oxum(self):
@@ -480,13 +483,13 @@ class Bag(object):
         if file_count != total_files or byte_count != total_bytes:
             raise BagValidationError("Oxum error.  Found %s files and %s bytes on disk; expected %s files and %s bytes." % (total_files, total_bytes, file_count, byte_count))
 
-    def _validate_entries(self, processes):
+    def _validate_completeness(self):
         """
-        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        Verify that the actual file contents match the files recorded in the manifest files
         """
         errors = list()
 
-        # First we'll make sure there's no mismatch between the filesystem
+        # We'll make sure there's no mismatch between the filesystem
         # and the list of files in the manifest(s)
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
@@ -497,6 +500,15 @@ class Bag(object):
             e = UnexpectedFile(path)
             LOGGER.warning(str(e))
             errors.append(e)
+
+        if errors:
+            raise BagValidationError("incomplete bag", errors)
+
+    def _validate_entries(self, processes):
+        """
+        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        """
+        errors = list()
 
         # To avoid the overhead of reading the file more than once or loading
         # potentially massive files into memory we'll create a dictionary of
@@ -924,6 +936,7 @@ def _make_parser():
     parser.add_argument('--log', help='The name of the log file')
     parser.add_argument('--quiet', action='store_true')
     parser.add_argument('--validate', action='store_true')
+    parser.add_argument('--completeness', action='store_true')
     parser.add_argument('--fast', action='store_true')
 
     # optionally specify which checksum algorithm(s) to use when creating a bag
@@ -979,7 +992,7 @@ def main():
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                bag.validate(processes=args.processes, fast=args.fast)
+                bag.validate(processes=args.processes, fast=args.fast, completeness=args.completeness)
                 if args.fast:
                     LOGGER.info("%s valid according to Payload-Oxum", bag_dir)
                 else:
