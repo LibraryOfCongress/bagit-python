@@ -46,7 +46,6 @@ import sys
 import tempfile
 from datetime import date
 from functools import partial
-from os import listdir
 from os.path import abspath, isdir, isfile, join
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -806,9 +805,10 @@ def _find_tag_files(bag_dir):
                 for filename in filenames:
                     if filename.startswith('tagmanifest-'):
                         continue
-                    #remove everything up to the bag_dir directory
+                    # remove everything up to the bag_dir directory
                     p = join(dir_name, filename)
                     yield os.path.relpath(p, bag_dir)
+
 
 def _walk(data_dir):
     for dirpath, dirnames, filenames in os.walk(data_dir):
@@ -922,6 +922,7 @@ else:
 
 # following code is used for command line program
 
+
 class BagArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
         self.bag_info = {}
@@ -938,7 +939,7 @@ class BagHeaderAction(argparse.Action):
 def _make_parser():
     parser = BagArgumentParser(description='bagit-python version %s' % VERSION)
     parser.add_argument('--processes', type=int, dest='processes', default=1,
-                      help='parallelize checksums generation and verification')
+                        help='parallelize checksums generation and verification')
     parser.add_argument('--log', help='The name of the log file')
     parser.add_argument('--quiet', action='store_true')
     parser.add_argument('--validate', action='store_true')
@@ -947,17 +948,16 @@ def _make_parser():
     # optionally specify which checksum algorithm(s) to use when creating a bag
     # NOTE: could generate from checksum_algos ?
     parser.add_argument('--md5', action='append_const', dest='checksum', const='md5',
-                      help='Generate MD5 manifest when creating a bag (default)')
+                        help='Generate MD5 manifest when creating a bag (default)')
     parser.add_argument('--sha1', action='append_const', dest='checksum', const='sha1',
-                      help='Generate SHA1 manifest when creating a bag')
+                        help='Generate SHA1 manifest when creating a bag')
     parser.add_argument('--sha256', action='append_const', dest='checksum', const='sha256',
-                      help='Generate SHA-256 manifest when creating a bag')
+                        help='Generate SHA-256 manifest when creating a bag')
     parser.add_argument('--sha512', action='append_const', dest='checksum', const='sha512',
-                      help='Generate SHA-512 manifest when creating a bag')
+                        help='Generate SHA-512 manifest when creating a bag')
 
     for header in STANDARD_BAG_INFO_HEADERS:
-        parser.add_argument('--%s' % header.lower(), type=str,
-                          action=BagHeaderAction)
+        parser.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
 
     parser.add_argument('directory', nargs='+', help='directory to make a bag from')
 

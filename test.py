@@ -15,11 +15,11 @@ import tempfile
 import unittest
 from os.path import join as j
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-
 import bagit
 import mock
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
 
 logging.basicConfig(filename='test.log', level=logging.DEBUG)
 stderr = logging.StreamHandler()
@@ -433,8 +433,8 @@ class TestBag(unittest.TestCase):
             'data/si/4011399822_65987a4806_b_d.jpg',
             'data/loc/2478433644_2839c5e8b8_o_d.jpg',
             'data/loc/3314493806_6f1db86d66_o_d.jpg']))
-        self.assertEqual(list(bag.manifest_files()), ['%s/manifest-md5.txt' %
-            self.tmpdir])
+        self.assertEqual(list(bag.manifest_files()),
+                         ['%s/manifest-md5.txt' % self.tmpdir])
 
     def test_has_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
