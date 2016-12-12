@@ -1,5 +1,7 @@
 FROM python:3.5
-RUN mkdir /bagit
+RUN useradd --user-group bagit-tester
+RUN install -d -o bagit-tester /bagit
+USER bagit-tester
 WORKDIR /bagit
 COPY .git/ /bagit/.git/
 COPY *.py /bagit/
