@@ -137,7 +137,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
 
             for c in checksum:
                 LOGGER.info("writing manifest-%s.txt", c)
-                Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, c)
+                Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, algorithm=c, encoding='utf-8')
 
             LOGGER.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -157,7 +157,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
             _make_tag_file('bag-info.txt', bag_info)
 
             for c in checksum:
-                _make_tagmanifest_file(c, bag_dir)
+                _make_tagmanifest_file(c, bag_dir, encoding='utf-8')
     except Exception:
         LOGGER.exception("An error occurred creating the bag")
         raise
@@ -313,7 +313,9 @@ class Bag(object):
             self.algs = list(set(self.algs))  # Dedupe
             for alg in self.algs:
                 LOGGER.info('updating manifest-%s.txt', alg)
-                oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes, alg)
+                oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes,
+                                      algorithm=alg,
+                                      encoding=self.encoding)
 
             # Update Payload-Oxum
             LOGGER.info('updating %s', self.tag_file_name)
@@ -324,7 +326,7 @@ class Bag(object):
 
         # Update tag-manifest for changes to manifest & bag-info files
         for alg in self.algs:
-            _make_tagmanifest_file(alg, self.path)
+            _make_tagmanifest_file(alg, self.path, encoding=self.encoding)
 
         # Reload the manifests
         self._load_manifests()
@@ -742,7 +744,7 @@ def _make_tag_file(bag_info_path, bag_info):
                 f.write("%s: %s\n" % (h, txt))
 
 
-def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
+def _make_manifest(manifest_file, data_dir, processes, algorithm='md5', encoding='utf-8'):
     LOGGER.info('writing manifest with %s processes', processes)
 
     if algorithm == 'md5':
@@ -764,7 +766,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     else:
         checksums = [manifest_line(i) for i in _walk(data_dir)]
 
-    with open_text_file(manifest_file, 'w') as manifest:
+    with open_text_file(manifest_file, 'w', encoding=encoding) as manifest:
         num_files = 0
         total_bytes = 0
 
@@ -775,7 +777,7 @@ def _make_manifest(manifest_file, data_dir, processes, algorithm='md5'):
     return "%s.%s" % (total_bytes, num_files)
 
 
-def _make_tagmanifest_file(alg, bag_dir):
+def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
     tagmanifest_file = join(bag_dir, "tagmanifest-%s.txt" % alg)
     LOGGER.info("writing %s", tagmanifest_file)
 
@@ -792,9 +794,11 @@ def _make_tagmanifest_file(alg, bag_dir):
                 m.update(block)
             checksums.append((m.hexdigest(), f))
 
-    with open_text_file(join(bag_dir, tagmanifest_file), 'w') as tagmanifest:
+    with open_text_file(join(bag_dir, tagmanifest_file),
+                        mode='w', encoding=encoding) as tagmanifest:
         for digest, filename in checksums:
             tagmanifest.write('%s %s\n' % (digest, filename))
+
 
 def _find_tag_files(bag_dir):
     for dir in os.listdir(bag_dir):
