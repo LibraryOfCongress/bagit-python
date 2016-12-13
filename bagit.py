@@ -44,6 +44,7 @@ import re
 import signal
 import sys
 import tempfile
+import unicodedata
 import warnings
 from datetime import date
 from functools import partial
@@ -190,8 +191,23 @@ class Bag(object):
         super(Bag, self).__init__()
         self.tags = {}
         self.info = {}
+        #: Dictionary of manifest entries and the checksum values for each
+        #: algorithm:
         self.entries = {}
-        self.algs = []
+
+        # To reliably handle Unicode normalization differences, we maintain
+        # lookup dictionaries in both directions for the filenames read from
+        # the filesystem and the manifests so we can handle cases where the
+        # normalization form changed between the bag being created and read.
+        # See https://github.com/LibraryOfCongress/bagit-python/issues/51.
+
+        #: maps Unicode-normalized values to the raw value from the filesystem
+        self.normalized_filesystem_names = {}
+
+        #: maps Unicode-normalized values to the raw value in the manifest
+        self.normalized_manifest_names = {}
+
+        self.algs = []  # TODO: Refactor to use the full word “algorithms”
         self.tag_file_name = None
         self.path = abspath(path)
         if path:
@@ -250,14 +266,31 @@ class Bag(object):
                 yield f
 
     def compare_manifests_with_fs(self):
-        files_on_fs = set(self.payload_files())
-        files_in_manifest = set(self.payload_entries().keys())
+        """
+        Compare the filenames in the manifests to the filenames present on the
+        local filesystem and returns two lists of the files which are only
+        present in the manifests and the files which are only present on the
+        local filesystem, respectively.
+        """
+
+        # We compare the filenames after Unicode normalization so we can
+        # reliably detect normalization changes after bag creation:
+        files_on_fs = set(normalize_unicode(i) for i in self.payload_files())
+        files_in_manifest = set(normalize_unicode(i) for i in self.payload_entries().keys())
 
         if self.version == "0.97":
-            files_in_manifest = files_in_manifest | set(self.missing_optional_tagfiles())
+            files_in_manifest.update(self.missing_optional_tagfiles())
 
-        return (list(files_in_manifest - files_on_fs),
-                list(files_on_fs - files_in_manifest))
+        only_on_fs = list()
+        only_in_manifest = list()
+
+        for i in files_on_fs.difference(files_in_manifest):
+            only_on_fs.append(self.normalized_filesystem_names[i])
+
+        for i in files_in_manifest.difference(files_on_fs):
+            only_in_manifest.append(self.normalized_manifest_names[i])
+
+        return only_in_manifest, only_on_fs
 
     def compare_fetch_with_fs(self):
         """Compares the fetch entries with the files actually
@@ -282,9 +315,12 @@ class Bag(object):
                 normalized_f = os.path.normpath(f)
                 rel_path = os.path.relpath(os.path.join(dirpath, normalized_f),
                                            start=self.path)
+
+                self.normalized_filesystem_names[normalize_unicode(rel_path)] = rel_path
                 yield rel_path
 
     def payload_entries(self):
+        """Return a dictionary of items """
         # Don't use dict comprehension (compatibility with Python < 2.7)
         return dict((key, value) for (key, value) in self.entries.items()
                     if key.startswith("data" + os.sep))
@@ -398,10 +434,12 @@ class Bag(object):
         """Returns validation success or failure as boolean.
         Optional fast parameter passed directly to validate().
         """
+
         try:
             self.validate(fast=fast)
         except BagError:
             return False
+
         return True
 
     def _load_manifests(self):
@@ -444,6 +482,10 @@ class Bag(object):
                     else:
                         self.entries[entry_path] = {}
                         self.entries[entry_path][alg] = entry_hash
+
+        self.normalized_manifest_names.update(
+            (normalize_unicode(i), i) for i in self.entries.keys()
+        )
 
     def _validate_structure(self):
         """Checks the structure of the bag, determining if it conforms to the
@@ -542,7 +584,10 @@ class Bag(object):
         else:
             worker_init = None
 
-        args = ((self.path, rel_path, hashes, available_hashers) for rel_path, hashes in self.entries.items())
+        args = ((self.path,
+                 self.normalized_filesystem_names.get(rel_path, rel_path),
+                 hashes,
+                 available_hashers) for rel_path, hashes in self.entries.items())
 
         try:
             if processes == 1:
@@ -638,9 +683,85 @@ class UnexpectedFile(ManifestErrorDetail):
         return "%s exists on filesystem but is not in manifest" % self.path
 
 
+class FileNormalizationConflict(BagError):
+    """
+    Exception raised when two files differ only in normalization and thus
+    are not safely portable
+    """
+
+    def __init__(self, file_a, file_b):
+        super(FileNormalizationConflict, self).__init__()
+
+        self.file_a = file_a
+        self.file_b = file_b
+
+    def __str__(self):
+        return 'Unicode normalization conflict for file "%s" and "%s"' % (self.file_a, self.file_b)
+
+
 def posix_multiprocessing_worker_initializer():
     """Ignore SIGINT in multiprocessing workers on POSIX systems"""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
+# The Unicode normalization form used here doesn't matter – all we care about
+# is consistency since the input value will be preserved:
+
+def normalize_unicode_py3(s):
+    return unicodedata.normalize('NFC', s)
+
+
+def normalize_unicode_py2(s):
+    if isinstance(s, str):
+        s = s.decode('utf-8')
+    return unicodedata.normalize('NFC', s)
+
+
+if sys.version_info > (3, 0):
+    normalize_unicode = normalize_unicode_py3
+else:
+    normalize_unicode = normalize_unicode_py2
+
+
+def build_unicode_normalized_lookup_dict(filenames):
+    """
+    Return a dictionary mapping unicode-normalized filenames to as-encoded
+    values to efficiently detect conflicts between the filesystem and manifests.
+
+    This is necessary because some filesystems and utilities may automatically
+    apply a different Unicode normalization form to filenames than was applied
+    when the bag was originally created.
+
+    The best known example of this is when a bag is created using a
+    normalization form other than NFD and then transferred to a Mac where the
+    HFS+ filesystem will transparently normalize filenames to a variant of NFD
+    for every call:
+
+    https://developer.apple.com/legacy/library/technotes/tn/tn1150.html#UnicodeSubtleties
+
+    Windows is documented as storing filenames exactly as provided:
+
+    https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+
+    Linux performs no normalization in the kernel but it is technically
+    valid for a filesystem to perform normalization, such as when an HFS+
+    volume is mounted.
+
+    See http://www.unicode.org/reports/tr15/ for a full discussion of
+    equivalence and normalization in Unicode.
+    """
+
+    output = dict()
+
+    for filename in filenames:
+        normalized_filename = normalize_unicode(filename)
+        if normalized_filename in output:
+            raise FileNormalizationConflict(filename,
+                                            output[normalized_filename])
+        else:
+            output[normalized_filename] = filename
+
+    return output
 
 
 def _calc_hashes(args):
