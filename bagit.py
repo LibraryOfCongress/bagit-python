@@ -271,14 +271,17 @@ class Bag(object):
         return list(files_in_fetch - files_on_fs)
 
     def payload_files(self):
+        """Returns a list of filenames which are present on the local filesystem"""
         payload_dir = os.path.join(self.path, "data")
 
         for dirpath, _, filenames in os.walk(payload_dir):
             for f in filenames:
-                # Jump through some hoops here to make the payload files come out
-                # looking like data/dir/file, rather than having the entire path.
-                rel_path = os.path.join(dirpath, os.path.normpath(f.replace('\\', '/')))
-                rel_path = rel_path.replace(self.path + os.path.sep, "", 1)
+                # Jump through some hoops here to make the payload files are
+                # returned with the directory structure relative to the base
+                # directory rather than the
+                normalized_f = os.path.normpath(f)
+                rel_path = os.path.relpath(os.path.join(dirpath, normalized_f),
+                                           start=self.path)
                 yield rel_path
 
     def payload_entries(self):
