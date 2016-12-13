@@ -625,12 +625,12 @@ class ChecksumMismatch(ManifestErrorDetail):
         self.found = found
 
     def __str__(self):
-        return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (self.path, self.algorithm, self.expected, self.found)
+        return "%s checksum validation failed (alg=%s expected=%s found=%s)" % (force_unicode(self.path), self.algorithm, self.expected, self.found)
 
 
 class FileMissing(ManifestErrorDetail):
     def __str__(self):
-        return "%s exists in manifest but not found on filesystem" % self.path
+        return "%s exists in manifest but not found on filesystem" % force_unicode(self.path)
 
 
 class UnexpectedFile(ManifestErrorDetail):
