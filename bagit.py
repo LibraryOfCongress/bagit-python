@@ -79,9 +79,9 @@ STANDARD_BAG_INFO_HEADERS = [
 
 CHECKSUM_ALGOS = ['md5', 'sha1', 'sha256', 'sha512']
 
-#: Convenience function used everywhere we want to open
-#: a file to read text rather than undecoded bytes.
-open_text_file = partial(codecs.open, encoding='utf-8')
+#: Convenience function used everywhere we want to open a file to read text
+#: rather than undecoded bytes:
+open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
 
 
 def make_bag(bag_dir, bag_info=None, processes=1, checksum=None):
