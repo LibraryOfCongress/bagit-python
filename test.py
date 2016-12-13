@@ -12,6 +12,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import unicodedata
 import unittest
 from os.path import join as j
 
@@ -578,6 +579,44 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.make_bag(self.tmpdir, {"test": '♡'})
         bag = bagit.Bag(self.tmpdir)
         self.assertEqual(bag.info['test'], '♡')
+
+    def test_filename_unicode_normalization(self):
+        # We need to handle cases where the Unicode normalization form of a
+        # filename has changed in-transit. This is hard to do portably in both
+        # directions because OS X normalizes *all* filenames to an NFD variant
+        # so we'll start with a basic test which writes the manifest using the
+        # NFC form and confirm that this does not cause the bag to fail when it
+        # is written to the filesystem using the NFD form, which will not be
+        # altered when saved to an HFS+ filesystem:
+
+        test_filename = 'Núñez Papers.txt'
+        test_filename_nfc = unicodedata.normalize('NFC', test_filename)
+        test_filename_nfd = unicodedata.normalize('NFD', test_filename)
+
+        os.makedirs(j(self.tmpdir, 'unicode-normalization'))
+
+        with open(j(self.tmpdir, 'unicode-normalization', test_filename_nfd),
+                  'w') as f:
+            f.write('This is a test filename written using NFD normalization\n')
+
+        bag = bagit.make_bag(self.tmpdir)
+        bag.save()
+
+        self.assertTrue(bag.is_valid())
+
+        # Now we'll cause the entire manifest file was normalized to NFC:
+        for m_f in bag.manifest_files():
+            contents = slurp_text_file(m_f)
+            normalized_bytes = unicodedata.normalize('NFC', contents).encode('utf-8')
+            with open(m_f, 'wb') as f:
+                f.write(normalized_bytes)
+
+        for alg in bag.algs:
+            bagit._make_tagmanifest_file(alg, bag.path, encoding=bag.encoding)
+
+        # Now we'll reload the whole thing:
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
 
 if __name__ == '__main__':
     unittest.main()
