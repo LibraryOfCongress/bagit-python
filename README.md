@@ -8,7 +8,7 @@ bagit is a Python library and command line utility for working with  [BagIt](htt
 Installation
 ------------
 
-bagit.py is a single-file python module that you can drop into your project as 
+bagit.py is a single-file python module that you can drop into your project as
 needed or you can install globally with:
 
     pip install bagit
@@ -23,13 +23,13 @@ which you can use to turn an existing directory into a bag:
 
     bagit.py --contact-name 'John Kunze' /directory/to/bag
 
-You can pass in key/value metadata for the bag using options like 
-`--contact-name` above, which get persisted to the bag-info.txt. For a 
+You can pass in key/value metadata for the bag using options like
+`--contact-name` above, which get persisted to the bag-info.txt. For a
 complete list of bag-info.txt properties you can use as commmand line
 arguments see `--help`.
 
-Since calculating checksums can take a while when creating a bag, you may want 
-to calculate them in parallel if you are on a multicore machine. You can do 
+Since calculating checksums can take a while when creating a bag, you may want
+to calculate them in parallel if you are on a multicore machine. You can do
 that with the `--processes` option:
 
     bagit.py --processes 4 /directory/to/bag
@@ -59,7 +59,7 @@ multiple CPUs you can:
 Library Usage
 -------------
 
-You can also use bagit programatically in your own Python programs. 
+You can also use bagit programatically in your own Python programs.
 
 ### Create
 
@@ -95,7 +95,7 @@ bag.save()
 
 By default `save` will not update manifests. This guards against a situation
 where a call to `save` to persist bag metadata accidentally regenerates
-manifests for an invalid bag. If you have modified the payload of a bag by 
+manifests for an invalid bag. If you have modified the payload of a bag by
 adding, modifying or deleting files in the data directory, and wish to
 regenerate the manifests set the `manifests` parameter to True when calling
 `save`.
@@ -114,7 +114,7 @@ os.remove('/path/to/bag/data/file')
 bag.save(manifests=True)
 ```
 
-The save method takes an optional processes parameter which will 
+The save method takes an optional processes parameter which will
 determine how many processes are used to regenerate the checksums.
 This can be handy on multicore machines.
 
@@ -130,14 +130,14 @@ else:
     print "boo :("
 ```
 
-If you'd like to get a detailed list of validation errors, 
-execute the `validate` method and catch the `BagValidationError` 
-exception. If the bag's manifest was invalid (and it wasn't caught by the 
-payload oxum) the exception's `details` property will contain a list of 
-`ManifestError`s that you can introspect on. Each ManifestError, will be of 
+If you'd like to get a detailed list of validation errors,
+execute the `validate` method and catch the `BagValidationError`
+exception. If the bag's manifest was invalid (and it wasn't caught by the
+payload oxum) the exception's `details` property will contain a list of
+`ManifestError`s that you can introspect on. Each ManifestError, will be of
 type `ChecksumMismatch`, `FileMissing`, `UnexpectedFile`.
 
-So for example if you want to print out checksums that failed to validate 
+So for example if you want to print out checksums that failed to validate
 you can do this:
 
 ```python
@@ -154,7 +154,7 @@ except bagit.BagValidationError, e:
         (e.path, e.algorithm, e.expected, e.found)
 ```
 
-To iterate through a bag's manifest and retrieve checksums for the payload 
+To iterate through a bag's manifest and retrieve checksums for the payload
 files use the bag's entries dictionary:
 
 ```python
@@ -171,8 +171,8 @@ Development
     % cd bagit-python
     % python test.py
 
-If you'd like to see how increasing parallelization of bag creation on 
-your system effects the time to create a bag try using the included bench 
+If you'd like to see how increasing parallelization of bag creation on
+your system effects the time to create a bag try using the included bench
 utility:
 
     % ./bench.py
