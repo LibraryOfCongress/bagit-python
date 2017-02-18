@@ -23,6 +23,16 @@ which you can use to turn an existing directory into a bag:
 
     bagit.py --contact-name 'John Kunze' /directory/to/bag
 
+Run bagit in a Terminal or Powershell or similar. If you're unsure where to
+find the script, you may alternatively invoke the script via Python,
+replacing `bagit.py` with `python -m bagit`:
+
+    python -m bagit --help
+    
+Or on Windows:
+
+    py -m bagit --help
+
 You can pass in key/value metadata for the bag using options like
 `--contact-name` above, which get persisted to the bag-info.txt. For a
 complete list of bag-info.txt properties you can use as commmand line
