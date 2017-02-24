@@ -171,6 +171,11 @@ Development
     % cd bagit-python
     % python test.py
 
+If you have Docker installed, you can run the tests under Linux inside a
+container:
+
+    % docker build -t bagit:latest . && docker run -it bagit:latest
+
 If you'd like to see how increasing parallelization of bag creation on
 your system effects the time to create a bag try using the included bench
 utility:
