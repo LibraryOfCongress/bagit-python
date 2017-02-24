@@ -1,12 +1,10 @@
-bagit-python
-============
+# bagit-python
 
 [![Build Status](https://travis-ci.org/LibraryOfCongress/bagit-python.svg)](http://travis-ci.org/LibraryOfCongress/bagit-python)
 
 bagit is a Python library and command line utility for working with  [BagIt](http://purl.org/net/bagit) style packages.
 
-Installation
-------------
+## Installation
 
 bagit.py is a single-file python module that you can drop into your project as
 needed or you can install globally with:
@@ -15,13 +13,29 @@ needed or you can install globally with:
 
 Python v2.6+ is required.
 
-Command Line Usage
-------------------
+## Command Line Usage
 
-When you install bagit you should get a command line program called bagit.py
+When you install bagit you should get a command-line program called bagit.py
 which you can use to turn an existing directory into a bag:
 
     bagit.py --contact-name 'John Kunze' /directory/to/bag
+
+### Finding Bagit on your system
+
+The `bagit.py` program should be available in your normal command-line window
+(Terminal on OS X, Command Prompt or Powershell on Windows, etc.). If you are
+unsure where it was installed you can also request that Python search for
+`bagit` as a Python module: simply replace `bagit.py` with `python -m bagit`:
+
+    python -m bagit --help
+
+On some systems Python may have been installed as `python3`, `py`, etc. –
+simply use the same name you use to start an interactive Python shell:
+
+    py -m bagit --help
+    python3 -m bagit --help
+
+### Configuring BagIt
 
 You can pass in key/value metadata for the bag using options like
 `--contact-name` above, which get persisted to the bag-info.txt. For a
@@ -56,10 +70,10 @@ multiple CPUs you can:
 
     bagit.py --validate --processes 4 /path/to/bag
 
-Library Usage
--------------
+## Using BagIt in your programs
 
-You can also use bagit programatically in your own Python programs.
+You can also use BagIt programatically in your own Python programs by importing
+the `bagit` module.
 
 ### Create
 
@@ -164,17 +178,31 @@ for path, fixity in bag.entries.items():
   print "path:%s md5:%s" % (path, fixity["md5"])
 ```
 
-Development
------------
+## Contributing to bagit-python development
 
     % git clone git://github.com/LibraryOfCongress/bagit-python.git
     % cd bagit-python
+    # MAKE CHANGES
     % python test.py
+
+### Running the tests
+
+You can quickly run the tests by having setuptools install dependencies:
+
+    python setup.py test
+
+Once your code is working, you can use [Tox](https://tox.readthedocs.io/) to run
+the tests with every supported version of Python which you have installed on
+the local system:
+
+    tox
 
 If you have Docker installed, you can run the tests under Linux inside a
 container:
 
     % docker build -t bagit:latest . && docker run -it bagit:latest
+
+## Benchmarks
 
 If you'd like to see how increasing parallelization of bag creation on
 your system effects the time to create a bag try using the included bench
