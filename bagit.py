@@ -79,6 +79,9 @@ STANDARD_BAG_INFO_HEADERS = [
 
 CHECKSUM_ALGOS = ['md5', 'sha1', 'sha256', 'sha512']
 
+#: Block size used when reading files for hashing:
+HASH_BLOCK_SIZE = 512 * 1024
+
 #: Convenience function used everywhere we want to open a file to read text
 #: rather than undecoded bytes:
 open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
@@ -659,7 +662,7 @@ def _calculate_file_hashes(full_path, f_hashers):
     try:
         with open(full_path, 'rb') as f:
             while True:
-                block = f.read(1048576)
+                block = f.read(HASH_BLOCK_SIZE)
                 if not block:
                     break
                 for i in f_hashers.values():
@@ -788,7 +791,7 @@ def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
         with open(join(bag_dir, f), 'rb') as fh:
             m = _hasher(alg)
             while True:
-                block = fh.read(16384)
+                block = fh.read(HASH_BLOCK_SIZE)
                 if not block:
                     break
                 m.update(block)
@@ -890,7 +893,7 @@ def _manifest_line(filename, algorithm='md5'):
 
         total_bytes = 0
         while True:
-            block = fh.read(16384)
+            block = fh.read(HASH_BLOCK_SIZE)
             total_bytes += len(block)
             if not block:
                 break
