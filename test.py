@@ -110,7 +110,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
     def test_validation_error_details(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
         readme = j(self.tmpdir, "data", "README")
         txt = slurp_text_file(readme)
         txt = 'A' + txt[1:]
@@ -214,13 +214,13 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
     def test_missing_manifest_raises_error(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.make_bag(self.tmpdir, checksums=['sha512'])
         self.assertTrue(self.validate(bag))
-        os.remove(j(self.tmpdir, "manifest-md5.txt"))
+        os.remove(j(self.tmpdir, "manifest-sha512.txt"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
     def test_mixed_case_checksums(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
         hashstr = {}
         # Extract entries only for the payload and ignore
         # entries from the tagmanifest file
@@ -258,7 +258,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertTrue(self.validate(bag, fast=True))
 
     def test_validate_optional_tagfile(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
         with open(j(tagdir, "tagfile"), "w") as tagfile:
             tagfile.write("test")
@@ -284,7 +284,7 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
     def test_validate_optional_tagfile_in_directory(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
         tagdir = tempfile.mkdtemp(dir=self.tmpdir)
 
         if not os.path.exists(j(tagdir, "tagfolder")):
@@ -347,7 +347,7 @@ class TestBag(unittest.TestCase):
 
     def test_make_bag(self):
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
-        bagit.make_bag(self.tmpdir, bag_info=info)
+        bagit.make_bag(self.tmpdir, bag_info=info, checksums=['md5'])
 
         # data dir should've been created
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
@@ -414,7 +414,7 @@ class TestBag(unittest.TestCase):
         self.assertTrue('af1c03483cd1999098cce5f9e7689eea1f81899587508f59ba3c582d376f8bad34e75fed55fd1b1c26bd0c7a06671b85e90af99abac8753ad3d76d8d6bb31ebd  data/si/4011399822_65987a4806_b_d.jpg' in manifest_txt)
 
     def test_make_bag_unknown_algorithm(self):
-        self.assertRaises(RuntimeError, bagit.make_bag, self.tmpdir, checksum=['not-really-a-name'])
+        self.assertRaises(ValueError, bagit.make_bag, self.tmpdir, checksum=['not-really-a-name'])
 
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
@@ -425,7 +425,7 @@ class TestBag(unittest.TestCase):
 
     def test_bag_class(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        bag = bagit.make_bag(self.tmpdir, bag_info=info, checksums=['sha384'])
         self.assertTrue(isinstance(bag, bagit.Bag))
         self.assertEqual(set(bag.payload_files()), set([
             'data/README',
@@ -434,7 +434,7 @@ class TestBag(unittest.TestCase):
             'data/loc/2478433644_2839c5e8b8_o_d.jpg',
             'data/loc/3314493806_6f1db86d66_o_d.jpg']))
         self.assertEqual(list(bag.manifest_files()),
-                         ['%s/manifest-md5.txt' % self.tmpdir])
+                         ['%s/manifest-sha384.txt' % self.tmpdir])
 
     def test_has_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -485,7 +485,7 @@ Tag-File-Character-Encoding: UTF-8
 
     def test_missing_tagmanifest_valid(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        bag = bagit.make_bag(self.tmpdir, bag_info=info, checksums=['md5'])
         self.assertTrue(bag.is_valid())
         os.remove(j(self.tmpdir, 'tagmanifest-md5.txt'))
         self.assertTrue(bag.is_valid())
