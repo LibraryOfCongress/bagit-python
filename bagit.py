@@ -974,6 +974,9 @@ def main():
     if args.processes < 0:
         parser.error("number of processes needs to be 0 or more")
 
+    if sys.version_info < (2, 7) and args.processes > 1:
+        parser.error('multiple processes are not supported on Python 2.6')
+
     _configure_logging(args)
 
     rc = 0

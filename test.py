@@ -464,6 +464,7 @@ Tag-File-Character-Encoding: UTF-8
             bf.write(bagfile)
         self.assertRaises(bagit.BagValidationError, bagit.Bag, self.tmpdir)
 
+    @unittest.skipIf(sys.version_info < (2, 7), 'multiprocessing is unstable on Python 2.6')
     def test_make_bag_multiprocessing(self):
         bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))
