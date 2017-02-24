@@ -1,0 +1,5 @@
+prune test-data
+exclude .*
+exclude Dockerfile
+exclude tox.ini
+exclude MANIFEST.in

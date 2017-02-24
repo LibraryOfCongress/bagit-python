@@ -5,7 +5,9 @@ if sys.version_info < (2, 6):
     print("Python 2.6 or higher is required")
     sys.exit(1)
 
-description = \
+description = 'Create and validate BagIt packages'
+
+long_description = \
 """
 This package can be used to create BagIt style packages of
 digital content for safe transmission and digital preservation.
@@ -37,6 +39,7 @@ setup(
     py_modules = ['bagit',],
     scripts = ['bagit.py'],
     description = description,
+    long_description = long_description,
     platforms = ['POSIX'],
     test_suite = 'test',
     setup_requires=['setuptools_scm'],
