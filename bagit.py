@@ -244,7 +244,7 @@ class Bag(object):
 
         try:
             codecs.lookup(self.encoding)
-        except codecs.LookupError:
+        except LookupError:
             raise BagValidationError("Unsupported encoding: %s" % self.encoding)
 
         info_file_path = os.path.join(self.path, self.tag_file_name)
