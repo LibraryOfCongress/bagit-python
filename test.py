@@ -611,7 +611,7 @@ Tag-File-Character-Encoding: UTF-8
             with open(m_f, 'wb') as f:
                 f.write(normalized_bytes)
 
-        for alg in bag.algs:
+        for alg in bag.algorithms:
             bagit._make_tagmanifest_file(alg, bag.path, encoding=bag.encoding)
 
         # Now we'll reload the whole thing:

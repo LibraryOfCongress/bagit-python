@@ -207,7 +207,7 @@ class Bag(object):
         #: maps Unicode-normalized values to the raw value in the manifest
         self.normalized_manifest_names = {}
 
-        self.algs = []  # TODO: Refactor to use the full word “algorithms”
+        self.algorithms = []
         self.tag_file_name = None
         self.path = abspath(path)
         if path:
@@ -218,6 +218,11 @@ class Bag(object):
 
     def __str__(self):
         return self.path
+
+    @property
+    def algs(self):
+        warnings.warn('Use Bag.algorithms instead of Bag.algs', DeprecationWarning)
+        return self.algorithms
 
     def _open(self):
         # Open the bagit.txt file, and load any tags from it, including
@@ -362,8 +367,8 @@ class Bag(object):
                 raise BagError("Read permissions are required to calculate file fixities.")
 
             oxum = None
-            self.algs = list(set(self.algs))  # Dedupe
-            for alg in self.algs:
+            self.algorithms = list(set(self.algorithms))  # Dedupe
+            for alg in self.algorithms:
                 LOGGER.info('updating manifest-%s.txt', alg)
                 oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes,
                                       algorithm=alg,
@@ -377,7 +382,7 @@ class Bag(object):
         _make_tag_file(self.tag_file_name, self.info)
 
         # Update tag-manifest for changes to manifest & bag-info files
-        for alg in self.algs:
+        for alg in self.algorithms:
             _make_tagmanifest_file(alg, self.path, encoding=self.encoding)
 
         # Reload the manifests
@@ -456,7 +461,7 @@ class Bag(object):
             else:
                 search = "manifest-"
             alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
-            self.algs.append(alg)
+            self.algorithms.append(alg)
 
             with open_text_file(manifest_file, 'r', encoding=self.encoding) as manifest_file:
                 for line in manifest_file:
@@ -569,7 +574,7 @@ class Bag(object):
         # multiple hash objects
 
         available_hashers = set()
-        for alg in self.algs:
+        for alg in self.algorithms:
             try:
                 hashlib.new(alg)
                 available_hashers.add(alg)
@@ -577,7 +582,7 @@ class Bag(object):
                 LOGGER.warning("Unable to validate file contents using unknown %s hash algorithm", alg)
 
         if not available_hashers:
-            raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algs))
+            raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algorithms))
 
         if os.name == 'posix':
             worker_init = posix_multiprocessing_worker_initializer
