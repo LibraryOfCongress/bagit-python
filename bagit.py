@@ -46,6 +46,7 @@ import sys
 import tempfile
 import unicodedata
 import warnings
+from collections import defaultdict
 from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
@@ -92,7 +93,7 @@ HASH_BLOCK_SIZE = 512 * 1024
 open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
 
 
-def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None):
+def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding='utf-8'):
     """
     Convert a given directory into a bag. You can pass in arbitrary
     key/value pairs to put into the bag-info.txt metadata file as
@@ -149,9 +150,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None)
             # original directory
             os.chmod('data', os.stat(cwd).st_mode)
 
-            for c in checksums:
-                LOGGER.info("writing manifest-%s.txt", c)
-                Oxum = _make_manifest('manifest-%s.txt' % c, 'data', processes, algorithm=c, encoding='utf-8')
+            total_bytes, total_files = make_manifests('data', processes, algorithms=checksums,
+                                                      encoding=encoding)
 
             LOGGER.info("writing bagit.txt")
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -167,13 +167,14 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None)
                 bag_info['Bagging-Date'] = date.strftime(date.today(), "%Y-%m-%d")
             if 'Bag-Software-Agent' not in bag_info:
                 bag_info['Bag-Software-Agent'] = 'bagit.py v' + VERSION + ' <http://github.com/libraryofcongress/bagit-python>'
-            bag_info['Payload-Oxum'] = Oxum
+
+            bag_info['Payload-Oxum'] = "%s.%s" % (total_bytes, total_files)
             _make_tag_file('bag-info.txt', bag_info)
 
             for c in checksums:
                 _make_tagmanifest_file(c, bag_dir, encoding='utf-8')
     except Exception:
-        LOGGER.exception("An error occurred creating the bag")
+        LOGGER.exception("An error occurred creating a bag in %s", bag_dir)
         raise
     finally:
         os.chdir(old_dir)
@@ -366,18 +367,13 @@ class Bag(object):
                     LOGGER.error("The following files do not have read permissions: \n%s", unreadable_files)
                 raise BagError("Read permissions are required to calculate file fixities.")
 
-            oxum = None
-            self.algorithms = list(set(self.algorithms))  # Dedupe
-            for alg in self.algorithms:
-                LOGGER.info('updating manifest-%s.txt', alg)
-                oxum = _make_manifest('manifest-%s.txt' % alg, 'data', processes,
-                                      algorithm=alg,
-                                      encoding=self.encoding)
+            total_bytes, total_files = make_manifests('data', processes,
+                                                      algorithms=self.algorithms,
+                                                      encoding=self.encoding)
 
             # Update Payload-Oxum
             LOGGER.info('updating %s', self.tag_file_name)
-            if oxum:
-                self.info['Payload-Oxum'] = oxum
+            self.info['Payload-Oxum'] = '%s.%s' % (total_bytes, total_files)
 
         _make_tag_file(self.tag_file_name, self.info)
 
@@ -568,22 +564,6 @@ class Bag(object):
             LOGGER.warning(force_unicode(e))
             errors.append(e)
 
-        # To avoid the overhead of reading the file more than once or loading
-        # potentially massive files into memory we'll create a dictionary of
-        # hash objects so we can open a file, read a block and pass it to
-        # multiple hash objects
-
-        available_hashers = set()
-        for alg in self.algorithms:
-            try:
-                hashlib.new(alg)
-                available_hashers.add(alg)
-            except ValueError:
-                LOGGER.warning("Unable to validate file contents using unknown %s hash algorithm", alg)
-
-        if not available_hashers:
-            raise RuntimeError("%s: Unable to validate bag contents: none of the hash algorithms in %s are supported!" % (self, self.algorithms))
-
         if os.name == 'posix':
             worker_init = posix_multiprocessing_worker_initializer
         else:
@@ -592,7 +572,7 @@ class Bag(object):
         args = ((self.path,
                  self.normalized_filesystem_names.get(rel_path, rel_path),
                  hashes,
-                 available_hashers) for rel_path, hashes in self.entries.items())
+                 self.algorithms) for rel_path, hashes in self.entries.items())
 
         try:
             if processes == 1:
@@ -769,14 +749,44 @@ def build_unicode_normalized_lookup_dict(filenames):
     return output
 
 
+def get_hashers(algorithms):
+    """
+    Given a list of algorithm names, return a dictionary of hasher instances
+
+    This avoids redundant code between the creation and validation code where in
+    both cases we want to avoid reading the same file more than once. The
+    intended use is a simple for loop:
+
+        for block in file:
+            for hasher in hashers.values():
+                hasher.update(block)
+    """
+
+    hashers = {}
+
+    for alg in algorithms:
+        try:
+            hasher = hashlib.new(alg)
+        except ValueError:
+            LOGGER.warning("Disabling requested hash algorithm %s: hashlib does not support it", alg)
+            continue
+
+        hashers[alg] = hasher
+
+    if not hashers:
+        raise ValueError("Unable to continue: hashlib does not support any of the requested algorithms!")
+
+    return hashers
+
+
 def _calc_hashes(args):
     # auto unpacking of sequences illegal in Python3
-    (base_path, rel_path, hashes, available_hashes) = args
+    (base_path, rel_path, hashes, algorithms) = args
     full_path = os.path.join(base_path, rel_path)
 
     # Create a clone of the default empty hash objects:
     f_hashers = dict(
-        (alg, hashlib.new(alg)) for alg in hashes if alg in available_hashes
+        (alg, hashlib.new(alg)) for alg in hashes if alg in algorithms
     )
 
     try:
@@ -886,28 +896,51 @@ def _make_tag_file(bag_info_path, bag_info):
                 f.write("%s: %s\n" % (h, txt))
 
 
-def _make_manifest(manifest_file, data_dir, processes, algorithm='md5', encoding='utf-8'):
-    LOGGER.info('writing manifest with %s processes', processes)
+def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='utf-8'):
+    LOGGER.info('Generating %s manifests with %s processes',
+                ', '.join(algorithms), processes)
 
-    manifest_line_f = partial(generate_manifest_line, algorithm=algorithm)
+    manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms)
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
-        checksums = pool.map(manifest_line_f, _walk(data_dir))
+        checksums = pool.map(manifest_line_generator, _walk(data_dir))
         pool.close()
         pool.join()
     else:
-        checksums = [manifest_line_f(i) for i in _walk(data_dir)]
+        checksums = [manifest_line_generator(i) for i in _walk(data_dir)]
 
-    with open_text_file(manifest_file, 'w', encoding=encoding) as manifest:
-        num_files = 0
-        total_bytes = 0
+    # At this point we have a list of tuples which start with the algorithm name:
+    manifest_data = {}
+    for batch in checksums:
+        for entry in batch:
+            manifest_data.setdefault(entry[0], []).append(entry[1:])
 
-        for digest, filename, byte_count in checksums:
-            num_files += 1
-            total_bytes += byte_count
-            manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
-    return "%s.%s" % (total_bytes, num_files)
+    # These will be keyed on the algorithm name so we can perform sanity checks
+    # below to catch failures in the hashing process:
+    num_files = defaultdict(lambda: 0)
+    total_bytes = defaultdict(lambda: 0)
+
+    for algorithm, values in manifest_data.items():
+        manifest_filename = 'manifest-%s.txt' % algorithm
+
+        with open_text_file(manifest_filename, 'w', encoding=encoding) as manifest:
+            for digest, filename, byte_count in values:
+                manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
+                num_files[algorithm] += 1
+                total_bytes[algorithm] += byte_count
+
+    # We'll use sets of the values for the error checks and eventually return the payload oxum values:
+    byte_value_set = set(total_bytes.values())
+    file_count_set = set(num_files.values())
+
+    if len(file_count_set) != 1:
+        raise RuntimeError('Expected the same number of files for each checksum but received: %s' % num_files)
+
+    if len(byte_value_set) != 1:
+        raise RuntimeError('Expected the same number of bytes for each checksum but received: %s' % total_bytes)
+
+    return byte_value_set.pop(), file_count_set.pop()
 
 
 def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
@@ -919,7 +952,7 @@ def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
         if re.match(r'^tagmanifest-.+\.txt$', f):
             continue
         with open(join(bag_dir, f), 'rb') as fh:
-            m = get_hasher(alg)
+            m = hashlib.new(alg)
             while True:
                 block = fh.read(HASH_BLOCK_SIZE)
                 if not block:
@@ -988,28 +1021,32 @@ def _can_read(test_dir):
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
 
-def get_hasher(algorithm='sha512'):
-    if not hasattr(hashlib, algorithm):
-        raise ValueError('hashlib does not support algorithm %s' % algorithm)
-    else:
-        hash_f = getattr(hashlib, algorithm)
-        return hash_f()
+def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
+    LOGGER.info("Generating manifest lines for file %s", filename)
 
+    # For performance we'll read the file only once and pass it block
+    # by block to every requested hash algorithm:
+    hashers = get_hashers(algorithms)
 
-def generate_manifest_line(filename, algorithm='md5'):
-    LOGGER.info("Generating checksum for file %s", filename)
-    with open(filename, 'rb') as fh:
-        m = get_hasher(algorithm)
+    total_bytes = 0
 
-        total_bytes = 0
+    with open(filename, 'rb') as f:
         while True:
-            block = fh.read(HASH_BLOCK_SIZE)
-            total_bytes += len(block)
+            block = f.read(HASH_BLOCK_SIZE)
+
             if not block:
                 break
-            m.update(block)
 
-    return (m.hexdigest(), _decode_filename(filename), total_bytes)
+            total_bytes += len(block)
+            for hasher in hashers.values():
+                hasher.update(block)
+
+    decoded_filename = _decode_filename(filename)
+
+    # We'll generate a list of results in roughly manifest format but prefixed with the algorithm:
+    results = [(alg, hasher.hexdigest(), decoded_filename, total_bytes) for alg, hasher in hashers.items()]
+
+    return results
 
 
 def _encode_filename(s):
