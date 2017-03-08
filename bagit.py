@@ -92,6 +92,8 @@ HASH_BLOCK_SIZE = 512 * 1024
 #: rather than undecoded bytes:
 open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
 
+# This is the same as decoding the byte values in codecs.BOM:
+UNICODE_BYTE_ORDER_MARK = u'\uFEFF'
 
 def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding='utf-8'):
     """
@@ -451,15 +453,29 @@ class Bag(object):
             # v0.97 requires that optional tagfiles are verified.
             manifests += list(self.tagmanifest_files())
 
-        for manifest_file in manifests:
-            if not manifest_file.find("tagmanifest-") is -1:
+        for manifest_filename in manifests:
+            if not manifest_filename.find("tagmanifest-") is -1:
                 search = "tagmanifest-"
             else:
                 search = "manifest-"
-            alg = os.path.basename(manifest_file).replace(search, "").replace(".txt", "")
+            alg = os.path.basename(manifest_filename).replace(search, "").replace(".txt", "")
             self.algorithms.append(alg)
 
-            with open_text_file(manifest_file, 'r', encoding=self.encoding) as manifest_file:
+            with open_text_file(manifest_filename, 'r', encoding=self.encoding) as manifest_file:
+                if manifest_file.encoding.startswith('UTF'):
+                    # We'll check the first character to see if it's a BOM:
+                    if manifest_file.read(1) == UNICODE_BYTE_ORDER_MARK:
+                        # We'll skip it either way by letting line decoding
+                        # happen at the new offset but we will issue a warning
+                        # for UTF-8 since the presence of a BOM  is contrary to
+                        # the BagIt specification:
+                        if manifest_file.encoding == 'UTF-8':
+                            LOGGER.warning('%s is encoded using UTF-8 but contains an unnecessary byte-order mark,'
+                                           ' which is not in compliance with the BagIt RFC',
+                                           manifest_file.name)
+                    else:
+                        manifest_file.seek(0)  # Pretend the first read never happened
+
                 for line in manifest_file:
                     line = line.strip()
 
