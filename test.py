@@ -251,6 +251,21 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(self.validate(bag))
 
+    def test_unsafe_directory_entries_raise_error(self):
+        bad_paths = (
+            '../../../secrets.json', '~/.pgp/id_rsa', r'C:\win32\cmd.exe',
+            r'\\?\C:\\', '/etc/passwd'
+        )
+        hasher = hashlib.new('md5')
+        hasher.update('this is not a real checksum')
+        for bad_path in bad_paths:
+            self.tearDown()
+            self.setUp()
+            bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
+            with open(j(self.tmpdir, 'manifest-md5.txt'), 'wb+') as manifest_out:
+                manifest_out.write('%s %s\n' % (hasher.hexdigest(), bad_path))
+            self.assertRaises(bagit.BagError, bagit.Bag, self.tmpdir)
+
     def test_multiple_oxum_values(self):
         bag = bagit.make_bag(self.tmpdir)
         with open(j(self.tmpdir, "bag-info.txt"), "a") as baginfo:

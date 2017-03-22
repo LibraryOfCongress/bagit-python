@@ -415,6 +415,12 @@ class Bag(object):
 
     def files_to_be_fetched(self):
         for f, _, _ in self.fetch_entries():
+            if self._path_is_dangerous(f):
+                raise BagError(
+                    'Path "%s" in "%s" is unsafe' % (
+                        entry_path, os.path.join(self.path, 'fetch.txt'),
+                    )
+                )
             yield f
 
     def has_oxum(self):
@@ -493,6 +499,13 @@ class Bag(object):
                     entry_hash = entry[0]
                     entry_path = os.path.normpath(entry[1].lstrip("*"))
                     entry_path = _decode_filename(entry_path)
+
+                    if self._path_is_dangerous(entry_path):
+                        raise BagError(
+                            'Path "%s" in manifest "%s" is unsafe' % (
+                                entry_path, manifest_file.name
+                            )
+                        )
 
                     if entry_path in self.entries:
                         self.entries[entry_path][alg] = entry_hash
@@ -631,6 +644,23 @@ class Bag(object):
             first_line = bagit_file.read(4)
             if first_line.startswith(codecs.BOM_UTF8):
                 raise BagValidationError("bagit.txt must not contain a byte-order mark")
+
+    def _path_is_dangerous(self, path):
+        """
+        Return true if path looks dangerous, i.e. potentially operates
+        outside the bagging directory structure, e.g. ~/.bashrc, ../../../secrets.json,
+            \\?\c:\, D:\sys32\cmd.exe
+        """
+        # Disallow dots, slashes, and tildes as first character
+        disallow = r'.\/~'
+        if path[0] in disallow:
+            return True
+        # Disallow drive letters at beginning of path, e.g c:, D:
+        drive_pat = re.compile(r'^[A-Za-z]:')
+        if drive_pat.match(path):
+            return True
+        return False
+
 
 
 class BagError(Exception):
