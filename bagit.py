@@ -651,16 +651,18 @@ class Bag(object):
         outside the bagging directory structure, e.g. ~/.bashrc, ../../../secrets.json,
             \\?\c:\, D:\sys32\cmd.exe
         """
-        # Disallow dots, slashes, and tildes as first character
-        disallow = r'.\/~'
-        if path[0] in disallow:
+        if os.path.isabs(path):
             return True
-        # Disallow drive letters at beginning of path, e.g c:, D:
-        drive_pat = re.compile(r'^[A-Za-z]:')
-        if drive_pat.match(path):
+        if os.path.expanduser(path) != path:
             return True
-        return False
-
+        if os.path.expandvars(path) != path:
+            return True
+        real_path = os.path.realpath(os.path.join(self.path, path))
+        real_path = os.path.normcase(os.path.normpath(real_path))
+        bag_path = os.path.realpath(self.path)
+        bag_path = os.path.normcase(os.path.normpath(bag_path))
+        common = os.path.commonprefix((bag_path, real_path))
+        return not (common == bag_path)
 
 
 class BagError(Exception):

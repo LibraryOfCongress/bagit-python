@@ -252,16 +252,26 @@ class TestSingleProcessValidation(unittest.TestCase):
         self.assertTrue(self.validate(bag))
 
     def test_unsafe_directory_entries_raise_error(self):
-        bad_paths = (
-            '../../../secrets.json', '~/.pgp/id_rsa', r'C:\win32\cmd.exe',
-            '\\\\?\\C:\\', '/etc/passwd'
-        )
+        bad_paths = None
+        # This could be more granular, but ought to be
+        # adequate.
+        if os.name == 'nt':
+            bad_paths = (
+                r'C:\win32\cmd.exe',
+                '\\\\?\\C:\\',
+                'COM1:',
+                '\\\\.\\COM56'
+            )
+        else:
+            bad_paths = (
+                '../../../secrets.json',
+                '~/.pgp/id_rsa',
+                '/dev/null'
+            )
         hasher = hashlib.new('md5')
         corpus = 'this is not a real checksum'
         hasher.update(corpus.encode('utf-8'))
         for bad_path in bad_paths:
-            self.tearDown()
-            self.setUp()
             bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
             with open(j(self.tmpdir, 'manifest-md5.txt'), 'wb+') as manifest_out:
                 line = '%s %s\n' % (hasher.hexdigest(), bad_path)
