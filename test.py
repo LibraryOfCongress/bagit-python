@@ -264,7 +264,8 @@ class TestSingleProcessValidation(unittest.TestCase):
             self.setUp()
             bag = bagit.make_bag(self.tmpdir, checksums=['md5'])
             with open(j(self.tmpdir, 'manifest-md5.txt'), 'wb+') as manifest_out:
-                manifest_out.write('%s %s\n' % (hasher.hexdigest(), bad_path))
+                line = '%s %s\n' % (hasher.hexdigest(), bad_path)
+                manifest_out.write(line.encode('utf-8'))
             self.assertRaises(bagit.BagError, bagit.Bag, self.tmpdir)
 
     def test_multiple_oxum_values(self):
