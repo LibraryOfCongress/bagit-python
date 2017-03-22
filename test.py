@@ -254,7 +254,7 @@ class TestSingleProcessValidation(unittest.TestCase):
     def test_unsafe_directory_entries_raise_error(self):
         bad_paths = (
             '../../../secrets.json', '~/.pgp/id_rsa', r'C:\win32\cmd.exe',
-            r'\\?\C:\\', '/etc/passwd'
+            '\\\\?\\C:\\', '/etc/passwd'
         )
         hasher = hashlib.new('md5')
         corpus = 'this is not a real checksum'
