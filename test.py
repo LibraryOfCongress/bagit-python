@@ -257,7 +257,8 @@ class TestSingleProcessValidation(unittest.TestCase):
             r'\\?\C:\\', '/etc/passwd'
         )
         hasher = hashlib.new('md5')
-        hasher.update('this is not a real checksum')
+        corpus = 'this is not a real checksum'
+        hasher.update(corpus.encode('utf-8'))
         for bad_path in bad_paths:
             self.tearDown()
             self.setUp()
