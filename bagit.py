@@ -658,9 +658,9 @@ class Bag(object):
         if os.path.expandvars(path) != path:
             return True
         real_path = os.path.realpath(os.path.join(self.path, path))
-        real_path = os.path.normcase(os.path.normpath(real_path))
+        real_path = os.path.normpath(real_path)
         bag_path = os.path.realpath(self.path)
-        bag_path = os.path.normcase(os.path.normpath(bag_path))
+        bag_path = os.path.normpath(bag_path)
         common = os.path.commonprefix((bag_path, real_path))
         return not (common == bag_path)
 

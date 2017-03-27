@@ -260,13 +260,16 @@ class TestSingleProcessValidation(unittest.TestCase):
                 r'C:\win32\cmd.exe',
                 '\\\\?\\C:\\',
                 'COM1:',
-                '\\\\.\\COM56'
+                '\\\\.\\COM56',
+                '..\\..\\..\\win32\\cmd.exe',
+                'data\\..\\..\\..\\win32\\cmd.exe'
             )
         else:
             bad_paths = (
                 '../../../secrets.json',
                 '~/.pgp/id_rsa',
-                '/dev/null'
+                '/dev/null',
+                'data/../../../secrets.json'
             )
         hasher = hashlib.new('md5')
         corpus = 'this is not a real checksum'
