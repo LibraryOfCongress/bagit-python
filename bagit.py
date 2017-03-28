@@ -1195,7 +1195,6 @@ def main():
 
     rc = 0
     for bag_dir in args.directory:
-
         # validate the bag
         if args.validate:
             try:
@@ -1220,7 +1219,7 @@ def main():
                 LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1
 
-        sys.exit(rc)
+    sys.exit(rc)
 
 
 if __name__ == '__main__':
