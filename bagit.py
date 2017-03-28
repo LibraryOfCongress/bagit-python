@@ -29,9 +29,9 @@ Optionally you can pass metadata intended for the bag-info.txt:
 
     % bagit.py --source-organization "Library of Congress" directory
 
-For more help see:
 
-    % bagit.py --help
+For more information or to contribute to bagit-python's development, please
+visit https://github.com/LibraryOfCongress/bagit-python
 """
 
 from __future__ import (absolute_import, division, print_function,
@@ -1142,13 +1142,20 @@ class BagHeaderAction(argparse.Action):
 
 
 def _make_parser():
-    parser = BagArgumentParser(description='bagit-python version %s' % VERSION)
+    parser = BagArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                               description='bagit-python version %s\n\n%s\n' % (VERSION, __doc__.strip()))
     parser.add_argument('--processes', type=int, dest='processes', default=1,
-                        help='parallelize checksums generation and verification')
-    parser.add_argument('--log', help='The name of the log file')
-    parser.add_argument('--quiet', action='store_true')
-    parser.add_argument('--validate', action='store_true')
-    parser.add_argument('--fast', action='store_true')
+                        help='Use multiple processes to calculate checksums faster (default: %(default)s)')
+    parser.add_argument('--log', help='The name of the log file (default: stdout)')
+    parser.add_argument('--quiet', action='store_true',
+                        help='Suppress all progress information other than errors')
+    parser.add_argument('--validate', action='store_true',
+                        help='Validate existing bags in the provided directories instead of'
+                             ' creating new ones')
+    parser.add_argument('--fast', action='store_true',
+                        help='Modify --validate behaviour to only test whether the bag directory'
+                             ' has the number of files and total size specified in Payload-Oxum'
+                             ' without performing checksum validation to detect corruption.')
 
     checksum_args = parser.add_argument_group(
         'Checksum Algorithms',
@@ -1197,6 +1204,9 @@ def main():
 
     if sys.version_info < (2, 7) and args.processes > 1:
         parser.error('multiple processes are not supported on Python 2.6')
+
+    if args.fast and not args.validate:
+        parser.error('--fast is only allowed as an option for --validate!')
 
     _configure_logging(args)
 
