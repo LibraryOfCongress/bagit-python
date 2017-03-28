@@ -1160,8 +1160,9 @@ def _make_parser():
         checksum_args.add_argument('--%s' % i, action='append_const', dest='checksums', const=i,
                                    help='Generate %s manifest when creating a bag' % alg_name)
 
+    metadata_args = parser.add_argument_group('Optional Bag Metadata')
     for header in STANDARD_BAG_INFO_HEADERS:
-        parser.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
+        metadata_args.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
 
     parser.add_argument('directory', nargs='+',
                         help='Directory which will be converted into a bag in place'
