@@ -18,6 +18,9 @@ Basic usage is to give bag a directory to bag up:
 
     % bagit.py my_directory
 
+This does a bag-in-place operation where the current contents will be moved
+into the appropriate BagIt structure and the metadata files will be created.
+
 You can bag multiple directories if you wish:
 
     % bagit.py directory1 directory2
@@ -1160,7 +1163,10 @@ def _make_parser():
     for header in STANDARD_BAG_INFO_HEADERS:
         parser.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
 
-    parser.add_argument('directory', nargs='+', help='directory to make a bag from')
+    parser.add_argument('directory', nargs='+',
+                        help='Directory which will be converted into a bag in place'
+                             ' by moving any existing files into the BagIt structure'
+                             ' and creating the manifests and other metadata.')
 
     return parser
 
