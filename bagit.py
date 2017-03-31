@@ -8,27 +8,39 @@ can be found at:
     http://purl.org/net/bagit
 
 bagit.py is a pure python drop in library and command line tool for creating,
-and working with BagIt directories:
+and working with BagIt directories.
 
-    import bagit
-    bag = bagit.make_bag('example-directory', {'Contact-Name': 'Ed Summers'})
-    print bag.entries
 
-Basic usage is to give bag a directory to bag up:
+Command-Line Usage:
 
-    % bagit.py my_directory
+Basic usage is to give bagit.py a directory to bag up:
+
+    $ bagit.py my_directory
+
+This does a bag-in-place operation where the current contents will be moved
+into the appropriate BagIt structure and the metadata files will be created.
 
 You can bag multiple directories if you wish:
 
-    % bagit.py directory1 directory2
+    $ bagit.py directory1 directory2
 
-Optionally you can pass metadata intended for the bag-info.txt:
+Optionally you can provide metadata which will be stored in bag-info.txt:
 
-    % bagit.py --source-organization "Library of Congress" directory
+    $ bagit.py --source-organization "Library of Congress" directory
 
-For more help see:
+You can also select which manifest algorithms will be used:
 
-    % bagit.py --help
+    $ bagit.py --sha1 --md5 --sha256 --sha512 directory
+
+
+Using BagIt from your Python code:
+
+    import bagit
+    bag = bagit.make_bag('example-directory', {'Contact-Name': 'Ed Summers'})
+    print(bag.entries)
+
+For more information or to contribute to bagit-python's development, please
+visit https://github.com/LibraryOfCongress/bagit-python
 """
 
 from __future__ import (absolute_import, division, print_function,
@@ -1139,13 +1151,20 @@ class BagHeaderAction(argparse.Action):
 
 
 def _make_parser():
-    parser = BagArgumentParser(description='bagit-python version %s' % VERSION)
+    parser = BagArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                               description='bagit-python version %s\n\n%s\n' % (VERSION, __doc__.strip()))
     parser.add_argument('--processes', type=int, dest='processes', default=1,
-                        help='parallelize checksums generation and verification')
-    parser.add_argument('--log', help='The name of the log file')
-    parser.add_argument('--quiet', action='store_true')
-    parser.add_argument('--validate', action='store_true')
-    parser.add_argument('--fast', action='store_true')
+                        help='Use multiple processes to calculate checksums faster (default: %(default)s)')
+    parser.add_argument('--log', help='The name of the log file (default: stdout)')
+    parser.add_argument('--quiet', action='store_true',
+                        help='Suppress all progress information other than errors')
+    parser.add_argument('--validate', action='store_true',
+                        help='Validate existing bags in the provided directories instead of'
+                             ' creating new ones')
+    parser.add_argument('--fast', action='store_true',
+                        help='Modify --validate behaviour to only test whether the bag directory'
+                             ' has the number of files and total size specified in Payload-Oxum'
+                             ' without performing checksum validation to detect corruption.')
 
     checksum_args = parser.add_argument_group(
         'Checksum Algorithms',
@@ -1157,10 +1176,14 @@ def _make_parser():
         checksum_args.add_argument('--%s' % i, action='append_const', dest='checksums', const=i,
                                    help='Generate %s manifest when creating a bag' % alg_name)
 
+    metadata_args = parser.add_argument_group('Optional Bag Metadata')
     for header in STANDARD_BAG_INFO_HEADERS:
-        parser.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
+        metadata_args.add_argument('--%s' % header.lower(), type=str, action=BagHeaderAction)
 
-    parser.add_argument('directory', nargs='+', help='directory to make a bag from')
+    parser.add_argument('directory', nargs='+',
+                        help='Directory which will be converted into a bag in place'
+                             ' by moving any existing files into the BagIt structure'
+                             ' and creating the manifests and other metadata.')
 
     return parser
 
@@ -1191,11 +1214,13 @@ def main():
     if sys.version_info < (2, 7) and args.processes > 1:
         parser.error('multiple processes are not supported on Python 2.6')
 
+    if args.fast and not args.validate:
+        parser.error('--fast is only allowed as an option for --validate!')
+
     _configure_logging(args)
 
     rc = 0
     for bag_dir in args.directory:
-
         # validate the bag
         if args.validate:
             try:
@@ -1220,7 +1245,7 @@ def main():
                 LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
                 rc = 1
 
-        sys.exit(rc)
+    sys.exit(rc)
 
 
 if __name__ == '__main__':
