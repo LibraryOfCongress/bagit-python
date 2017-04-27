@@ -107,6 +107,7 @@ open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
 # This is the same as decoding the byte values in codecs.BOM:
 UNICODE_BYTE_ORDER_MARK = u'\uFEFF'
 
+
 def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding='utf-8'):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -430,7 +431,7 @@ class Bag(object):
             if self._path_is_dangerous(f):
                 raise BagError(
                     'Path "%s" in "%s" is unsafe' % (
-                        entry_path, os.path.join(self.path, 'fetch.txt'),
+                        f, os.path.join(self.path, 'fetch.txt'),
                     )
                 )
             yield f
