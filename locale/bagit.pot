@@ -1,0 +1,162 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-04-27 15:09-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bagit.py:126
+msgid ""
+"The `checksum` argument for `make_bag` should be replaced with `checksums`"
+msgstr ""
+
+#: bagit.py:134
+#, python-format
+msgid "Creating bag for directory %s"
+msgstr ""
+
+#: bagit.py:137 bagit.py:138
+#, python-format
+msgid "Bag directory %s does not exist"
+msgstr ""
+
+#: bagit.py:146
+#, python-format
+msgid ""
+"No write permissions for the following directories and files:\n"
+"%s"
+msgstr ""
+
+#: bagit.py:151 bagit.py:391
+#, python-format
+msgid ""
+"The following directories do not have read permissions:\n"
+"%s"
+msgstr ""
+
+#: bagit.py:154 bagit.py:394
+#, python-format
+msgid ""
+"The following files do not have read permissions:\n"
+"%s"
+msgstr ""
+
+#: bagit.py:157
+msgid "Creating data directory"
+msgstr ""
+
+#: bagit.py:166 bagit.py:170
+#, python-format
+msgid "Moving %(source)s to %(destination)s"
+msgstr ""
+
+#: bagit.py:181
+msgid "Creating bagit.txt"
+msgstr ""
+
+#: bagit.py:186
+msgid "Creating bag-info.txt"
+msgstr ""
+
+#: bagit.py:202
+#, python-format
+msgid "An error occurred creating a bag in %s"
+msgstr ""
+
+#: bagit.py:250
+msgid "Use Bag.algorithms instead of Bag.algs"
+msgstr ""
+
+#: bagit.py:385
+#, python-format
+msgid ""
+"no write permissions for the following directories and files:\n"
+"%s"
+msgstr ""
+
+#: bagit.py:403
+#, python-format
+msgid "Updating %s"
+msgstr ""
+
+#: bagit.py:505
+#, python-format
+msgid ""
+"%s is encoded using UTF-8 but contains an unnecessary byte-order mark, which "
+"is not in compliance with the BagIt RFC"
+msgstr ""
+
+#: bagit.py:523
+#, python-format
+msgid "%(bag)s: Invalid %(algorithm)s manifest entry: %(line)s"
+msgstr ""
+
+#: bagit.py:572
+msgid "Fast validation requires a Payload-Oxum in bag-info.txt"
+msgstr ""
+
+#: bagit.py:590
+msgid "bag-info.txt defines multiple Payload-Oxum values!"
+msgstr ""
+
+#: bagit.py:654
+#, python-format
+msgid "Unable to calculate file hashes for %s"
+msgstr ""
+
+#: bagit.py:852
+#, python-format
+msgid "Disabling requested hash algorithm %s: hashlib does not support it"
+msgstr ""
+
+#: bagit.py:888
+#, python-format
+msgid "Verifying checksum for file %s"
+msgstr ""
+
+#: bagit.py:981
+#, python-format
+msgid "Using %(process_count)d processes to generate manifests: %(algorithms)s"
+msgstr ""
+
+#: bagit.py:1029
+#, python-format
+msgid "Creating %s"
+msgstr ""
+
+#: bagit.py:1106
+#, python-format
+msgid "Generating manifest lines for file %s"
+msgstr ""
+
+#: bagit.py:1252
+#, python-format
+msgid "%s valid according to Payload-Oxum"
+msgstr ""
+
+#: bagit.py:1254
+#, python-format
+msgid "%s is valid"
+msgstr ""
+
+#: bagit.py:1256
+#, python-format
+msgid "%(bag)s is invalid: %(error)s"
+msgstr ""
+
+#: bagit.py:1267
+#, python-format
+msgid "Failed to create bag in %(bag_directory)s: %(error)s"
+msgstr ""
