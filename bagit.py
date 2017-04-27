@@ -48,6 +48,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import argparse
 import codecs
+import gettext
 import hashlib
 import logging
 import multiprocessing
@@ -69,6 +70,12 @@ except ImportError:
     from urlparse import urlparse
 
 from pkg_resources import DistributionNotFound, get_distribution
+
+TRANSLATION_CATALOG = gettext.translation('bagit-python', localedir='locale', fallback=False)
+if sys.version_info < (3, ):
+    _ = TRANSLATION_CATALOG.ugettext
+else:
+    _ = TRANSLATION_CATALOG.gettext
 
 MODULE_NAME = 'bagit' if __name__ == '__main__' else __name__
 
@@ -121,7 +128,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
     """
 
     if checksum is not None:
-        warnings.warn('The `checksum` argument for `make_bag` should be replaced with `checksums`',
+        warnings.warn(_('The `checksum` argument for `make_bag` should be replaced with `checksums`'),
                       DeprecationWarning)
         checksums = checksum
 
@@ -129,11 +136,11 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         checksums = DEFAULT_CHECKSUMS
 
     bag_dir = os.path.abspath(bag_dir)
-    LOGGER.info("creating bag for directory %s", bag_dir)
+    LOGGER.info(_("Creating bag for directory %s"), bag_dir)
 
     if not os.path.isdir(bag_dir):
-        LOGGER.error("no such bag directory %s", bag_dir)
-        raise RuntimeError("no such bag directory %s" % bag_dir)
+        LOGGER.error(_("Bag directory %s does not exist"), bag_dir)
+        raise RuntimeError(_("Bag directory %s does not exist") % bag_dir)
 
     old_dir = os.path.abspath(os.path.curdir)
     os.chdir(bag_dir)
@@ -141,17 +148,18 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
     try:
         unbaggable = _can_bag(os.curdir)
         if unbaggable:
-            LOGGER.error("no write permissions for the following directories and files: \n%s", unbaggable)
+            LOGGER.error(_("No write permissions for the following directories and files:\n%s"), unbaggable)
             raise BagError("Not all files/folders can be moved.")
         unreadable_dirs, unreadable_files = _can_read(os.curdir)
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
-                LOGGER.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
+                LOGGER.error(_("The following directories do not have read permissions:\n%s"),
+                             unreadable_dirs)
             if unreadable_files:
-                LOGGER.error("The following files do not have read permissions: \n%s", unreadable_files)
+                LOGGER.error(_("The following files do not have read permissions:\n%s"), unreadable_files)
             raise BagError("Read permissions are required to calculate file fixities.")
         else:
-            LOGGER.info("creating data dir")
+            LOGGER.info(_("Creating data directory"))
 
             cwd = os.getcwd()
             temp_data = tempfile.mkdtemp(dir=cwd)
@@ -160,10 +168,12 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
                 if os.path.abspath(f) == temp_data:
                     continue
                 new_f = os.path.join(temp_data, f)
-                LOGGER.info("moving %s to %s", f, new_f)
+                LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                            {'source': f, 'destination': new_f})
                 os.rename(f, new_f)
 
-            LOGGER.info("moving %s to %s", temp_data, 'data')
+            LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                        {'source': temp_data, 'destination': 'data'})
             os.rename(temp_data, 'data')
 
             # permissions for the payload directory should match those of the
@@ -173,12 +183,12 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
             total_bytes, total_files = make_manifests('data', processes, algorithms=checksums,
                                                       encoding=encoding)
 
-            LOGGER.info("writing bagit.txt")
+            LOGGER.info(_("Creating bagit.txt"))
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
             with open_text_file('bagit.txt', 'w') as bagit_file:
                 bagit_file.write(txt)
 
-            LOGGER.info("writing bag-info.txt")
+            LOGGER.info(_("Creating bag-info.txt"))
             if bag_info is None:
                 bag_info = {}
 
@@ -194,7 +204,7 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
             for c in checksums:
                 _make_tagmanifest_file(c, bag_dir, encoding='utf-8')
     except Exception:
-        LOGGER.exception("An error occurred creating a bag in %s", bag_dir)
+        LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
         raise
     finally:
         os.chdir(old_dir)
@@ -242,7 +252,7 @@ class Bag(object):
 
     @property
     def algs(self):
-        warnings.warn('Use Bag.algorithms instead of Bag.algs', DeprecationWarning)
+        warnings.warn(_('Use Bag.algorithms instead of Bag.algs'), DeprecationWarning)
         return self.algorithms
 
     def _open(self):
@@ -377,14 +387,17 @@ class Bag(object):
         if manifests:
             unbaggable = _can_bag(self.path)
             if unbaggable:
-                LOGGER.error("no write permissions for the following directories and files: \n%s", unbaggable)
+                LOGGER.error(_("no write permissions for the following directories and files:\n%s"),
+                             unbaggable)
                 raise BagError("Not all files/folders can be moved.")
             unreadable_dirs, unreadable_files = _can_read(self.path)
             if unreadable_dirs or unreadable_files:
                 if unreadable_dirs:
-                    LOGGER.error("The following directories do not have read permissions: \n%s", unreadable_dirs)
+                    LOGGER.error(_("The following directories do not have read permissions:\n%s"),
+                                 unreadable_dirs)
                 if unreadable_files:
-                    LOGGER.error("The following files do not have read permissions: \n%s", unreadable_files)
+                    LOGGER.error(_("The following files do not have read permissions:\n%s"),
+                                 unreadable_files)
                 raise BagError("Read permissions are required to calculate file fixities.")
 
             total_bytes, total_files = make_manifests('data', processes,
@@ -392,7 +405,7 @@ class Bag(object):
                                                       encoding=self.encoding)
 
             # Update Payload-Oxum
-            LOGGER.info('updating %s', self.tag_file_name)
+            LOGGER.info(_('Updating %s'), self.tag_file_name)
             self.info['Payload-Oxum'] = '%s.%s' % (total_bytes, total_files)
 
         _make_tag_file(self.tag_file_name, self.info)
@@ -514,8 +527,9 @@ class Bag(object):
                         # for UTF-8 since the presence of a BOM  is contrary to
                         # the BagIt specification:
                         if manifest_file.encoding == 'UTF-8':
-                            LOGGER.warning('%s is encoded using UTF-8 but contains an unnecessary byte-order mark,'
-                                           ' which is not in compliance with the BagIt RFC',
+                            LOGGER.warning(_('%s is encoded using UTF-8 but contains an unnecessary'
+                                             ' byte-order mark, which is not in compliance with the'
+                                             ' BagIt RFC'),
                                            manifest_file.name)
                     else:
                         manifest_file.seek(0)  # Pretend the first read never happened
@@ -531,7 +545,8 @@ class Bag(object):
 
                     # Format is FILENAME *CHECKSUM
                     if len(entry) != 2:
-                        LOGGER.error("%s: Invalid %s manifest entry: %s", self, alg, line)
+                        LOGGER.error(_("%(bag)s: Invalid %(algorithm)s manifest entry: %(line)s"),
+                                     {'bag': self, 'algorithm': alg, 'line': line})
                         continue
 
                     entry_hash = entry[0]
@@ -594,10 +609,14 @@ class Bag(object):
 
     def _validate_contents(self, processes=1, fast=False):
         if fast and not self.has_oxum():
-            raise BagValidationError("cannot validate Bag with fast=True if Bag lacks a Payload-Oxum")
-        self._validate_oxum()    # Fast
+            raise BagValidationError(_('Fast validation requires a Payload-Oxum in bag-info.txt'))
+
+        # Perform the fast file count + size check so we can fail early:
+        self._validate_oxum()
+
         if not fast:
-            self._validate_entries(processes)  # *SLOW*
+            # Now perform the full file hashing process:
+            self._validate_entries(processes)
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
@@ -608,6 +627,7 @@ class Bag(object):
         # If multiple Payload-Oxum tags (bad idea)
         # use the first listed in bag-info.txt
         if isinstance(oxum, list):
+            LOGGER.warning(_('bag-info.txt defines multiple Payload-Oxum values!'))
             oxum = oxum[0]
 
         byte_count, file_count = oxum.split('.', 1)
@@ -671,7 +691,7 @@ class Bag(object):
                         pass
         # Any unhandled exceptions are probably fatal
         except:
-            LOGGER.exception("unable to calculate file hashes for %s", self)
+            LOGGER.exception(_("Unable to calculate file hashes for %s"), self)
             raise
 
         for rel_path, f_hashes, hashes in hash_results:
@@ -869,7 +889,7 @@ def get_hashers(algorithms):
         try:
             hasher = hashlib.new(alg)
         except ValueError:
-            LOGGER.warning("Disabling requested hash algorithm %s: hashlib does not support it", alg)
+            LOGGER.warning(_("Disabling requested hash algorithm %s: hashlib does not support it"), alg)
             continue
 
         hashers[alg] = hasher
@@ -905,7 +925,7 @@ def _calculate_file_hashes(full_path, f_hashers):
     Returns a dictionary of (algorithm, hexdigest) values for the provided
     filename
     """
-    LOGGER.info("Verifying checksum for file %s", full_path)
+    LOGGER.info(_("Verifying checksum for file %s"), full_path)
     if not os.path.exists(full_path):
         raise BagValidationError("%s does not exist" % full_path)
 
@@ -998,8 +1018,8 @@ def _make_tag_file(bag_info_path, bag_info):
 
 
 def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='utf-8'):
-    LOGGER.info('Generating %s manifests with %s processes',
-                ', '.join(algorithms), processes)
+    LOGGER.info(_('Using %(process_count)d processes to generate manifests: %(algorithms)s'),
+                {'process_count': processes, 'algorithms': ', '.join(algorithms)})
 
     manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms)
 
@@ -1046,7 +1066,7 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='
 
 def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
     tagmanifest_file = join(bag_dir, "tagmanifest-%s.txt" % alg)
-    LOGGER.info("writing %s", tagmanifest_file)
+    LOGGER.info(_("Creating %s"), tagmanifest_file)
 
     checksums = []
     for f in _find_tag_files(bag_dir):
@@ -1123,7 +1143,7 @@ def _can_read(test_dir):
 
 
 def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
-    LOGGER.info("Generating manifest lines for file %s", filename)
+    LOGGER.info(_("Generating manifest lines for file %s"), filename)
 
     # For performance we'll read the file only once and pass it block
     # by block to every requested hash algorithm:
@@ -1269,11 +1289,12 @@ def main():
                 # validate throws a BagError or BagValidationError
                 bag.validate(processes=args.processes, fast=args.fast)
                 if args.fast:
-                    LOGGER.info("%s valid according to Payload-Oxum", bag_dir)
+                    LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
                 else:
-                    LOGGER.info("%s is valid", bag_dir)
+                    LOGGER.info(_("%s is valid"), bag_dir)
             except BagError as e:
-                LOGGER.error("%s is invalid: %s", bag_dir, e)
+                LOGGER.error(_("%(bag)s is invalid: %(error)s"),
+                             {'bag': bag_dir, 'error': e})
                 rc = 1
 
         # make the bag
@@ -1283,7 +1304,9 @@ def main():
                          processes=args.processes,
                          checksums=args.checksums)
             except Exception as exc:
-                LOGGER.error("Failed to create bag in %s: %s", bag_dir, exc, exc_info=True)
+                LOGGER.error(_("Failed to create bag in %(bag_directory)s: %(error)s"),
+                             {'bag_directory': bag_dir, 'error': exc},
+                             exc_info=True)
                 rc = 1
 
     sys.exit(rc)
