@@ -63,6 +63,11 @@ from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
 
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
 from pkg_resources import DistributionNotFound, get_distribution
 
 MODULE_NAME = 'bagit' if __name__ == '__main__' else __name__
@@ -418,38 +423,58 @@ class Bag(object):
                 yield tagfilepath
 
     def fetch_entries(self):
+        """Load fetch.txt if present and iterate over its contents
+
+        yields (url, size, filename) tuples
+
+        raises BagError for errors such as an unsafe filename referencing
+        data outside of the bag directory
+        """
+
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
             with open(fetch_file_path, 'rb') as fetch_file:
                 for line in fetch_file:
-                    parts = line.strip().split(None, 2)
-                    yield (parts[0], parts[1], parts[2])
+                    url, file_size, filename = line.strip().split(None, 2)
+
+                    if self._path_is_dangerous(filename):
+                        raise BagError(
+                            'Path "%s" in "%s" is unsafe' % (
+                                filename, os.path.join(self.path, 'fetch.txt'),
+                            )
+                        )
+
+                    yield url, file_size, filename
 
     def files_to_be_fetched(self):
-        for f, _, _ in self.fetch_entries():
-            if self._path_is_dangerous(f):
-                raise BagError(
-                    'Path "%s" in "%s" is unsafe' % (
-                        f, os.path.join(self.path, 'fetch.txt'),
-                    )
-                )
-            yield f
+        """
+        Convenience wrapper for fetch_entries which returns only the
+        local filename
+        """
+
+        for url, file_size, filename in self.fetch_entries():
+            yield filename
 
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
     def validate(self, processes=1, fast=False):
-        """Checks the structure and contents are valid. If you supply
-        the parameter fast=True the Payload-Oxum (if present) will
-        be used to check that the payload files are present and
-        accounted for, instead of re-calculating fixities and
-        comparing them against the manifest. By default validate()
-        will re-calculate fixities (fast=False).
+        """Checks the structure and contents are valid.
+
+        If you supply the parameter fast=True the Payload-Oxum (if present) will
+        be used to check that the payload files are present and accounted for,
+        instead of re-calculating fixities and comparing them against the
+        manifest. By default validate() will re-calculate fixities (fast=False).
         """
+
         self._validate_structure()
         self._validate_bagittxt()
+
+        self.validate_fetch()
+
         self._validate_contents(processes=processes, fast=fast)
+
         return True
 
     def is_valid(self, fast=False):
@@ -551,6 +576,21 @@ class Bag(object):
             raise BagValidationError("Missing manifest file")
         if "bagit.txt" not in os.listdir(self.path):
             raise BagValidationError("Missing bagit.txt")
+
+    def validate_fetch(self):
+        """Validate the fetch.txt file
+
+        Raises `BagError` for errors and otherwise returns no value
+        """
+
+        for url, file_size, filename in self.fetch_entries():
+            # fetch_entries will raise a BagError for unsafe filenames
+            # so at this point we will check only that the URL is minimally
+            # well formed:
+            parsed_url = urlparse(url)
+
+            if not all((parsed_url.scheme, parsed_url.netloc, parsed_url.path)):
+                raise BagError('Malformed URL in fetch.txt: %s' % url)
 
     def _validate_contents(self, processes=1, fast=False):
         if fast and not self.has_oxum():
