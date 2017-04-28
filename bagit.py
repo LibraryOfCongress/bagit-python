@@ -617,7 +617,7 @@ class Bag(object):
             parsed_url = urlparse(url)
 
             if not all((parsed_url.scheme, parsed_url.netloc, parsed_url.path)):
-                raise BagError('Malformed URL in fetch.txt: %s' % url)
+                raise BagError(_('Malformed URL in fetch.txt: %s') % url)
 
     def _validate_contents(self, processes=1, fast=False):
         if fast and not self.has_oxum():
