@@ -110,6 +110,19 @@ class TestSingleProcessValidation(unittest.TestCase):
         bag = bagit.Bag(self.tmpdir)
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=False)
 
+    def test_validate_missing_directory(self):
+        bagit.make_bag(self.tmpdir)
+
+        tmp_data_dir = os.path.join(self.tmpdir, 'data')
+        shutil.rmtree(tmp_data_dir)
+
+        bag = bagit.Bag(self.tmpdir)
+        with self.assertRaises(bagit.BagValidationError) as error_catcher:
+            bag.validate()
+
+        self.assertEqual('Expected data directory %s does not exist' % tmp_data_dir,
+                         str(error_catcher.exception))
+
     def test_validation_error_details(self):
         bag = bagit.make_bag(self.tmpdir, checksums=['md5'], bag_info={'Bagging-Date': '1970-01-01'})
         readme = j(self.tmpdir, "data", "README")
@@ -373,13 +386,23 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
 class TestBag(unittest.TestCase):
 
     def setUp(self):
+        self.starting_directory = os.getcwd()   # FIXME: remove this after we stop changing directories in bagit.py
         self.tmpdir = tempfile.mkdtemp()
         if os.path.isdir(self.tmpdir):
             shutil.rmtree(self.tmpdir)
         shutil.copytree('test-data', self.tmpdir)
 
     def tearDown(self):
+        os.chdir(self.starting_directory)       # FIXME: remove this after we stop changing directories in bagit.py
         if os.path.isdir(self.tmpdir):
+            # Clean up after tests which leave inaccessible files behind:
+
+            os.chmod(self.tmpdir, 0o700)
+
+            for dirpath, subdirs, filenames in os.walk(self.tmpdir, topdown=True):
+                for i in subdirs:
+                    os.chmod(os.path.join(dirpath, i), 0o700)
+
             shutil.rmtree(self.tmpdir)
 
     def test_make_bag(self):
@@ -454,6 +477,55 @@ class TestBag(unittest.TestCase):
 
     def test_make_bag_unknown_algorithm(self):
         self.assertRaises(ValueError, bagit.make_bag, self.tmpdir, checksum=['not-really-a-name'])
+
+    def test_make_bag_with_bogus_directory(self):
+        bogus_directory = os.path.realpath('this-directory-does-not-exist')
+
+        with self.assertRaises(RuntimeError) as error_catcher:
+            bagit.make_bag(bogus_directory)
+
+        self.assertEqual('Bag directory %s does not exist' % bogus_directory,
+                         str(error_catcher.exception))
+
+    def test_make_bag_with_unreadable_source(self):
+        os.chmod(self.tmpdir, 0)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        self.assertEqual('Missing permissions to move all files and directories',
+                         str(error_catcher.exception))
+
+    def test_make_bag_with_unreadable_subdirectory(self):
+        # We'll set this write-only to exercise the second permission check in make_bag:
+        os.chmod(j(self.tmpdir, 'loc'), 0o200)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        self.assertEqual('Read permissions are required to calculate file fixities',
+                         str(error_catcher.exception))
+
+    def test_make_bag_with_unwritable_source(self):
+        path_suffixes = ('', 'loc')
+
+        for path_suffix in reversed(path_suffixes):
+            os.chmod(j(self.tmpdir, path_suffix), 0o500)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        self.assertEqual('Missing permissions to move all files and directories',
+                         str(error_catcher.exception))
+
+    def test_make_bag_with_unreadable_file(self):
+        os.chmod(j(self.tmpdir, 'loc', '2478433644_2839c5e8b8_o_d.jpg'), 0)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        self.assertEqual('Read permissions are required to calculate file fixities',
+                         str(error_catcher.exception))
 
     def test_make_bag_with_data_dir_present(self):
         os.mkdir(j(self.tmpdir, 'data'))
@@ -550,6 +622,28 @@ Tag-File-Character-Encoding: UTF-8
         bagit.make_bag(self.tmpdir)
         payload_dir = j(self.tmpdir, 'data')
         self.assertEqual(os.stat(payload_dir).st_mode, new_perms)
+
+    def test_save_bag_to_unwritable_directory(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        os.chmod(self.tmpdir, 0)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bag.save()
+
+        self.assertEqual('Cannot save bag to non-existent or inaccessible directory %s' % self.tmpdir,
+                         str(error_catcher.exception))
+
+    def test_save_bag_with_unwritable_file(self):
+        bag = bagit.make_bag(self.tmpdir, checksum=['sha256'])
+
+        os.chmod(os.path.join(self.tmpdir, 'bag-info.txt'), 0)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bag.save()
+
+        self.assertEqual('Read permissions are required to calculate file fixities',
+                         str(error_catcher.exception))
 
     def test_save_manifests(self):
         bag = bagit.make_bag(self.tmpdir)

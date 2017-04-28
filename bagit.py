@@ -145,28 +145,36 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         LOGGER.error(_("Bag directory %s does not exist"), bag_dir)
         raise RuntimeError(_("Bag directory %s does not exist") % bag_dir)
 
+    # FIXME: we should do the permissions checks before changing directories
     old_dir = os.path.abspath(os.path.curdir)
-    os.chdir(bag_dir)
 
     try:
-        unbaggable = _can_bag(os.curdir)
+        # TODO: These two checks are currently redundant since an unreadable directory will also
+        #       often be unwritable, and this code will require review when we add the option to
+        #       bag to a destination other than the source. It would be nice if we could avoid
+        #       walking the directory tree more than once even if most filesystems will cache it
+
+        unbaggable = _can_bag(bag_dir)
 
         if unbaggable:
             LOGGER.error(_("Unable to write to the following directories and files:\n%s"), unbaggable)
             raise BagError(_("Missing permissions to move all files and directories"))
 
-        unreadable_dirs, unreadable_files = _can_read(os.curdir)
+        unreadable_dirs, unreadable_files = _can_read(bag_dir)
 
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
                 LOGGER.error(_("The following directories do not have read permissions:\n%s"),
                              unreadable_dirs)
             if unreadable_files:
-                LOGGER.error(_("The following files do not have read permissions:\n%s"), unreadable_files)
+                LOGGER.error(_("The following files do not have read permissions:\n%s"),
+                             unreadable_files)
             raise BagError(_("Read permissions are required to calculate file fixities"))
         else:
             LOGGER.info(_("Creating data directory"))
 
+            # FIXME: if we calculate full paths we won't need to deal with changing directories
+            os.chdir(bag_dir)
             cwd = os.getcwd()
             temp_data = tempfile.mkdtemp(dir=cwd)
 
@@ -387,28 +395,31 @@ class Bag(object):
         if not self.path:
             raise BagError(_('Bag.save() called before setting the path!'))
 
+        if not os.access(self.path, os.R_OK | os.W_OK | os.X_OK):
+            raise BagError(_('Cannot save bag to non-existent or inaccessible directory %s') % self.path)
+
+        unbaggable = _can_bag(self.path)
+        if unbaggable:
+            LOGGER.error(_("Missing write permissions for the following directories and files:\n%s"),
+                         unbaggable)
+            raise BagError(_("Missing permissions to move all files and directories"))
+
+        unreadable_dirs, unreadable_files = _can_read(self.path)
+        if unreadable_dirs or unreadable_files:
+            if unreadable_dirs:
+                LOGGER.error(_("The following directories do not have read permissions:\n%s"),
+                                unreadable_dirs)
+            if unreadable_files:
+                LOGGER.error(_("The following files do not have read permissions:\n%s"),
+                             unreadable_files)
+            raise BagError(_("Read permissions are required to calculate file fixities"))
+
         # Change working directory to bag directory so helper functions work
         old_dir = os.path.abspath(os.path.curdir)
         os.chdir(self.path)
 
         # Generate new manifest files
         if manifests:
-            unbaggable = _can_bag(self.path)
-            if unbaggable:
-                LOGGER.error(_("Missing write permissions for the following directories and files:\n%s"),
-                             unbaggable)
-                raise BagError(_("Missing permissions to move all files and directories"))
-
-            unreadable_dirs, unreadable_files = _can_read(self.path)
-            if unreadable_dirs or unreadable_files:
-                if unreadable_dirs:
-                    LOGGER.error(_("The following directories do not have read permissions:\n%s"),
-                                 unreadable_dirs)
-                if unreadable_files:
-                    LOGGER.error(_("The following files do not have read permissions:\n%s"),
-                                 unreadable_files)
-                raise BagError(_("Read permissions are required to calculate file fixities"))
-
             total_bytes, total_files = make_manifests('data', processes,
                                                       algorithms=self.algorithms,
                                                       encoding=self.encoding)
@@ -1150,12 +1161,24 @@ def _walk(data_dir):
 
 
 def _can_bag(test_dir):
-    """Scan the provided directory for files which do not have write permissions"""
-    unwriteable = []
-    for inode in os.listdir(test_dir):
-        if not os.access(os.path.join(test_dir, inode), os.W_OK):
-            unwriteable.append(os.path.join(os.path.abspath(test_dir), inode))
-    return unwriteable
+    """Scan the provided directory for files which cannot be bagged due to insufficient permissions"""
+    unbaggable = []
+
+    if not os.access(test_dir, os.R_OK):
+        # We cannot continue without permission to read the source directory
+        unbaggable.append(test_dir)
+        return unbaggable
+
+    if not os.access(test_dir, os.W_OK):
+        unbaggable.append(test_dir)
+
+    for dirpath, dirnames, filenames in os.walk(test_dir):
+        for directory in dirnames:
+            full_path = os.path.join(dirpath, directory)
+            if not os.access(full_path, os.W_OK):
+                unbaggable.append(full_path)
+
+    return unbaggable
 
 
 def _can_read(test_dir):
@@ -1164,13 +1187,19 @@ def _can_read(test_dir):
     """
     unreadable_dirs = []
     unreadable_files = []
-    for dirpath, dirnames, filenames in os.walk(test_dir):
-        for dn in dirnames:
-            if not os.access(os.path.join(dirpath, dn), os.R_OK):
-                unreadable_dirs.append(os.path.join(dirpath, dn))
-        for fn in filenames:
-            if not os.access(os.path.join(dirpath, fn), os.R_OK):
-                unreadable_files.append(os.path.join(dirpath, fn))
+
+    if not os.access(test_dir, os.R_OK):
+        unreadable_dirs.append(test_dir)
+    else:
+        for dirpath, dirnames, filenames in os.walk(test_dir):
+            for dn in dirnames:
+                full_path = os.path.join(dirpath, dn)
+                if not os.access(full_path, os.R_OK):
+                    unreadable_dirs.append(full_path)
+            for fn in filenames:
+                full_path = os.path.join(dirpath, fn)
+                if not os.access(full_path, os.R_OK):
+                    unreadable_files.append(full_path)
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
 
