@@ -550,6 +550,10 @@ class TestBag(SelfCleaningTestCase):
         self.assertEqual(list(bag.manifest_files()),
                          ['%s/manifest-sha384.txt' % self.tmpdir])
 
+    def test_bag_string_representation(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertEqual(self.tmpdir, str(bag))
+
     def test_has_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
         self.assertTrue(bag.has_oxum())

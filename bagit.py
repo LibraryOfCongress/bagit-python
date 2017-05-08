@@ -262,6 +262,7 @@ class Bag(object):
             self._open()
 
     def __str__(self):
+        # FIXME: develop a more informative string representation for a Bag
         return self.path
 
     @property
