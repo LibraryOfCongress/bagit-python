@@ -408,7 +408,7 @@ class Bag(object):
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
                 LOGGER.error(_("The following directories do not have read permissions:\n%s"),
-                                unreadable_dirs)
+                             unreadable_dirs)
             if unreadable_files:
                 LOGGER.error(_("The following files do not have read permissions:\n%s"),
                              unreadable_files)

@@ -20,7 +20,7 @@ import bagit
 import mock
 
 if sys.version_info < (2, 7):
-    import unittest2 as unittest
+    import unittest2 as unittest  # NOQA
 
 logging.basicConfig(filename='test.log', level=logging.DEBUG)
 stderr = logging.StreamHandler()
@@ -450,10 +450,14 @@ class TestBag(unittest.TestCase):
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha1.txt')))
         manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-sha1.txt')).splitlines()
         self.assertIn('ace19416e605cfb12ab11df4898ca7fd9979ee43  data/README', manifest_txt)
-        self.assertIn('4c0a3da57374e8db379145f18601b159f3cad44b  data/loc/2478433644_2839c5e8b8_o_d.jpg', manifest_txt)
-        self.assertIn('62095aeddae2f3207cb77c85937e13c51641ef71  data/loc/3314493806_6f1db86d66_o_d.jpg', manifest_txt)
-        self.assertIn('e592194b3733e25166a631e1ec55bac08066cbc1  data/si/2584174182_ffd5c24905_b_d.jpg', manifest_txt)
-        self.assertIn('db49ef009f85a5d0701829f38d29f8cf9c5df2ea  data/si/4011399822_65987a4806_b_d.jpg', manifest_txt)
+        self.assertIn('4c0a3da57374e8db379145f18601b159f3cad44b  data/loc/2478433644_2839c5e8b8_o_d.jpg',
+                      manifest_txt)
+        self.assertIn('62095aeddae2f3207cb77c85937e13c51641ef71  data/loc/3314493806_6f1db86d66_o_d.jpg',
+                      manifest_txt)
+        self.assertIn('e592194b3733e25166a631e1ec55bac08066cbc1  data/si/2584174182_ffd5c24905_b_d.jpg',
+                      manifest_txt)
+        self.assertIn('db49ef009f85a5d0701829f38d29f8cf9c5df2ea  data/si/4011399822_65987a4806_b_d.jpg',
+                      manifest_txt)
 
     def test_make_bag_sha256_manifest(self):
         bagit.make_bag(self.tmpdir, checksum=['sha256'])
