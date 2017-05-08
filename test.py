@@ -756,6 +756,53 @@ Tag-File-Character-Encoding: UTF-8
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(bag.is_valid())
 
+    def test_open_bag_with_missing_bagit_txt(self):
+        bagit.make_bag(self.tmpdir)
+
+        os.unlink(j(self.tmpdir, 'bagit.txt'))
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.Bag(self.tmpdir)
+
+        self.assertEqual('Expected bagit.txt does not exist: %s/bagit.txt' % self.tmpdir,
+                         str(error_catcher.exception))
+
+    def test_open_bag_with_malformed_bagit_txt(self):
+        bagit.make_bag(self.tmpdir)
+
+        with open(j(self.tmpdir, 'bagit.txt'), 'w') as f:
+            os.ftruncate(f.fileno(), 0)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.Bag(self.tmpdir)
+
+        self.assertEqual('Missing required tag in bagit.txt: BagIt-Version, Tag-File-Character-Encoding',
+                         str(error_catcher.exception))
+
+    def test_open_bag_with_unknown_version(self):
+        bagit.make_bag(self.tmpdir)
+
+        with open(j(self.tmpdir, 'bagit.txt'), 'w') as f:
+            f.write('BagIt-Version: 0.123456789\nTag-File-Character-Encoding: UTF-8\n')
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.Bag(self.tmpdir)
+
+        self.assertEqual('Unsupported bag version: 0.123456789',
+                         str(error_catcher.exception))
+
+    def test_open_bag_with_unknown_encoding(self):
+        bagit.make_bag(self.tmpdir)
+
+        with open(j(self.tmpdir, 'bagit.txt'), 'w') as f:
+            f.write('BagIt-Version: 0.97\nTag-File-Character-Encoding: WTF-8\n')
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.Bag(self.tmpdir)
+
+        self.assertEqual('Unsupported encoding: WTF-8',
+                         str(error_catcher.exception))
+
 
 class TestFetch(SelfCleaningTestCase):
     def setUp(self):
