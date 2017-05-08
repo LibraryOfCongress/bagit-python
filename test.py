@@ -781,6 +781,9 @@ class TestFetch(SelfCleaningTestCase):
         self.assertListEqual(['data/nasa/PIA21390.jpg'],
                              list(self.bag.files_to_be_fetched()))
 
+        self.assertListEqual(['data/nasa/PIA21390.jpg'],
+                             list(self.bag.compare_fetch_with_fs()))
+
     def test_fetch_validation(self):
         with open(j(self.tmpdir, 'fetch.txt'), 'w') as fetch_txt:
             print('https://photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - data/nasa/PIA21390.jpg',
