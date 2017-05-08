@@ -36,18 +36,37 @@ def slurp_text_file(filename):
         return f.read()
 
 
-@mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
-class TestSingleProcessValidation(unittest.TestCase):
+class SelfCleaningTestCase(unittest.TestCase):
+    """TestCase subclass which cleans up self.tmpdir after each test"""
 
     def setUp(self):
+        super(SelfCleaningTestCase, self).setUp()
+
+        self.starting_directory = os.getcwd()   # FIXME: remove this after we stop changing directories in bagit.py
         self.tmpdir = tempfile.mkdtemp()
         if os.path.isdir(self.tmpdir):
             shutil.rmtree(self.tmpdir)
         shutil.copytree('test-data', self.tmpdir)
 
     def tearDown(self):
+        # FIXME: remove this after we stop changing directories in bagit.py
+        os.chdir(self.starting_directory)
         if os.path.isdir(self.tmpdir):
+            # Clean up after tests which leave inaccessible files behind:
+
+            os.chmod(self.tmpdir, 0o700)
+
+            for dirpath, subdirs, filenames in os.walk(self.tmpdir, topdown=True):
+                for i in subdirs:
+                    os.chmod(os.path.join(dirpath, i), 0o700)
+
             shutil.rmtree(self.tmpdir)
+
+        super(SelfCleaningTestCase, self).tearDown()
+
+
+@mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
+class TestSingleProcessValidation(SelfCleaningTestCase):
 
     def validate(self, bag, *args, **kwargs):
         return bag.validate(*args, **kwargs)
@@ -383,27 +402,7 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
 
 
 @mock.patch('bagit.VERSION', new='1.5.4')  # This avoids needing to change expected hashes on each release
-class TestBag(unittest.TestCase):
-
-    def setUp(self):
-        self.starting_directory = os.getcwd()   # FIXME: remove this after we stop changing directories in bagit.py
-        self.tmpdir = tempfile.mkdtemp()
-        if os.path.isdir(self.tmpdir):
-            shutil.rmtree(self.tmpdir)
-        shutil.copytree('test-data', self.tmpdir)
-
-    def tearDown(self):
-        os.chdir(self.starting_directory)       # FIXME: remove this after we stop changing directories in bagit.py
-        if os.path.isdir(self.tmpdir):
-            # Clean up after tests which leave inaccessible files behind:
-
-            os.chmod(self.tmpdir, 0o700)
-
-            for dirpath, subdirs, filenames in os.walk(self.tmpdir, topdown=True):
-                for i in subdirs:
-                    os.chmod(os.path.join(dirpath, i), 0o700)
-
-            shutil.rmtree(self.tmpdir)
+class TestBag(SelfCleaningTestCase):
 
     def test_make_bag(self):
         info = {'Bagging-Date': '1970-01-01', 'Contact-Email': 'ehs@pobox.com'}
