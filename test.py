@@ -757,5 +757,78 @@ Tag-File-Character-Encoding: UTF-8
         self.assertTrue(bag.is_valid())
 
 
+class TestFetch(SelfCleaningTestCase):
+    def setUp(self):
+        super(TestFetch, self).setUp()
+
+        # All of these tests will involve fetch.txt usage with an existing bag
+        # so we'll simply create one:
+        self.bag = bagit.make_bag(self.tmpdir)
+
+    def test_fetch_loader(self):
+        with open(j(self.tmpdir, 'fetch.txt'), 'w') as fetch_txt:
+            print('https://photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - data/nasa/PIA21390.jpg',
+                  file=fetch_txt)
+
+        self.bag.save(manifests=True)
+        self.bag.validate()
+
+        self.assertListEqual([('https://photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg',
+                               '-',
+                               'data/nasa/PIA21390.jpg')],
+                             list(self.bag.fetch_entries()))
+
+        self.assertListEqual(['data/nasa/PIA21390.jpg'],
+                             list(self.bag.files_to_be_fetched()))
+
+    def test_fetch_validation(self):
+        with open(j(self.tmpdir, 'fetch.txt'), 'w') as fetch_txt:
+            print('https://photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - data/nasa/PIA21390.jpg',
+                  file=fetch_txt)
+
+        self.bag.save(manifests=True)
+
+        with mock.patch.object(bagit.Bag, 'validate_fetch') as mock_vf:
+            self.bag.validate()
+            self.assertTrue(mock_vf.called, msg='Bag.validate() should call Bag.validate_fetch()')
+
+    def test_fetch_unsafe_payloads(self):
+        with open(j(self.tmpdir, 'fetch.txt'), 'w') as fetch_txt:
+            print('https://photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - /etc/passwd',
+                  file=fetch_txt)
+
+        self.bag.save(manifests=True)
+
+        expected_msg = 'Path "/etc/passwd" in "%s/fetch.txt" is unsafe' % self.tmpdir
+
+        # We expect both validate() and fetch entry iteration to raise errors on security hazards
+        # so we'll test both:
+
+        with self.assertRaises(bagit.BagError) as cm:
+            self.bag.validate()
+
+        self.assertEqual(expected_msg, str(cm.exception))
+
+        # Note the use of list() to exhaust the fetch_entries generator:
+        with self.assertRaises(bagit.BagError) as cm:
+            list(self.bag.fetch_entries())
+
+        self.assertEqual(expected_msg, str(cm.exception))
+
+    def test_fetch_malformed_url(self):
+        with open(j(self.tmpdir, 'fetch.txt'), 'w') as fetch_txt:
+            print('//photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - data/nasa/PIA21390.jpg',
+                  file=fetch_txt)
+
+        self.bag.save(manifests=True)
+
+        expected_msg = 'Malformed URL in fetch.txt: //photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg'
+
+        with self.assertRaises(bagit.BagError) as cm:
+            self.bag.validate_fetch()
+
+        self.assertEqual(expected_msg, str(cm.exception))
+
+
 if __name__ == '__main__':
     unittest.main()
