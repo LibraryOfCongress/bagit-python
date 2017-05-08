@@ -468,7 +468,7 @@ class Bag(object):
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
         if isfile(fetch_file_path):
-            with open(fetch_file_path, 'rb') as fetch_file:
+            with open_text_file(fetch_file_path, 'r', encoding=self.encoding) as fetch_file:
                 for line in fetch_file:
                     url, file_size, filename = line.strip().split(None, 2)
 
