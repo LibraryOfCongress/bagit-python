@@ -29,7 +29,7 @@ except ImportError:
 
 from pkg_resources import DistributionNotFound, get_distribution
 
-TRANSLATION_CATALOG = gettext.translation('bagit-python', localedir='locale', fallback=False)
+TRANSLATION_CATALOG = gettext.translation('bagit-python', localedir='locale', fallback=True)
 if sys.version_info < (3, ):
     _ = TRANSLATION_CATALOG.ugettext
 else:
