@@ -31,7 +31,7 @@ try:
 except:
     requirements.append("hashlib")
 
-tests_require = ['mock']
+tests_require = ['mock', 'coverage']
 
 if sys.version_info < (2, 7):
     tests_require.append('unittest2')

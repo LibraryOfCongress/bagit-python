@@ -14,7 +14,7 @@ matrix:
 
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
-    - pip install coveralls
+    - pip install coveralls coverage
 
 script: coverage run --include=bagit.py setup.py test
 
