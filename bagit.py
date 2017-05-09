@@ -840,10 +840,10 @@ class FileNormalizationConflict(BagError):
         self.file_b = file_b
 
     def __str__(self):
-        return _('Unicode normalization conflict for file "%(file_a)s" and "%(file_b)s"' % {
+        return _('Unicode normalization conflict for file "%(file_a)s" and "%(file_b)s"') % {
             'file_a': self.file_a,
             'file_b': self.file_b
-        })
+        }
 
 
 def posix_multiprocessing_worker_initializer():
