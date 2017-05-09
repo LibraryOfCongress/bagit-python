@@ -8,6 +8,11 @@ python:
  - "3.6"
  - "3.6-dev"
 
+addons:
+  apt:
+    packages:
+        gettext  # This was removed in the Precise release on
+
 matrix:
   allow_failures:
     python: "3.6-dev"
