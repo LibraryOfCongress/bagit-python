@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-27 17:05-0400\n"
+"POT-Creation-Date: 2017-05-09 11:56-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,162 +17,186 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: bagit.py:129
+#, python-format
+msgid ""
+"\n"
+"BagIt is a directory, filename convention for bundling an arbitrary set of\n"
+"files with a manifest, checksums, and additional metadata. More about BagIt\n"
+"can be found at:\n"
+"\n"
+"    http://purl.org/net/bagit\n"
+"\n"
+"bagit.py is a pure python drop in library and command line tool for "
+"creating,\n"
+"and working with BagIt directories.\n"
+"\n"
+"\n"
+"Command-Line Usage:\n"
+"\n"
+"Basic usage is to give bagit.py a directory to bag up:\n"
+"\n"
+"    $ bagit.py my_directory\n"
+"\n"
+"This does a bag-in-place operation where the current contents will be moved\n"
+"into the appropriate BagIt structure and the metadata files will be "
+"created.\n"
+"\n"
+"You can bag multiple directories if you wish:\n"
+"\n"
+"    $ bagit.py directory1 directory2\n"
+"\n"
+"Optionally you can provide metadata which will be stored in bag-info.txt:\n"
+"\n"
+"    $ bagit.py --source-organization \"Library of Congress\" directory\n"
+"\n"
+"You can also select which manifest algorithms will be used:\n"
+"\n"
+"    $ bagit.py --sha1 --md5 --sha256 --sha512 directory\n"
+"\n"
+"\n"
+"Using BagIt from your Python code:\n"
+"\n"
+"    import bagit\n"
+"    bag = bagit.make_bag('example-directory', {'Contact-Name': 'Ed "
+"Summers'})\n"
+"    print(bag.entries)\n"
+"\n"
+"For more information or to contribute to bagit-python's development, please\n"
+"visit %(PROJECT_URL)s\n"
+msgstr ""
+
 msgid ""
 "The `checksum` argument for `make_bag` should be replaced with `checksums`"
 msgstr ""
 
-#: bagit.py:137
 #, python-format
 msgid "Creating bag for directory %s"
 msgstr ""
 
-#: bagit.py:140 bagit.py:141
 #, python-format
 msgid "Bag directory %s does not exist"
 msgstr ""
 
-#: bagit.py:150
 #, python-format
 msgid ""
 "Unable to write to the following directories and files:\n"
 "%s"
 msgstr ""
 
-#: bagit.py:151 bagit.py:395
 msgid "Missing permissions to move all files and directories"
 msgstr ""
 
-#: bagit.py:157 bagit.py:400
 #, python-format
 msgid ""
 "The following directories do not have read permissions:\n"
 "%s"
 msgstr ""
 
-#: bagit.py:160 bagit.py:403
 #, python-format
 msgid ""
 "The following files do not have read permissions:\n"
 "%s"
 msgstr ""
 
-#: bagit.py:161 bagit.py:405
 msgid "Read permissions are required to calculate file fixities"
 msgstr ""
 
-#: bagit.py:163
 msgid "Creating data directory"
 msgstr ""
 
-#: bagit.py:172 bagit.py:176
 #, python-format
 msgid "Moving %(source)s to %(destination)s"
 msgstr ""
 
-#: bagit.py:187
 msgid "Creating bagit.txt"
 msgstr ""
 
-#: bagit.py:192
 msgid "Creating bag-info.txt"
 msgstr ""
 
-#: bagit.py:208
 #, python-format
 msgid "An error occurred creating a bag in %s"
 msgstr ""
 
-#: bagit.py:256
 msgid "Use Bag.algorithms instead of Bag.algs"
 msgstr ""
 
-#: bagit.py:265
 #, python-format
 msgid "Expected bagit.txt does not exist: %s"
 msgstr ""
 
-#: bagit.py:272
 #, python-format
 msgid "Missing required tag in bagit.txt: %s"
 msgstr ""
 
-#: bagit.py:282
 #, python-format
 msgid "Unsupported bag version: %s"
 msgstr ""
 
-#: bagit.py:287
 #, python-format
 msgid "Unsupported encoding: %s"
 msgstr ""
 
-#: bagit.py:383
 msgid "Bag.save() called before setting the path!"
 msgstr ""
 
-#: bagit.py:393
+#, python-format
+msgid "Cannot save bag to non-existent or inaccessible directory %s"
+msgstr ""
+
 #, python-format
 msgid ""
 "Missing write permissions for the following directories and files:\n"
 "%s"
 msgstr ""
 
-#: bagit.py:412
 #, python-format
 msgid "Updating Payload-Oxum in %s"
 msgstr ""
 
-#: bagit.py:455
 #, python-format
 msgid "Path \"%(payload_file)s\" in \"%(source_file)s\" is unsafe"
 msgstr ""
 
-#: bagit.py:516
 #, python-format
 msgid ""
 "%s is encoded using UTF-8 but contains an unnecessary byte-order mark, which "
 "is not in compliance with the BagIt RFC"
 msgstr ""
 
-#: bagit.py:534
 #, python-format
 msgid "%(bag)s: Invalid %(algorithm)s manifest entry: %(line)s"
 msgstr ""
 
-#: bagit.py:544
 #, python-format
 msgid "Path \"%(payload_file)s\" in manifest \"%(manifest_file)s\" is unsafe"
 msgstr ""
 
-#: bagit.py:574
 #, python-format
 msgid "Expected data directory %s does not exist"
 msgstr ""
 
-#: bagit.py:581
 msgid "No manifest files found"
 msgstr ""
 
-#: bagit.py:583
 #, python-format
 msgid "Expected %s to contain \"bagit.txt\""
 msgstr ""
 
-#: bagit.py:587
+#, python-format
+msgid "Malformed URL in fetch.txt: %s"
+msgstr ""
+
 msgid "Fast validation requires bag-info.txt to include Payload-Oxum"
 msgstr ""
 
-#: bagit.py:605
 msgid "bag-info.txt defines multiple Payload-Oxum values!"
 msgstr ""
 
-#: bagit.py:611
 #, python-format
 msgid "Malformed Payload-Oxum value: %s"
 msgstr ""
 
-#: bagit.py:625
 #, python-format
 msgid ""
 "Payload-Oxum validation failed. Expected %(oxum_file_count)d files and "
@@ -180,180 +204,144 @@ msgid ""
 "%(found_byte_count)d bytes"
 msgstr ""
 
-#: bagit.py:678
 #, python-format
 msgid "Unable to calculate file hashes for %s"
 msgstr ""
 
-#: bagit.py:690
 msgid "Bag validation failed"
 msgstr ""
 
-#: bagit.py:703
 msgid "bagit.txt must not contain a byte-order mark"
 msgstr ""
 
-#: bagit.py:763
 #, python-format
 msgid ""
 "%(path)s %(algorithm)s validation failed: expected=\"%(expected)s\" found="
 "\"%(found)s\""
 msgstr ""
 
-#: bagit.py:773
 #, python-format
 msgid "%s exists in manifest but was not found on filesystem"
 msgstr ""
 
-#: bagit.py:778
 #, python-format
 msgid "%s exists on filesystem but is not in the manifest"
 msgstr ""
 
-#: bagit.py:794
 #, python-format
 msgid ""
 "Unicode normalization conflict for file \"%(file_a)s\" and \"%(file_b)s\""
 msgstr ""
 
-#: bagit.py:884
 #, python-format
 msgid "Disabling requested hash algorithm %s: hashlib does not support it"
 msgstr ""
 
-#: bagit.py:890
 msgid ""
 "Unable to continue: hashlib does not support any of the requested algorithms!"
 msgstr ""
 
-#: bagit.py:920
 #, python-format
 msgid "Verifying checksum for file %s"
 msgstr ""
 
-#: bagit.py:923
 #, python-format
 msgid "File %s does not exist"
 msgstr ""
 
-#: bagit.py:934
 #, python-format
 msgid "Could not read %(filename)s: %(error)s"
 msgstr ""
 
-#: bagit.py:988
 #, python-format
 msgid "%(filename)s contains invalid tag: %(line)s"
 msgstr ""
 
-#: bagit.py:1017
 #, python-format
 msgid "Using %(process_count)d processes to generate manifests: %(algorithms)s"
 msgstr ""
 
-#: bagit.py:1055
 msgid "Expected the same number of files for each checksum"
 msgstr ""
 
-#: bagit.py:1058
 msgid "Expected the same number of bytes for each checksums"
 msgstr ""
 
-#: bagit.py:1065
 #, python-format
 msgid "Creating %s"
 msgstr ""
 
-#: bagit.py:1141
 #, python-format
 msgid "Generating manifest lines for file %s"
 msgstr ""
 
-#: bagit.py:1213
 #, python-format
 msgid ""
 "Use multiple processes to calculate checksums faster (default: %(default)s)"
 msgstr ""
 
-#: bagit.py:1214
 msgid "The name of the log file (default: stdout)"
 msgstr ""
 
-#: bagit.py:1216
 msgid "Suppress all progress information other than errors"
 msgstr ""
 
-#: bagit.py:1218
 msgid ""
 "Validate existing bags in the provided directories instead of creating new "
 "ones"
 msgstr ""
 
-#: bagit.py:1221
 msgid ""
 "Modify --validate behaviour to only test whether the bag directory has the "
 "number of files and total size specified in Payload-Oxum without performing "
 "checksum validation to detect corruption."
 msgstr ""
 
-#: bagit.py:1226
 msgid "Checksum Algorithms"
 msgstr ""
 
-#: bagit.py:1228
 #, python-format
 msgid ""
 "Select the manifest algorithms to be used when creating bags (default=%s)"
 msgstr ""
 
-#: bagit.py:1236
 #, python-format
 msgid "Generate %s manifest when creating a bag"
 msgstr ""
 
-#: bagit.py:1238
 msgid "Optional Bag Metadata"
 msgstr ""
 
-#: bagit.py:1243
 msgid ""
 "Directory which will be converted into a bag in place by moving any existing "
 "files into the BagIt structure and creating the manifests and other metadata."
 msgstr ""
 
-#: bagit.py:1264
 #, python-format
 msgid "bagit-python version %s"
 msgstr ""
 
-#: bagit.py:1271
 msgid "The number of processes must be 0 or greater"
 msgstr ""
 
-#: bagit.py:1274
 msgid "Multiple processes are not supported on Python 2.6"
 msgstr ""
 
-#: bagit.py:1277
 msgid "--fast is only allowed as an option for --validate!"
 msgstr ""
 
-#: bagit.py:1290
 #, python-format
 msgid "%s valid according to Payload-Oxum"
 msgstr ""
 
-#: bagit.py:1292
 #, python-format
 msgid "%s is valid"
 msgstr ""
 
-#: bagit.py:1294
 #, python-format
 msgid "%(bag)s is invalid: %(error)s"
 msgstr ""
 
-#: bagit.py:1305
 #, python-format
 msgid "Failed to create bag in %(bag_directory)s: %(error)s"
 msgstr ""
