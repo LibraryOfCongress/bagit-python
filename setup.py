@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import glob
+import os
 import subprocess
 import sys
 from setuptools import setup
@@ -43,7 +44,7 @@ def get_message_catalogs():
     for po_file in glob.glob('locale/*/LC_MESSAGES/bagit-python.po'):
         mo_file = po_file.replace('.po', '.mo')
         subprocess.check_call(['msgfmt', '-o', mo_file, po_file])
-        message_catalogs.append(mo_file)
+        message_catalogs.append((os.path.dirname(mo_file), (mo_file, )))
 
     return message_catalogs
 
