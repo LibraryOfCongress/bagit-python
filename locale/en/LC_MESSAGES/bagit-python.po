@@ -1,0 +1,379 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2017 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-05-09 11:56-0400\n"
+"PO-Revision-Date: 2017-04-27 15:02-0400\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#, python-format
+msgid ""
+"\n"
+"BagIt is a directory, filename convention for bundling an arbitrary set of\n"
+"files with a manifest, checksums, and additional metadata. More about BagIt\n"
+"can be found at:\n"
+"\n"
+"    http://purl.org/net/bagit\n"
+"\n"
+"bagit.py is a pure python drop in library and command line tool for "
+"creating,\n"
+"and working with BagIt directories.\n"
+"\n"
+"\n"
+"Command-Line Usage:\n"
+"\n"
+"Basic usage is to give bagit.py a directory to bag up:\n"
+"\n"
+"    $ bagit.py my_directory\n"
+"\n"
+"This does a bag-in-place operation where the current contents will be moved\n"
+"into the appropriate BagIt structure and the metadata files will be "
+"created.\n"
+"\n"
+"You can bag multiple directories if you wish:\n"
+"\n"
+"    $ bagit.py directory1 directory2\n"
+"\n"
+"Optionally you can provide metadata which will be stored in bag-info.txt:\n"
+"\n"
+"    $ bagit.py --source-organization \"Library of Congress\" directory\n"
+"\n"
+"You can also select which manifest algorithms will be used:\n"
+"\n"
+"    $ bagit.py --sha1 --md5 --sha256 --sha512 directory\n"
+"\n"
+"\n"
+"Using BagIt from your Python code:\n"
+"\n"
+"    import bagit\n"
+"    bag = bagit.make_bag('example-directory', {'Contact-Name': 'Ed "
+"Summers'})\n"
+"    print(bag.entries)\n"
+"\n"
+"For more information or to contribute to bagit-python's development, please\n"
+"visit %(PROJECT_URL)s\n"
+msgstr ""
+
+msgid ""
+"The `checksum` argument for `make_bag` should be replaced with `checksums`"
+msgstr ""
+"The `checksum` argument for `make_bag` should be replaced with `checksums`"
+
+#, python-format
+msgid "Creating bag for directory %s"
+msgstr "Creating bag for directory %s"
+
+#, python-format
+msgid "Bag directory %s does not exist"
+msgstr "Bag directory %s does not exist"
+
+#, python-format
+msgid ""
+"Unable to write to the following directories and files:\n"
+"%s"
+msgstr ""
+
+msgid "Missing permissions to move all files and directories"
+msgstr ""
+
+#, python-format
+msgid ""
+"The following directories do not have read permissions:\n"
+"%s"
+msgstr ""
+"The following directories do not have read permissions:\n"
+"%s"
+
+#, python-format
+msgid ""
+"The following files do not have read permissions:\n"
+"%s"
+msgstr ""
+"The following files do not have read permissions:\n"
+"%s"
+
+msgid "Read permissions are required to calculate file fixities"
+msgstr ""
+
+msgid "Creating data directory"
+msgstr "Creating data directory"
+
+#, python-format
+msgid "Moving %(source)s to %(destination)s"
+msgstr "Moving %(source)s to %(destination)s"
+
+msgid "Creating bagit.txt"
+msgstr "Creating bagit.txt"
+
+msgid "Creating bag-info.txt"
+msgstr "Creating bag-info.txt"
+
+#, python-format
+msgid "An error occurred creating a bag in %s"
+msgstr "An error occurred creating a bag in %s"
+
+msgid "Use Bag.algorithms instead of Bag.algs"
+msgstr "Use Bag.algorithms instead of Bag.algs"
+
+#, python-format
+msgid "Expected bagit.txt does not exist: %s"
+msgstr ""
+
+#, python-format
+msgid "Missing required tag in bagit.txt: %s"
+msgstr ""
+
+#, python-format
+msgid "Unsupported bag version: %s"
+msgstr ""
+
+#, python-format
+msgid "Unsupported encoding: %s"
+msgstr ""
+
+msgid "Bag.save() called before setting the path!"
+msgstr ""
+
+#, python-format
+msgid "Cannot save bag to non-existent or inaccessible directory %s"
+msgstr ""
+
+#, python-format
+msgid ""
+"Missing write permissions for the following directories and files:\n"
+"%s"
+msgstr ""
+
+#, python-format
+msgid "Updating Payload-Oxum in %s"
+msgstr ""
+
+#, python-format
+msgid "Path \"%(payload_file)s\" in \"%(source_file)s\" is unsafe"
+msgstr ""
+
+#, python-format
+msgid ""
+"%s is encoded using UTF-8 but contains an unnecessary byte-order mark, which "
+"is not in compliance with the BagIt RFC"
+msgstr ""
+"%s is encoded using UTF-8 but contains an unnecessary byte-order mark, which "
+"is not in compliance with the BagIt RFC"
+
+#, python-format
+msgid "%(bag)s: Invalid %(algorithm)s manifest entry: %(line)s"
+msgstr "%(bag)s: Invalid %(algorithm)s manifest entry: %(line)s"
+
+#, python-format
+msgid "Path \"%(payload_file)s\" in manifest \"%(manifest_file)s\" is unsafe"
+msgstr ""
+
+#, python-format
+msgid "Expected data directory %s does not exist"
+msgstr ""
+
+msgid "No manifest files found"
+msgstr ""
+
+#, python-format
+msgid "Expected %s to contain \"bagit.txt\""
+msgstr ""
+
+#, python-format
+msgid "Malformed URL in fetch.txt: %s"
+msgstr ""
+
+msgid "Fast validation requires bag-info.txt to include Payload-Oxum"
+msgstr ""
+
+msgid "bag-info.txt defines multiple Payload-Oxum values!"
+msgstr "bag-info.txt defines multiple Payload-Oxum values!"
+
+#, python-format
+msgid "Malformed Payload-Oxum value: %s"
+msgstr ""
+
+#, python-format
+msgid ""
+"Payload-Oxum validation failed. Expected %(oxum_file_count)d files and "
+"%(oxum_byte_count)d bytes but found %(found_file_count)d files and "
+"%(found_byte_count)d bytes"
+msgstr ""
+
+#, python-format
+msgid "Unable to calculate file hashes for %s"
+msgstr "Unable to calculate file hashes for %s"
+
+msgid "Bag validation failed"
+msgstr ""
+
+msgid "bagit.txt must not contain a byte-order mark"
+msgstr ""
+
+#, python-format
+msgid ""
+"%(path)s %(algorithm)s validation failed: expected=\"%(expected)s\" found="
+"\"%(found)s\""
+msgstr ""
+
+#, python-format
+msgid "%s exists in manifest but was not found on filesystem"
+msgstr ""
+
+#, python-format
+msgid "%s exists on filesystem but is not in the manifest"
+msgstr ""
+
+#, python-format
+msgid ""
+"Unicode normalization conflict for file \"%(file_a)s\" and \"%(file_b)s\""
+msgstr ""
+
+#, python-format
+msgid "Disabling requested hash algorithm %s: hashlib does not support it"
+msgstr "Disabling requested hash algorithm %s: hashlib does not support it"
+
+msgid ""
+"Unable to continue: hashlib does not support any of the requested algorithms!"
+msgstr ""
+
+#, python-format
+msgid "Verifying checksum for file %s"
+msgstr "Verifying checksum for file %s"
+
+#, python-format
+msgid "File %s does not exist"
+msgstr ""
+
+#, python-format
+msgid "Could not read %(filename)s: %(error)s"
+msgstr ""
+
+#, python-format
+msgid "%(filename)s contains invalid tag: %(line)s"
+msgstr ""
+
+#, python-format
+msgid "Using %(process_count)d processes to generate manifests: %(algorithms)s"
+msgstr ""
+
+msgid "Expected the same number of files for each checksum"
+msgstr ""
+
+msgid "Expected the same number of bytes for each checksums"
+msgstr ""
+
+#, python-format
+msgid "Creating %s"
+msgstr "Creating %s"
+
+#, python-format
+msgid "Generating manifest lines for file %s"
+msgstr "Generating manifest lines for file %s"
+
+#, python-format
+msgid ""
+"Use multiple processes to calculate checksums faster (default: %(default)s)"
+msgstr ""
+
+msgid "The name of the log file (default: stdout)"
+msgstr ""
+
+msgid "Suppress all progress information other than errors"
+msgstr ""
+
+msgid ""
+"Validate existing bags in the provided directories instead of creating new "
+"ones"
+msgstr ""
+
+msgid ""
+"Modify --validate behaviour to only test whether the bag directory has the "
+"number of files and total size specified in Payload-Oxum without performing "
+"checksum validation to detect corruption."
+msgstr ""
+
+msgid "Checksum Algorithms"
+msgstr ""
+
+#, python-format
+msgid ""
+"Select the manifest algorithms to be used when creating bags (default=%s)"
+msgstr ""
+
+#, python-format
+msgid "Generate %s manifest when creating a bag"
+msgstr ""
+
+msgid "Optional Bag Metadata"
+msgstr ""
+
+msgid ""
+"Directory which will be converted into a bag in place by moving any existing "
+"files into the BagIt structure and creating the manifests and other metadata."
+msgstr ""
+
+#, python-format
+msgid "bagit-python version %s"
+msgstr ""
+
+msgid "The number of processes must be 0 or greater"
+msgstr ""
+
+msgid "Multiple processes are not supported on Python 2.6"
+msgstr ""
+
+msgid "--fast is only allowed as an option for --validate!"
+msgstr ""
+
+#, python-format
+msgid "%s valid according to Payload-Oxum"
+msgstr "%s valid according to Payload-Oxum"
+
+#, python-format
+msgid "%s is valid"
+msgstr "%s is valid"
+
+#, python-format
+msgid "%(bag)s is invalid: %(error)s"
+msgstr "%(bag)s is invalid: %(error)s"
+
+#, python-format
+msgid "Failed to create bag in %(bag_directory)s: %(error)s"
+msgstr "Failed to create bag in %(bag_directory)s: %(error)s"
+
+#~ msgid "Fast validation requires a Payload-Oxum in bag-info.txt"
+#~ msgstr "Fast validation requires a Payload-Oxum in bag-info.txt"
+
+#~ msgid ""
+#~ "No write permissions for the following directories and files:\n"
+#~ "%s"
+#~ msgstr ""
+#~ "No write permissions for the following directories and files:\n"
+#~ "%s"
+
+#~ msgid ""
+#~ "no write permissions for the following directories and files:\n"
+#~ "%s"
+#~ msgstr ""
+#~ "no write permissions for the following directories and files:\n"
+#~ "%s"
+
+#~ msgid "Updating %s"
+#~ msgstr "Updating %s"
+
+#~ msgid ""
+#~ "Using %(process_count)d processes to generate manifests: %(algoritms)s"
+#~ msgstr ""
+#~ "Using %(process_count)d processes to generate manifests: %(algoritms)s"

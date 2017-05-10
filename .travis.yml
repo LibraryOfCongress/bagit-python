@@ -8,11 +8,21 @@ python:
  - "3.6"
  - "3.6-dev"
 
+addons:
+  apt:
+    packages:
+        gettext  # This was removed in the Precise release on
+
 matrix:
   allow_failures:
     python: "3.6-dev"
 
-script: python setup.py test
-
 install:
+    - pip install --upgrade pip
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
+    - pip install coveralls coverage
+
+script: coverage run --include=bagit.py setup.py test
+
+after_success:
+    coveralls
