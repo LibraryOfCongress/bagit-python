@@ -15,11 +15,8 @@ if sys.version_info < (2, 6):
 
 description = 'Create and validate BagIt packages'
 
-long_description = """
-This package can be used to create BagIt style packages of
-digital content for safe transmission and digital preservation.
-See: http://en.wikipedia.org/wiki/BagIt for more details.
-""".strip()
+with open('README.rst') as readme:
+    long_description = readme.read()
 
 # for older pythons ...
 requirements = []
