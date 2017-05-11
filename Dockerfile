@@ -4,6 +4,6 @@ RUN install -d -o bagit-tester /bagit
 USER bagit-tester
 WORKDIR /bagit
 COPY .git/ /bagit/.git/
-COPY *.py /bagit/
+COPY *.rst *.py /bagit/
 COPY test-data /bagit/test-data/
 CMD [ "python", "setup.py", "test" ]
