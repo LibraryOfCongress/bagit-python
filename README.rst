@@ -246,7 +246,7 @@ container:
 
 ::
 
-    % docker build -t bagit:latest . && docker run -it bagit:latest
+    % docker build -t bagit . && docker run -it bagit
 
 Benchmarks
 ----------
