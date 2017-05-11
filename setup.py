@@ -9,6 +9,11 @@ import subprocess
 import sys
 from setuptools import setup
 
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = OSError
+
 if sys.version_info < (2, 6):
     print("Python 2.6 or higher is required")
     sys.exit(1)
@@ -40,8 +45,11 @@ def get_message_catalogs():
 
     for po_file in glob.glob('locale/*/LC_MESSAGES/bagit-python.po'):
         mo_file = po_file.replace('.po', '.mo')
-        subprocess.check_call(['msgfmt', '-o', mo_file, po_file])
-        message_catalogs.append((os.path.dirname(mo_file), (mo_file, )))
+        try:
+            subprocess.check_call(['msgfmt', '-o', mo_file, po_file])
+            message_catalogs.append((os.path.dirname(mo_file), (mo_file, )))
+        except FileNotFoundError:
+            pass
 
     return message_catalogs
 
