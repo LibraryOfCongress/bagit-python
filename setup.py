@@ -18,17 +18,6 @@ description = 'Create and validate BagIt packages'
 with open('README.rst') as readme:
     long_description = readme.read()
 
-# for older pythons ...
-requirements = []
-try:
-    import multiprocessing
-except:
-    requirements.append("multiprocessing")
-try:
-    import hashlib
-except:
-    requirements.append("hashlib")
-
 tests_require = ['mock', 'coverage']
 
 if sys.version_info < (2, 7):
@@ -70,7 +59,6 @@ setup(
     test_suite='test',
     setup_requires=['setuptools_scm'],
     tests_require=tests_require,
-    install_requires=requirements,
     classifiers=[
         'License :: Public Domain',
         'Intended Audience :: Developers',
