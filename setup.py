@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import glob
 import os
@@ -40,7 +40,16 @@ def get_message_catalogs():
 
     for po_file in glob.glob('locale/*/LC_MESSAGES/bagit-python.po'):
         mo_file = po_file.replace('.po', '.mo')
-        subprocess.check_call(['msgfmt', '-o', mo_file, po_file])
+
+        if not os.path.exists(mo_file) or os.path.getmtime(mo_file) < os.path.getmtime(po_file):
+            try:
+                subprocess.check_call(['msgfmt', '-o', mo_file, po_file])
+            except (OSError, subprocess.CalledProcessError) as exc:
+                print("Translation catalog %s could not be compiled (is gettext installed?) "
+                      " — translations will not be available for this language: %s" % (po_file, exc),
+                      file=sys.stderr)
+                continue
+
         message_catalogs.append((os.path.dirname(mo_file), (mo_file, )))
 
     return message_catalogs
