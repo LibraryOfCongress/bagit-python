@@ -188,6 +188,8 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
             temp_data = tempfile.mkdtemp(dir=cwd)
 
             for f in os.listdir('.'):
+                if f == 'fetch.txt':
+                    continue
                 if os.path.abspath(f) == temp_data:
                     continue
                 new_f = os.path.join(temp_data, f)
