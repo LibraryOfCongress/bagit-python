@@ -5,6 +5,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import codecs
 import datetime
+import filecmp
 import hashlib
 import logging
 import os
@@ -105,7 +106,28 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha256.txt')))
         self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha512.txt')))
         self.assertTrue(self.validate(bag, fast=True))
+        subdir = os.path.relpath(self.tmpdir, os.path.join(self.tmpdir, os.pardir))
+        self.assertTrue(os.listdir(os.path.join(dest_dir, 'data')) == [subdir,])
+        diff = filecmp.dircmp(self.tmpdir, os.path.join(dest_dir, 'data', subdir))
+        self.assertTrue(len(diff.left_only+diff.right_only) == 0)
         shutil.rmtree(tmp_dir_out)
+
+    def test_make_bag_with_destinations(self):
+        dest = tempfile.mkdtemp(prefix='bagit-test-dest-')
+        src_par = tempfile.mkdtemp(prefix='bagit-test-src-')
+        srcs = tuple(os.path.join(src_par, '%04d' % i) for i in range(10))
+        subdirs = tuple(os.path.relpath(src, src_par) for src in srcs)
+        for src in srcs:
+            shutil.copytree('test-data', src)
+            bag = bagit.make_bag(src, dest_dir=dest, checksum=['sha256'])
+        self.assertTrue(tuple(sorted(os.listdir(os.path.join(dest, 'data')))) == subdirs)
+        for src, subdir in zip(srcs, subdirs):
+            diff = filecmp.dircmp(src, os.path.join(dest, 'data', subdir))
+            self.assertTrue(len(diff.left_only+diff.right_only) == 0)
+        self.assertTrue(self.validate(bag))
+        shutil.rmtree(src_par)
+        shutil.rmtree(dest)
+
 
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)

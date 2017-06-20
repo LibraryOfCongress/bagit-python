@@ -214,9 +214,17 @@ def make_bag(bag_dir,
         else:
             LOGGER.info(_("Creating data directory"))
 
+            data_subdir = None
             if dest_dir:
                 temp_data = tempfile.mkdtemp(dir=dest_dir)
                 data_dir = os.path.join(dest_dir, 'data')
+                data_subdir = os.path.relpath(
+                    bag_dir, os.path.join(bag_dir, os.pardir)
+                )
+                if os.path.abspath(os.path.join(bag_dir, data_subdir)) == bag_dir:
+                    raise RuntimeError(
+                        _("Could not get parent of source directory %s") % bag_dir
+                    )
             else:
                 temp_data = tempfile.mkdtemp(dir=bag_dir)
                 data_dir = os.path.join(bag_dir, 'data')
@@ -237,9 +245,19 @@ def make_bag(bag_dir,
                                 {'source': os.path.join(bag_dir, f), 'destination': new_f})
                     os.rename(os.path.join(bag_dir, f), new_f)
 
-            LOGGER.info(_('Moving %(source)s to %(destination)s'),
-                        {'source': temp_data, 'destination': data_dir})
-            os.rename(temp_data, data_dir)
+            if data_subdir:
+                LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                            {'source': temp_data, 
+                                'destination': os.path.join(data_dir, data_subdir)})
+                if not os.path.exists(data_dir):
+                    os.mkdir(data_dir)
+                elif os.path.exists(os.path.join(data_dir, data_subdir)):
+                    shutil.rmtree(os.path.join(data_dir, data_subdir))
+                os.rename(temp_data, os.path.join(data_dir, data_subdir))
+            else:
+                LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                            {'source': temp_data, 'destination': data_dir})
+                os.rename(temp_data, data_dir)
 
             # permissions for the payload directory should match those of the
             # original directory
