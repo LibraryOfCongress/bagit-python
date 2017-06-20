@@ -128,6 +128,30 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         shutil.rmtree(src_par)
         shutil.rmtree(dest)
 
+    def test_make_bag_bad_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-')
+        dest_dir = j(tmp_dir_out, 'i-dont-exist', 'test-dest')
+        self.assertRaises(
+            RuntimeError, bagit.make_bag, self.tmpdir,
+            dest_dir=dest_dir, checksum=['sha256', 'sha512']
+        )
+        shutil.rmtree(tmp_dir_out)
+
+    def test_remake_bag_with_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-')
+        dest_dir = j(tmp_dir_out, 'test-dest')
+        for i in range(5):
+            bag = bagit.make_bag(
+                self.tmpdir, dest_dir=dest_dir, checksum=['sha256', 'sha512']
+            )
+        self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha256.txt')))
+        self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha512.txt')))
+        self.assertTrue(self.validate(bag, fast=True))
+        subdir = os.path.relpath(self.tmpdir, os.path.join(self.tmpdir, os.pardir))
+        self.assertTrue(os.listdir(os.path.join(dest_dir, 'data')) == [subdir,])
+        diff = filecmp.dircmp(self.tmpdir, os.path.join(dest_dir, 'data', subdir))
+        self.assertTrue(len(diff.left_only+diff.right_only) == 0)
+        shutil.rmtree(tmp_dir_out)
 
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
