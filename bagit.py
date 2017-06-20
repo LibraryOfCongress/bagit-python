@@ -228,7 +228,10 @@ def make_bag(bag_dir,
                 if dest_dir:
                     LOGGER.info(_('Copying %(source)s to %(destination)s'),
                                 {'source': os.path.join(bag_dir, f), 'destination': new_f})
-                    shutil.copy(os.path.join(bag_dir, f), new_f)
+                    if os.path.isdir(os.path.join(bag_dir, f)):
+                        shutil.copytree(os.path.join(bag_dir, f), new_f)
+                    else:
+                        shutil.copy(os.path.join(bag_dir, f), new_f)
                 else:
                     LOGGER.info(_('Moving %(source)s to %(destination)s'),
                                 {'source': os.path.join(bag_dir, f), 'destination': new_f})
@@ -242,9 +245,15 @@ def make_bag(bag_dir,
             # original directory
             os.chmod(data_dir, os.stat(bag_dir).st_mode)
 
-            total_bytes, total_files = make_manifests(
-                data_dir, processes, algorithms=checksums, encoding=encoding, src_dir=bag_dir
-            )
+            if dest_dir:
+                total_bytes, total_files = make_manifests(
+                    data_dir, processes, algorithms=checksums, encoding=encoding, src_dir=bag_dir
+                )
+            else:
+                total_bytes, total_files = make_manifests(
+                    data_dir, processes, algorithms=checksums, encoding=encoding
+                )
+
 
             LOGGER.info(_("Creating bagit.txt"))
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -1133,9 +1142,15 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS,
     LOGGER.info(_('Using %(process_count)d processes to generate manifests: %(algorithms)s'),
                 {'process_count': processes, 'algorithms': ', '.join(algorithms)})
 
-    manifest_line_generator = partial(
-        generate_manifest_lines, algorithms=algorithms, src_dir=src_dir, data_dir=data_dir
-    )
+    if src_dir:
+        manifest_line_generator = partial(
+            generate_manifest_lines, algorithms=algorithms,
+            src_dir=src_dir, data_dir=data_dir
+        )
+    else:
+        manifest_line_generator = partial(
+            generate_manifest_lines, algorithms=algorithms
+        )
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
@@ -1159,8 +1174,6 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS,
     mani_dir = os.path.abspath(os.path.join(data_dir, os.pardir))
     for algorithm, values in manifest_data.items():
         manifest_filename = os.path.join(mani_dir, 'manifest-%s.txt' % algorithm)
-        LOGGER.info('MANIFEST: %s' % manifest_filename)
-
         with open_text_file(manifest_filename, 'w', encoding=encoding) as manifest:
             for digest, filename, byte_count in values:
                 filename = os.path.relpath(filename, mani_dir)
@@ -1207,7 +1220,7 @@ def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
 def _find_tag_files(bag_dir):
     for dir in os.listdir(bag_dir):
         if dir != 'data':
-            if os.path.isfile(dir) and not dir.startswith('tagmanifest-'):
+            if os.path.isfile(os.path.join(bag_dir, dir)) and not dir.startswith('tagmanifest-'):
                 yield dir
             for dir_name, _, filenames in os.walk(dir):
                 for filename in filenames:
@@ -1291,6 +1304,8 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS, src_dir=None
         if data_dir:
             inpath = os.path.relpath(filename, data_dir)
             inpath = os.path.join(src_dir, inpath)
+            if not os.path.exists(inpath):
+                inpath = filename
         else:
             raise RuntimeError(_("Data directory required"))
         LOGGER.info(_("Generating manifest lines for file %s (source=%s)"), filename, inpath)
