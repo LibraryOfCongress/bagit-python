@@ -96,6 +96,17 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         # check valid with three manifests
         self.assertTrue(self.validate(bag, fast=True))
 
+    def test_make_bag_with_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-')
+        dest_dir = j(tmp_dir_out, 'test-dest')
+        bag = bagit.make_bag(
+            self.tmpdir, dest_dir=dest_dir, checksum=['sha256', 'sha512']
+        )
+        self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha256.txt')))
+        self.assertTrue(os.path.isfile(j(dest_dir, 'manifest-sha512.txt')))
+        self.assertTrue(self.validate(bag, fast=True))
+        shutil.rmtree(tmp_dir_out)
+
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
