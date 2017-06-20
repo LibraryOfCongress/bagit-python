@@ -21,6 +21,7 @@ from collections import defaultdict
 from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
+import shutil
 
 try:
     from urllib.parse import urlparse
@@ -132,7 +133,9 @@ open_text_file = partial(codecs.open, encoding='utf-8', errors='strict')
 UNICODE_BYTE_ORDER_MARK = u'\uFEFF'
 
 
-def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding='utf-8'):
+def make_bag(bag_dir, 
+        bag_info=None, processes=1, checksums=None, checksum=None,
+        encoding='utf-8', dest_dir=None):
     """
     Convert a given directory into a bag. You can pass in arbitrary
     key/value pairs to put into the bag-info.txt metadata file as
@@ -148,14 +151,36 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         checksums = DEFAULT_CHECKSUMS
 
     bag_dir = os.path.abspath(bag_dir)
-    LOGGER.info(_("Creating bag for directory %s"), bag_dir)
+    if dest_dir:
+        LOGGER.info(_("Creating bag for directory %s"), dest_dir)
+    else:
+        LOGGER.info(_("Creating bag for directory %s"), bag_dir)
 
     if not os.path.isdir(bag_dir):
         LOGGER.error(_("Bag directory %s does not exist"), bag_dir)
         raise RuntimeError(_("Bag directory %s does not exist") % bag_dir)
 
-    # FIXME: we should do the permissions checks before changing directories
-    old_dir = os.path.abspath(os.path.curdir)
+    if dest_dir is not None:
+        dest_dir = os.path.abspath(dest_dir)
+        if os.path.exists(dest_dir):
+            if not os.path.isdir(dest_dir):
+                # Destination directory is a file or something else we can't
+                # work with.
+                raise RuntimeError(_("Destination %s exists but is not a directory") % dest_dir)
+            else:
+                # Destination directory looks okay so far.
+                pass
+        else:
+            dest_par = os.path.abspath(os.path.join(dest_dir, os.pardir))
+            if os.path.isdir(dest_par):
+                try:
+                    os.mkdir(dest_dir)
+                except:
+                    raise RuntimeError(_("Could not create destination directory %s") % dest_dir)
+            else:
+                raise RuntimeError(
+                    _("Destination parent directory %s is not a directory") % dest_par
+                ) 
 
     try:
         # TODO: These two checks are currently redundant since an unreadable directory will also
@@ -163,13 +188,20 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         #       bag to a destination other than the source. It would be nice if we could avoid
         #       walking the directory tree more than once even if most filesystems will cache it
 
-        unbaggable = _can_bag(bag_dir)
+        if dest_dir is None:
+            unbaggable = _can_bag(bag_dir)
+        else:
+            unbaggable = _can_bag_to(bag_dir, dest_dir)
 
         if unbaggable:
             LOGGER.error(_("Unable to write to the following directories and files:\n%s"), unbaggable)
             raise BagError(_("Missing permissions to move all files and directories"))
 
         unreadable_dirs, unreadable_files = _can_read(bag_dir)
+        if dest_dir is not None:
+            ud, uf = _can_read(dest_dir)
+            unreadable_dirs += ud
+            unreadable_files += uf
 
         if unreadable_dirs or unreadable_files:
             if unreadable_dirs:
@@ -182,34 +214,73 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         else:
             LOGGER.info(_("Creating data directory"))
 
-            # FIXME: if we calculate full paths we won't need to deal with changing directories
-            os.chdir(bag_dir)
-            cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=cwd)
+            data_subdir = None
+            if dest_dir:
+                temp_data = tempfile.mkdtemp(dir=dest_dir)
+                data_dir = os.path.join(dest_dir, 'data')
+                data_subdir = os.path.relpath(
+                    bag_dir, os.path.join(bag_dir, os.pardir)
+                )
+                if os.path.abspath(os.path.join(bag_dir, data_subdir)) == bag_dir:
+                    raise RuntimeError(
+                        _("Could not get parent of source directory %s") % bag_dir
+                    )
+            else:
+                temp_data = tempfile.mkdtemp(dir=bag_dir)
+                data_dir = os.path.join(bag_dir, 'data')
 
-            for f in os.listdir('.'):
-                if os.path.abspath(f) == temp_data:
+            for f in os.listdir(bag_dir):
+                if os.path.join(bag_dir, f) == temp_data:
                     continue
                 new_f = os.path.join(temp_data, f)
-                LOGGER.info(_('Moving %(source)s to %(destination)s'),
-                            {'source': f, 'destination': new_f})
-                os.rename(f, new_f)
+                if dest_dir:
+                    LOGGER.info(_('Copying %(source)s to %(destination)s'),
+                                {'source': os.path.join(bag_dir, f), 'destination': new_f})
+                    if os.path.isdir(os.path.join(bag_dir, f)):
+                        shutil.copytree(os.path.join(bag_dir, f), new_f)
+                    else:
+                        shutil.copy(os.path.join(bag_dir, f), new_f)
+                else:
+                    LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                                {'source': os.path.join(bag_dir, f), 'destination': new_f})
+                    os.rename(os.path.join(bag_dir, f), new_f)
 
-            LOGGER.info(_('Moving %(source)s to %(destination)s'),
-                        {'source': temp_data, 'destination': 'data'})
-            os.rename(temp_data, 'data')
+            if data_subdir:
+                LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                            {'source': temp_data, 
+                                'destination': os.path.join(data_dir, data_subdir)})
+                if not os.path.exists(data_dir):
+                    os.mkdir(data_dir)
+                elif os.path.exists(os.path.join(data_dir, data_subdir)):
+                    shutil.rmtree(os.path.join(data_dir, data_subdir))
+                os.rename(temp_data, os.path.join(data_dir, data_subdir))
+            else:
+                LOGGER.info(_('Moving %(source)s to %(destination)s'),
+                            {'source': temp_data, 'destination': data_dir})
+                os.rename(temp_data, data_dir)
 
             # permissions for the payload directory should match those of the
             # original directory
-            os.chmod('data', os.stat(cwd).st_mode)
+            os.chmod(data_dir, os.stat(bag_dir).st_mode)
 
-            total_bytes, total_files = make_manifests('data', processes, algorithms=checksums,
-                                                      encoding=encoding)
+            if dest_dir:
+                total_bytes, total_files = make_manifests(
+                    data_dir, processes, algorithms=checksums, encoding=encoding, src_dir=bag_dir
+                )
+            else:
+                total_bytes, total_files = make_manifests(
+                    data_dir, processes, algorithms=checksums, encoding=encoding
+                )
+
 
             LOGGER.info(_("Creating bagit.txt"))
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
-            with open_text_file('bagit.txt', 'w') as bagit_file:
-                bagit_file.write(txt)
+            if dest_dir:
+                with open_text_file(os.path.join(dest_dir, 'bagit.txt'), 'w') as bagit_file:
+                    bagit_file.write(txt)
+            else:
+                with open_text_file(os.path.join(bag_dir, 'bagit.txt'), 'w') as bagit_file:
+                    bagit_file.write(txt)
 
             LOGGER.info(_("Creating bag-info.txt"))
             if bag_info is None:
@@ -222,17 +293,30 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
                 bag_info['Bag-Software-Agent'] = 'bagit.py v%s <%s>' % (VERSION, PROJECT_URL)
 
             bag_info['Payload-Oxum'] = "%s.%s" % (total_bytes, total_files)
-            _make_tag_file('bag-info.txt', bag_info)
+            if dest_dir:
+                _make_tag_file(os.path.join(dest_dir, 'bag-info.txt'), bag_info)
+            else:
+                _make_tag_file(os.path.join(bag_dir, 'bag-info.txt'), bag_info)
 
-            for c in checksums:
-                _make_tagmanifest_file(c, bag_dir, encoding='utf-8')
+            if dest_dir:
+                for c in checksums:
+                    _make_tagmanifest_file(c, dest_dir, encoding='utf-8')
+            else:
+                for c in checksums:
+                    _make_tagmanifest_file(c, bag_dir, encoding='utf-8')
     except Exception:
-        LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
+        if dest_dir:
+            LOGGER.exception(_("An error occurred creating a bag in %s"), dest_dir)
+        else:
+            LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
         raise
-    finally:
-        os.chdir(old_dir)
 
-    return Bag(bag_dir)
+    if dest_dir:
+        bag = Bag(dest_dir)
+    else:
+        bag = Bag(bag_dir)
+
+    return bag
 
 
 class Bag(object):
@@ -1071,11 +1155,20 @@ def _make_tag_file(bag_info_path, bag_info):
                 f.write("%s: %s\n" % (h, txt))
 
 
-def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='utf-8'):
+def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS,
+            encoding='utf-8', src_dir=None):
     LOGGER.info(_('Using %(process_count)d processes to generate manifests: %(algorithms)s'),
                 {'process_count': processes, 'algorithms': ', '.join(algorithms)})
 
-    manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms)
+    if src_dir:
+        manifest_line_generator = partial(
+            generate_manifest_lines, algorithms=algorithms,
+            src_dir=src_dir, data_dir=data_dir
+        )
+    else:
+        manifest_line_generator = partial(
+            generate_manifest_lines, algorithms=algorithms
+        )
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
@@ -1095,12 +1188,13 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='
     # below to catch failures in the hashing process:
     num_files = defaultdict(lambda: 0)
     total_bytes = defaultdict(lambda: 0)
-
+    
+    mani_dir = os.path.abspath(os.path.join(data_dir, os.pardir))
     for algorithm, values in manifest_data.items():
-        manifest_filename = 'manifest-%s.txt' % algorithm
-
+        manifest_filename = os.path.join(mani_dir, 'manifest-%s.txt' % algorithm)
         with open_text_file(manifest_filename, 'w', encoding=encoding) as manifest:
             for digest, filename, byte_count in values:
+                filename = os.path.relpath(filename, mani_dir)
                 manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
                 num_files[algorithm] += 1
                 total_bytes[algorithm] += byte_count
@@ -1144,7 +1238,7 @@ def _make_tagmanifest_file(alg, bag_dir, encoding='utf-8'):
 def _find_tag_files(bag_dir):
     for dir in os.listdir(bag_dir):
         if dir != 'data':
-            if os.path.isfile(dir) and not dir.startswith('tagmanifest-'):
+            if os.path.isfile(os.path.join(bag_dir, dir)) and not dir.startswith('tagmanifest-'):
                 yield dir
             for dir_name, _, filenames in os.walk(dir):
                 for filename in filenames:
@@ -1172,17 +1266,19 @@ def _walk(data_dir):
 
 def _can_bag(test_dir):
     """Scan the provided directory for files which cannot be bagged due to insufficient permissions"""
-    unbaggable = []
+    return _can_bag_to(test_dir, test_dir)
 
-    if not os.access(test_dir, os.R_OK):
-        # We cannot continue without permission to read the source directory
-        unbaggable.append(test_dir)
+
+def _can_bag_to(src_dir, dest_dir):
+    unbaggable = []
+    if not os.access(src_dir, os.R_OK):
+        unbaggable.append(src_dir)
         return unbaggable
 
-    if not os.access(test_dir, os.W_OK):
-        unbaggable.append(test_dir)
+    if not os.access(dest_dir, os.W_OK):
+        unbaggable.append(dest_dir)
 
-    for dirpath, dirnames, filenames in os.walk(test_dir):
+    for dirpath, dirnames, filenames in os.walk(dest_dir):
         for directory in dirnames:
             full_path = os.path.join(dirpath, directory)
             if not os.access(full_path, os.W_OK):
@@ -1213,8 +1309,7 @@ def _can_read(test_dir):
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
 
-def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
-    LOGGER.info(_("Generating manifest lines for file %s"), filename)
+def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS, src_dir=None, data_dir=None):
 
     # For performance we'll read the file only once and pass it block
     # by block to every requested hash algorithm:
@@ -1222,7 +1317,21 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
 
     total_bytes = 0
 
-    with open(filename, 'rb') as f:
+    inpath = filename
+    if src_dir:
+        if data_dir:
+            src_par = os.path.abspath(os.path.join(src_dir, os.pardir))
+            inpath = os.path.relpath(filename, data_dir)
+            inpath = os.path.join(src_par, inpath)
+            if not os.path.exists(inpath):
+                inpath = filename
+        else:
+            raise RuntimeError(_("Data directory required"))
+        LOGGER.info(_("Generating manifest lines for file %s (source=%s)"), filename, inpath)
+    else:
+        LOGGER.info(_("Generating manifest lines for file %s"), filename)
+    
+    with open(inpath, 'rb') as f:
         while True:
             block = f.read(HASH_BLOCK_SIZE)
 
@@ -1297,6 +1406,8 @@ def _make_parser():
                         help=_('Modify --validate behaviour to only test whether the bag directory'
                                ' has the number of files and total size specified in Payload-Oxum'
                                ' without performing checksum validation to detect corruption.'))
+    parser.add_argument('--destination', type=str, dest='dest_dir', default=None,
+                        help=_('Create bag in destination directory rather than in place.'))
 
     checksum_args = parser.add_argument_group(
         _('Checksum Algorithms'),
@@ -1318,7 +1429,9 @@ def _make_parser():
     parser.add_argument('directory', nargs='+',
                         help=_('Directory which will be converted into a bag in place'
                                ' by moving any existing files into the BagIt structure'
-                               ' and creating the manifests and other metadata.'))
+                               ' and creating the manifests and other metadata.'
+                               ' If the destination argument is present, these directories'
+                               ' are treated as sources and left as they are.'))
 
     return parser
 
@@ -1376,11 +1489,17 @@ def main():
             try:
                 make_bag(bag_dir, bag_info=parser.bag_info,
                          processes=args.processes,
-                         checksums=args.checksums)
+                         checksums=args.checksums,
+                         dest_dir=args.dest_dir)
             except Exception as exc:
-                LOGGER.error(_("Failed to create bag in %(bag_directory)s: %(error)s"),
-                             {'bag_directory': bag_dir, 'error': exc},
-                             exc_info=True)
+                if args.dest_dir:
+                    LOGGER.error(_("Failed to create bag in %(bag_directory)s: %(error)s"),
+                                 {'bag_directory': args.dest_dir, 'error': exc},
+                                 exc_info=True)
+                else:
+                    LOGGER.error(_("Failed to create bag in %(bag_directory)s: %(error)s"),
+                                 {'bag_directory': bag_dir, 'error': exc},
+                                 exc_info=True)
                 rc = 1
 
     sys.exit(rc)
