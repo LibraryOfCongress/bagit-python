@@ -1320,8 +1320,9 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS, src_dir=None
     inpath = filename
     if src_dir:
         if data_dir:
+            src_par = os.path.abspath(os.path.join(src_dir, os.pardir))
             inpath = os.path.relpath(filename, data_dir)
-            inpath = os.path.join(src_dir, inpath)
+            inpath = os.path.join(src_par, inpath)
             if not os.path.exists(inpath):
                 inpath = filename
         else:
