@@ -118,10 +118,11 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
     def test_validate_completeness(self):
         bag = bagit.make_bag(self.tmpdir)
-        os.remove(j(self.tmpdir, "data", "README"))
-        with open(j(self.tmpdir, "data", "extra_file"), "w") as ef:
-            ef.write("foo")
+        old_path = j(self.tmpdir, "data", "README")
+        new_path = j(self.tmpdir, "data", "extra_file")
+        os.rename(old_path, new_path)
         bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(self.validate(bag, fast=True))
         self.assertRaises(bagit.BagValidationError, self.validate, bag,
             completeness=True)
 
