@@ -501,7 +501,7 @@ class Bag(object):
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
-    def validate(self, processes=1, fast=False):
+    def validate(self, processes=1, fast=False, completeness=False):
         """Checks the structure and contents are valid.
 
         If you supply the parameter fast=True the Payload-Oxum (if present) will
@@ -519,13 +519,13 @@ class Bag(object):
 
         return True
 
-    def is_valid(self, fast=False):
+    def is_valid(self, fast=False, completeness=False):
         """Returns validation success or failure as boolean.
         Optional fast parameter passed directly to validate().
         """
 
         try:
-            self.validate(fast=fast)
+            self.validate(fast=fast, completeness=completeness)
         except BagError:
             return False
 
@@ -1297,6 +1297,10 @@ def _make_parser():
                         help=_('Modify --validate behaviour to only test whether the bag directory'
                                ' has the number of files and total size specified in Payload-Oxum'
                                ' without performing checksum validation to detect corruption.'))
+    parser.add_argument('--completeness', action='store_true',
+                        help=_('Modify --validate behaviour to test whether the bag directory'
+                               ' has the expected payload specified in the checksum manifests'
+                               ' without performing checksum validation to detect corruption.'))
 
     checksum_args = parser.add_argument_group(
         _('Checksum Algorithms'),
@@ -1361,7 +1365,8 @@ def main():
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                bag.validate(processes=args.processes, fast=args.fast)
+                bag.validate(processes=args.processes, fast=args.fast,
+                    completeness=args.completeness)
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
                 else:
