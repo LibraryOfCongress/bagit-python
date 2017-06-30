@@ -515,7 +515,8 @@ class Bag(object):
 
         self.validate_fetch()
 
-        self._validate_contents(processes=processes, fast=fast)
+        self._validate_contents(processes=processes, fast=fast,
+            completeness=completeness)
 
         return True
 
@@ -640,14 +641,19 @@ class Bag(object):
             if not all((parsed_url.scheme, parsed_url.netloc)):
                 raise BagError(_('Malformed URL in fetch.txt: %s') % url)
 
-    def _validate_contents(self, processes=1, fast=False):
+    def _validate_contents(self, processes=1, fast=False,
+        completeness=False):
         if fast and not self.has_oxum():
             raise BagValidationError(_('Fast validation requires bag-info.txt to include Payload-Oxum'))
 
         # Perform the fast file count + size check so we can fail early:
         self._validate_oxum()
 
-        if not fast:
+        if completeness:
+            self._validate_completeness()
+
+        if not fast and not completeness:
+            self._validate_completeness()
             # Now perform the full file hashing process:
             self._validate_entries(processes)
 
@@ -690,9 +696,9 @@ class Bag(object):
                     }
             )
 
-    def _validate_entries(self, processes):
+    def _validate_completeness(self):
         """
-        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        Verify that the actual file manifests match the files in the data directory
         """
         errors = list()
 
@@ -707,6 +713,15 @@ class Bag(object):
             e = UnexpectedFile(path)
             LOGGER.warning(force_unicode(e))
             errors.append(e)
+
+        if errors:
+            raise BagValidationError(_("Bag validation failed"), errors)
+
+    def _validate_entries(self, processes):
+        """
+        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        """
+        errors = list()
 
         if os.name == 'posix':
             worker_init = posix_multiprocessing_worker_initializer
