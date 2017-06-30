@@ -206,20 +206,26 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
             got_exception = True
 
             exc_str = str(e)
-            self.assertIn("Bag validation failed: bag-info.txt exists in manifest but was not found on filesystem", exc_str)
+            self.assertIn("Bag validation failed: ", exc_str)
+            self.assertIn("bag-info.txt exists in manifest but was not found on filesystem", exc_str)
             self.assertIn("data/README exists in manifest but was not found on filesystem", exc_str)
             self.assertIn("data/extra exists on filesystem but is not in the manifest", exc_str)
             self.assertEqual(len(e.details), 3)
 
-            error = e.details[0]
-            self.assertEqual(str(error), "bag-info.txt exists in manifest but was not found on filesystem")
-            self.assertIsInstance(error, bagit.FileMissing)
-            self.assertEqual(error.path, "bag-info.txt")
+            if e.details[0].path == "bag-info.txt":
+                baginfo_error = e.details[0]
+                readme_error = e.details[1]
+            else:
+                baginfo_error = e.details[1]
+                readme_error = e.details[0]
 
-            error = e.details[1]
-            self.assertEqual(str(error), "data/README exists in manifest but was not found on filesystem")
-            self.assertTrue(error, bagit.FileMissing)
-            self.assertEqual(error.path, "data/README")
+            self.assertEqual(str(baginfo_error), "bag-info.txt exists in manifest but was not found on filesystem")
+            self.assertIsInstance(baginfo_error, bagit.FileMissing)
+            self.assertEqual(baginfo_error.path, "bag-info.txt")
+
+            self.assertEqual(str(readme_error), "data/README exists in manifest but was not found on filesystem")
+            self.assertIsInstance(readme_error, bagit.FileMissing)
+            self.assertEqual(readme_error.path, "data/README")
 
             error = e.details[2]
             self.assertEqual(str(error), "data/extra exists on filesystem but is not in the manifest")
