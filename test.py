@@ -107,6 +107,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
         # fast doesn't catch the flipped bit, since oxsum is the same
         self.assertTrue(self.validate(bag, fast=True))
+        self.assertTrue(self.validate(bag, completeness=True))
 
     def test_validate_fast(self):
         bag = bagit.make_bag(self.tmpdir)
