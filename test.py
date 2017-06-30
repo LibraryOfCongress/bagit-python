@@ -115,6 +115,15 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
                     "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
+    def test_validate_completeness(self):
+        bag = bagit.make_bag(self.tmpdir)
+        os.remove(j(self.tmpdir, "data", "README"))
+        with open(j(self.tmpdir, "data", "extra_file"), "w") as ef:
+            ef.write("foo")
+        bag = bagit.Bag(self.tmpdir)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag,
+            completeness=True)
+
     def test_validate_fast_without_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, "bag-info.txt"))
