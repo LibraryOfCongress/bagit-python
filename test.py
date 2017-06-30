@@ -161,9 +161,37 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         with open(readme, "w") as r:
             r.write(txt)
 
-        extra_file = j(self.tmpdir, "data", "extra")
-        with open(extra_file, "w") as ef:
-            ef.write('foo')
+        bag = bagit.Bag(self.tmpdir)
+        got_exception = False
+
+        try:
+            self.validate(bag)
+        except bagit.BagValidationError as e:
+            got_exception = True
+
+            exc_str = str(e)
+            self.assertIn('data/README md5 validation failed: expected="8e2af7a0143c7b8f4de0b3fc90f27354" found="fd41543285d17e7c29cd953f5cf5b955"',
+                          exc_str)
+            self.assertEqual(len(e.details), 1)
+
+            readme_error = e.details[0]
+            self.assertEqual('data/README md5 validation failed: expected="8e2af7a0143c7b8f4de0b3fc90f27354" found="fd41543285d17e7c29cd953f5cf5b955"',
+                             str(readme_error))
+            self.assertIsInstance(readme_error, bagit.ChecksumMismatch)
+            self.assertEqual(readme_error.algorithm, 'md5')
+            self.assertEqual(readme_error.path, 'data/README')
+            self.assertEqual(readme_error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
+            self.assertEqual(readme_error.found, 'fd41543285d17e7c29cd953f5cf5b955')
+
+        if not got_exception:
+            self.fail("didn't get BagValidationError")
+
+    def test_validation_completeness_error_details(self):
+        bag = bagit.make_bag(self.tmpdir, checksums=['md5'], bag_info={'Bagging-Date': '1970-01-01'})
+
+        old_path = j(self.tmpdir, "data", "README")
+        new_path = j(self.tmpdir, "data", "extra")
+        os.rename(old_path, new_path)
 
         # remove the bag-info.txt which contains the oxum to force a full
         # check of the manifest
@@ -179,12 +207,9 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
             exc_str = str(e)
             self.assertIn("Bag validation failed: bag-info.txt exists in manifest but was not found on filesystem", exc_str)
+            self.assertIn("data/README exists in manifest but was not found on filesystem", exc_str)
             self.assertIn("data/extra exists on filesystem but is not in the manifest", exc_str)
-            self.assertIn('data/README md5 validation failed: expected="8e2af7a0143c7b8f4de0b3fc90f27354" found="fd41543285d17e7c29cd953f5cf5b955"',
-                          exc_str)
-            self.assertIn('bag-info.txt md5 validation failed: expected="87297199b1dbd8dac6d63f604ba2f288" found="File %s does not exist"' % j(self.tmpdir, "bag-info.txt"),
-                          exc_str)
-            self.assertEqual(len(e.details), 4)
+            self.assertEqual(len(e.details), 3)
 
             error = e.details[0]
             self.assertEqual(str(error), "bag-info.txt exists in manifest but was not found on filesystem")
@@ -192,30 +217,15 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
             self.assertEqual(error.path, "bag-info.txt")
 
             error = e.details[1]
+            self.assertEqual(str(error), "data/README exists in manifest but was not found on filesystem")
+            self.assertTrue(error, bagit.FileMissing)
+            self.assertEqual(error.path, "data/README")
+
+            error = e.details[2]
             self.assertEqual(str(error), "data/extra exists on filesystem but is not in the manifest")
             self.assertTrue(error, bagit.UnexpectedFile)
             self.assertEqual(error.path, "data/extra")
 
-            if e.details[2].path == 'data/README':
-                readme_error = e.details[2]
-                baginfo_error = e.details[3]
-            else:
-                readme_error = e.details[3]
-                baginfo_error = e.details[2]
-            self.assertEqual('data/README md5 validation failed: expected="8e2af7a0143c7b8f4de0b3fc90f27354" found="fd41543285d17e7c29cd953f5cf5b955"',
-                             str(readme_error))
-            self.assertIsInstance(readme_error, bagit.ChecksumMismatch)
-            self.assertEqual(readme_error.algorithm, 'md5')
-            self.assertEqual(readme_error.path, 'data/README')
-            self.assertEqual(readme_error.expected, '8e2af7a0143c7b8f4de0b3fc90f27354')
-            self.assertEqual(readme_error.found, 'fd41543285d17e7c29cd953f5cf5b955')
-
-            # cannot test full value of baginfo error as it contains random name for tmp dir
-            self.assertIn("bag-info.txt does not exist", str(baginfo_error))
-            self.assertIsInstance(baginfo_error, bagit.ChecksumMismatch)
-            self.assertEqual(baginfo_error.algorithm, 'md5')
-            self.assertEqual(baginfo_error.path, 'bag-info.txt')
-            self.assertIn("bag-info.txt does not exist", baginfo_error.found)
         if not got_exception:
             self.fail("didn't get BagValidationError")
 
