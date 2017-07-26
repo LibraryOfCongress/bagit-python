@@ -648,14 +648,17 @@ class Bag(object):
 
         # Perform the fast file count + size check so we can fail early:
         self._validate_oxum()
+        self._validate_oxum()
+
+        if fast:
+            return
+
+        self._validate_completeness()
 
         if completeness_only:
-            self._validate_completeness()
+            return
 
-        if not fast and not completeness_only:
-            self._validate_completeness()
-            # Now perform the full file hashing process:
-            self._validate_entries(processes)
+        self._validate_entries(processes)
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
