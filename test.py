@@ -123,8 +123,10 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         os.rename(old_path, new_path)
         bag = bagit.Bag(self.tmpdir)
         self.assertTrue(self.validate(bag, fast=True))
-        self.assertRaises(bagit.BagValidationError, self.validate, bag,
-            completeness_only=True)
+        with mock.patch.object(bag, '_validate_entries') as m:
+            self.assertRaises(bagit.BagValidationError, self.validate, bag,
+                              completeness_only=True)
+            self.assertEqual(m.call_count, 0)
 
     def test_validate_fast_without_oxum(self):
         bag = bagit.make_bag(self.tmpdir)
