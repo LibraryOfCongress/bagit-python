@@ -994,9 +994,6 @@ def _calculate_file_hashes(full_path, f_hashers):
     """
     LOGGER.info(_("Verifying checksum for file %s"), full_path)
 
-    if not os.path.exists(full_path):
-        raise BagValidationError(_("File %s does not exist") % full_path)
-
     try:
         with open(full_path, 'rb') as f:
             while True:
