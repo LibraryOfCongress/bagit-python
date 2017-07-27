@@ -501,7 +501,7 @@ class Bag(object):
     def has_oxum(self):
         return 'Payload-Oxum' in self.info
 
-    def validate(self, processes=1, fast=False):
+    def validate(self, processes=1, fast=False, completeness_only=False):
         """Checks the structure and contents are valid.
 
         If you supply the parameter fast=True the Payload-Oxum (if present) will
@@ -515,17 +515,18 @@ class Bag(object):
 
         self.validate_fetch()
 
-        self._validate_contents(processes=processes, fast=fast)
+        self._validate_contents(processes=processes, fast=fast,
+            completeness_only=completeness_only)
 
         return True
 
-    def is_valid(self, fast=False):
+    def is_valid(self, fast=False, completeness_only=False):
         """Returns validation success or failure as boolean.
         Optional fast parameter passed directly to validate().
         """
 
         try:
-            self.validate(fast=fast)
+            self.validate(fast=fast, completeness_only=completeness_only)
         except BagError:
             return False
 
@@ -640,16 +641,23 @@ class Bag(object):
             if not all((parsed_url.scheme, parsed_url.netloc)):
                 raise BagError(_('Malformed URL in fetch.txt: %s') % url)
 
-    def _validate_contents(self, processes=1, fast=False):
+    def _validate_contents(self, processes=1, fast=False,
+                           completeness_only=False):
         if fast and not self.has_oxum():
             raise BagValidationError(_('Fast validation requires bag-info.txt to include Payload-Oxum'))
 
         # Perform the fast file count + size check so we can fail early:
         self._validate_oxum()
 
-        if not fast:
-            # Now perform the full file hashing process:
-            self._validate_entries(processes)
+        if fast:
+            return
+
+        self._validate_completeness()
+
+        if completeness_only:
+            return
+
+        self._validate_entries(processes)
 
     def _validate_oxum(self):
         oxum = self.info.get('Payload-Oxum')
@@ -690,9 +698,9 @@ class Bag(object):
                     }
             )
 
-    def _validate_entries(self, processes):
+    def _validate_completeness(self):
         """
-        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        Verify that the actual file manifests match the files in the data directory
         """
         errors = list()
 
@@ -707,6 +715,15 @@ class Bag(object):
             e = UnexpectedFile(path)
             LOGGER.warning(force_unicode(e))
             errors.append(e)
+
+        if errors:
+            raise BagValidationError(_("Bag validation failed"), errors)
+
+    def _validate_entries(self, processes):
+        """
+        Verify that the actual file contents match the recorded hashes stored in the manifest files
+        """
+        errors = list()
 
         if os.name == 'posix':
             worker_init = posix_multiprocessing_worker_initializer
@@ -976,9 +993,6 @@ def _calculate_file_hashes(full_path, f_hashers):
     filename
     """
     LOGGER.info(_("Verifying checksum for file %s"), full_path)
-
-    if not os.path.exists(full_path):
-        raise BagValidationError(_("File %s does not exist") % full_path)
 
     try:
         with open(full_path, 'rb') as f:
@@ -1297,6 +1311,10 @@ def _make_parser():
                         help=_('Modify --validate behaviour to only test whether the bag directory'
                                ' has the number of files and total size specified in Payload-Oxum'
                                ' without performing checksum validation to detect corruption.'))
+    parser.add_argument('--completeness-only', action='store_true',
+                        help=_('Modify --validate behaviour to test whether the bag directory'
+                               ' has the expected payload specified in the checksum manifests'
+                               ' without performing checksum validation to detect corruption.'))
 
     checksum_args = parser.add_argument_group(
         _('Checksum Algorithms'),
@@ -1361,7 +1379,8 @@ def main():
             try:
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
-                bag.validate(processes=args.processes, fast=args.fast)
+                bag.validate(processes=args.processes, fast=args.fast,
+                             completeness_only=args.completeness-only)
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
                 else:
