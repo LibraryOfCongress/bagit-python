@@ -648,7 +648,6 @@ class Bag(object):
 
         # Perform the fast file count + size check so we can fail early:
         self._validate_oxum()
-        self._validate_oxum()
 
         if fast:
             return
