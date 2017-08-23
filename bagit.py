@@ -743,11 +743,8 @@ class Bag(object):
                     pool = multiprocessing.Pool(processes if processes else None, initializer=worker_init)
                     hash_results = pool.map(_calc_hashes, args)
                 finally:
-                    try:
-                        pool.terminate()
-                    except Exception:
-                        # we really don't care about any exception in terminate()
-                        pass
+                    pool.terminate()
+
         # Any unhandled exceptions are probably fatal
         except:
             LOGGER.exception(_("Unable to calculate file hashes for %s"), self)
