@@ -1377,7 +1377,7 @@ def main():
                 bag = Bag(bag_dir)
                 # validate throws a BagError or BagValidationError
                 bag.validate(processes=args.processes, fast=args.fast,
-                             completeness_only=args.completeness-only)
+                             completeness_only=args.completeness_only)
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
                 else:
