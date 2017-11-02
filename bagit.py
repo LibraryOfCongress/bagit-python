@@ -605,11 +605,22 @@ class Bag(object):
                             }
                         )
 
-                    if entry_path in self.entries:
-                        self.entries[entry_path][alg] = entry_hash
-                    else:
-                        self.entries[entry_path] = {}
-                        self.entries[entry_path][alg] = entry_hash
+                    entry_hashes = self.entries.setdefault(entry_path, {})
+
+                    if alg in entry_hashes:
+                        warning_ctx = {'bag': self, 'algorithm': alg, 'filename': entry_path}
+                        if entry_hashes[alg] == entry_hash:
+                            msg = _('%(bag)s: %(algorithm)s manifest lists %(filename)s'
+                                    ' multiple times with the same value')
+                            if self.version_info >= (1, ):
+                                raise BagError(msg % warning_ctx)
+                            else:
+                                LOGGER.warning(msg, warning_ctx)
+                        else:
+                            raise BagError(_('%(bag)s: %(algorithm)s manifest lists %(filename)s'
+                                             ' multiple times with conflicting values') % warning_ctx)
+
+                    entry_hashes[alg] = entry_hash
 
         self.normalized_manifest_names.update(
             (normalize_unicode(i), i) for i in self.entries.keys()
