@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-05-09 11:56-0400\n"
+"POT-Creation-Date: 2017-11-02 14:47-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -121,12 +121,19 @@ msgstr ""
 msgid "Use Bag.algorithms instead of Bag.algs"
 msgstr ""
 
+msgid "Use the Bag.version_info tuple instead of Bag.version"
+msgstr ""
+
 #, python-format
 msgid "Expected bagit.txt does not exist: %s"
 msgstr ""
 
 #, python-format
 msgid "Missing required tag in bagit.txt: %s"
+msgstr ""
+
+#, python-format
+msgid "Bag version numbers must be MAJOR.MINOR numbers, not %s"
 msgstr ""
 
 #, python-format
@@ -173,6 +180,18 @@ msgid "Path \"%(payload_file)s\" in manifest \"%(manifest_file)s\" is unsafe"
 msgstr ""
 
 #, python-format
+msgid ""
+"%(bag)s: %(algorithm)s manifest lists %(filename)s multiple times with the "
+"same value"
+msgstr ""
+
+#, python-format
+msgid ""
+"%(bag)s: %(algorithm)s manifest lists %(filename)s multiple times with "
+"conflicting values"
+msgstr ""
+
+#, python-format
 msgid "Expected data directory %s does not exist"
 msgstr ""
 
@@ -204,11 +223,11 @@ msgid ""
 "%(found_byte_count)d bytes"
 msgstr ""
 
-#, python-format
-msgid "Unable to calculate file hashes for %s"
+msgid "Bag validation failed"
 msgstr ""
 
-msgid "Bag validation failed"
+#, python-format
+msgid "Unable to calculate file hashes for %s"
 msgstr ""
 
 msgid "bagit.txt must not contain a byte-order mark"
@@ -243,10 +262,6 @@ msgstr ""
 
 #, python-format
 msgid "Verifying checksum for file %s"
-msgstr ""
-
-#, python-format
-msgid "File %s does not exist"
 msgstr ""
 
 #, python-format
@@ -294,6 +309,12 @@ msgstr ""
 msgid ""
 "Modify --validate behaviour to only test whether the bag directory has the "
 "number of files and total size specified in Payload-Oxum without performing "
+"checksum validation to detect corruption."
+msgstr ""
+
+msgid ""
+"Modify --validate behaviour to test whether the bag directory has the "
+"expected payload specified in the checksum manifests without performing "
 "checksum validation to detect corruption."
 msgstr ""
 
