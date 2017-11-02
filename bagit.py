@@ -515,8 +515,7 @@ class Bag(object):
 
         self.validate_fetch()
 
-        self._validate_contents(processes=processes, fast=fast,
-            completeness_only=completeness_only)
+        self._validate_contents(processes=processes, fast=fast, completeness_only=completeness_only)
 
         return True
 
