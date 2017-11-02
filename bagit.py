@@ -279,6 +279,11 @@ class Bag(object):
         warnings.warn(_('Use Bag.algorithms instead of Bag.algs'), DeprecationWarning)
         return self.algorithms
 
+    @property
+    def version(self):
+        warnings.warn(_('Use the Bag.version_info tuple instead of Bag.version'), DeprecationWarning)
+        return self._version
+
     def _open(self):
         # Open the bagit.txt file, and load any tags from it, including
         # the required version and encoding.
@@ -294,15 +299,25 @@ class Bag(object):
         if missing_tags:
             raise BagError(_("Missing required tag in bagit.txt: %s") % ', '.join(missing_tags))
 
-        self.version = tags['BagIt-Version']
-        self.encoding = tags['Tag-File-Character-Encoding']
+        # To avoid breaking existing code we'll leave self.version as the string
+        # and parse it into a numeric version_info tuple. In version 2.0 we can
+        # break that.
 
-        if self.version in ["0.93", "0.94", "0.95"]:
+        self._version = tags['BagIt-Version']
+
+        try:
+            self.version_info = tuple(int(i) for i in self.version.split('.', 1))
+        except ValueError:
+            raise BagError(_('Bag version numbers must be MAJOR.MINOR numbers, not %s') % self._version)
+
+        if (0, 93) <= self.version_info <= (0, 95):
             self.tag_file_name = "package-info.txt"
-        elif self.version in ["0.96", "0.97"]:
+        elif (0, 96) <= self.version_info < (2, ):
             self.tag_file_name = "bag-info.txt"
         else:
-            raise BagError(_("Unsupported bag version: %s") % self.version)
+            raise BagError(_("Unsupported bag version: %s") % self._version)
+
+        self.encoding = tags['Tag-File-Character-Encoding']
 
         try:
             codecs.lookup(self.encoding)
@@ -340,7 +355,7 @@ class Bag(object):
         files_on_fs = set(normalize_unicode(i) for i in self.payload_files())
         files_in_manifest = set(normalize_unicode(i) for i in self.payload_entries().keys())
 
-        if self.version == "0.97":
+        if self.version_info >= (0, 97):
             files_in_manifest.update(self.missing_optional_tagfiles())
 
         only_on_fs = list()
@@ -535,8 +550,8 @@ class Bag(object):
         self.entries = {}
         manifests = list(self.manifest_files())
 
-        if self.version == "0.97":
-            # v0.97 requires that optional tagfiles are verified.
+        if self.version_info >= (0, 97):
+            # v0.97+ requires that optional tagfiles are verified.
             manifests += list(self.tagmanifest_files())
 
         for manifest_filename in manifests:

@@ -808,16 +808,29 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual('Missing required tag in bagit.txt: BagIt-Version, Tag-File-Character-Encoding',
                          str(error_catcher.exception))
 
-    def test_open_bag_with_unknown_version(self):
+    def test_open_bag_with_invalid_versions(self):
+        bagit.make_bag(self.tmpdir)
+
+        for v in ('a.b', '2.', '0.1.2', '1.2.3'):
+            with open(j(self.tmpdir, 'bagit.txt'), 'w') as f:
+                f.write('BagIt-Version: %s\nTag-File-Character-Encoding: UTF-8\n' % v)
+
+            with self.assertRaises(bagit.BagError) as error_catcher:
+                bagit.Bag(self.tmpdir)
+
+            self.assertEqual('Bag version numbers must be MAJOR.MINOR numbers, not %s' % v,
+                             str(error_catcher.exception))
+
+    def test_open_bag_with_unsupported_version(self):
         bagit.make_bag(self.tmpdir)
 
         with open(j(self.tmpdir, 'bagit.txt'), 'w') as f:
-            f.write('BagIt-Version: 0.123456789\nTag-File-Character-Encoding: UTF-8\n')
+            f.write('BagIt-Version: 2.0\nTag-File-Character-Encoding: UTF-8\n')
 
         with self.assertRaises(bagit.BagError) as error_catcher:
             bagit.Bag(self.tmpdir)
 
-        self.assertEqual('Unsupported bag version: 0.123456789',
+        self.assertEqual('Unsupported bag version: 2.0',
                          str(error_catcher.exception))
 
     def test_open_bag_with_unknown_encoding(self):
