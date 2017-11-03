@@ -306,7 +306,7 @@ class Bag(object):
         self._version = tags['BagIt-Version']
 
         try:
-            self.version_info = tuple(int(i) for i in self.version.split('.', 1))
+            self.version_info = tuple(int(i) for i in self._version.split('.', 1))
         except ValueError:
             raise BagError(_('Bag version numbers must be MAJOR.MINOR numbers, not %s') % self._version)
 
