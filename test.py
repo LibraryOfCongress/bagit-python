@@ -221,11 +221,13 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
                 baginfo_error = e.details[1]
                 readme_error = e.details[0]
 
-            self.assertEqual(str(baginfo_error), "bag-info.txt exists in manifest but was not found on filesystem")
+            self.assertEqual(str(baginfo_error),
+                             "bag-info.txt exists in manifest but was not found on filesystem")
             self.assertIsInstance(baginfo_error, bagit.FileMissing)
             self.assertEqual(baginfo_error.path, "bag-info.txt")
 
-            self.assertEqual(str(readme_error), "data/README exists in manifest but was not found on filesystem")
+            self.assertEqual(str(readme_error),
+                             "data/README exists in manifest but was not found on filesystem")
             self.assertIsInstance(readme_error, bagit.FileMissing)
             self.assertEqual(readme_error.path, "data/README")
 
@@ -492,10 +494,14 @@ class TestBag(SelfCleaningTestCase):
         # check manifest
         self.assertTrue(os.path.isfile(j(self.tmpdir, 'manifest-sha256.txt')))
         manifest_txt = slurp_text_file(j(self.tmpdir, 'manifest-sha256.txt')).splitlines()
-        self.assertIn('b6df8058fa818acfd91759edffa27e473f2308d5a6fca1e07a79189b95879953  data/loc/2478433644_2839c5e8b8_o_d.jpg', manifest_txt)
-        self.assertIn('1af90c21e72bb0575ae63877b3c69cfb88284f6e8c7820f2c48dc40a08569da5  data/loc/3314493806_6f1db86d66_o_d.jpg', manifest_txt)
-        self.assertIn('f065a4ae2bc5d47c6d046c3cba5c8cdfd66b07c96ff3604164e2c31328e41c1a  data/si/2584174182_ffd5c24905_b_d.jpg', manifest_txt)
-        self.assertIn('45d257c93e59ec35187c6a34c8e62e72c3e9cfbb548984d6f6e8deb84bac41f4  data/si/4011399822_65987a4806_b_d.jpg', manifest_txt)
+        self.assertIn(
+            'b6df8058fa818acfd91759edffa27e473f2308d5a6fca1e07a79189b95879953  data/loc/2478433644_2839c5e8b8_o_d.jpg', manifest_txt)
+        self.assertIn(
+            '1af90c21e72bb0575ae63877b3c69cfb88284f6e8c7820f2c48dc40a08569da5  data/loc/3314493806_6f1db86d66_o_d.jpg', manifest_txt)
+        self.assertIn(
+            'f065a4ae2bc5d47c6d046c3cba5c8cdfd66b07c96ff3604164e2c31328e41c1a  data/si/2584174182_ffd5c24905_b_d.jpg', manifest_txt)
+        self.assertIn(
+            '45d257c93e59ec35187c6a34c8e62e72c3e9cfbb548984d6f6e8deb84bac41f4  data/si/4011399822_65987a4806_b_d.jpg', manifest_txt)
 
     def test_make_bag_sha512_manifest(self):
         bagit.make_bag(self.tmpdir, checksum=['sha512'])
@@ -622,6 +628,23 @@ Tag-File-Character-Encoding: UTF-8
         meta = bag.info.get("Multival-Meta")
         self.assertEqual(type(meta), list)
         self.assertEqual(len(meta), len(baginfo["Multival-Meta"]))
+
+    def test_unusual_bag_info_separators(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        with open(j(self.tmpdir, 'bag-info.txt'), 'a') as f:
+            print('Test-Tag: 1', file=f)
+            print('Test-Tag:\t2', file=f)
+            print('Test-Tag\t: 3', file=f)
+            print('Test-Tag\t:\t4', file=f)
+            print('Test-Tag\t \t: 5', file=f)
+            print('Test-Tag:\t \t 6', file=f)
+
+        bag = bagit.Bag(self.tmpdir)
+        bag.save(manifests=True)
+
+        self.assertTrue(bag.is_valid())
+        self.assertEqual(bag.info['Test-Tag'], list(map(str, range(1, 7))))
 
     def test_default_bagging_date(self):
         info = {'Contact-Email': 'ehs@pobox.com'}
