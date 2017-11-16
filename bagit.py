@@ -1292,7 +1292,7 @@ def _decode_filename(s):
 def force_unicode_py2(s):
     """Reliably return a Unicode string given a possible unicode or byte string"""
     if isinstance(s, str):
-        s = s.decode('utf-8')
+        return s.decode('utf-8')
     else:
         return unicode(s)
 

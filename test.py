@@ -945,5 +945,23 @@ class TestFetch(SelfCleaningTestCase):
         self.assertEqual(expected_msg, str(cm.exception))
 
 
+class TestUtils(unittest.TestCase):
+    def setUp(self):
+        super(TestUtils, self).setUp()
+        if sys.version_info >= (3, ):
+            self.unicode_class = str
+        else:
+            self.unicode_class = unicode
+
+    def test_force_unicode_str_to_unicode(self):
+        self.assertIsInstance(bagit.force_unicode('foobar'), self.unicode_class)
+
+    def test_force_unicode_pass_through(self):
+        self.assertIsInstance(bagit.force_unicode(u'foobar'), self.unicode_class)
+
+    def test_force_unicode_int(self):
+        self.assertIsInstance(bagit.force_unicode(1234), self.unicode_class)
+
+
 if __name__ == '__main__':
     unittest.main()
