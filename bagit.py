@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
 import codecs
@@ -22,12 +21,13 @@ from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
 
+from pkg_resources import DistributionNotFound, get_distribution
+
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 
-from pkg_resources import DistributionNotFound, get_distribution
 
 
 def find_locale_dir():
