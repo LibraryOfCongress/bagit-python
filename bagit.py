@@ -1097,13 +1097,12 @@ def _make_tag_file(bag_info_path, bag_info):
     headers = sorted(bag_info.keys())
     with open_text_file(bag_info_path, 'w') as f:
         for h in headers:
-            if isinstance(bag_info[h], list):
-                for val in bag_info[h]:
-                    f.write("%s: %s\n" % (h, val))
-            else:
-                txt = bag_info[h]
+            values = bag_info[h]
+            if not isinstance(values, list):
+                values = [values]
+            for txt in values:
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub(r'\n|\r|(\r\n)', '', txt)
+                txt = re.sub(r'\n|\r|(\r\n)', '', force_unicode(txt))
                 f.write("%s: %s\n" % (h, txt))
 
 
