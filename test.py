@@ -629,6 +629,18 @@ Tag-File-Character-Encoding: UTF-8
         self.assertEqual(type(meta), list)
         self.assertEqual(len(meta), len(baginfo["Multival-Meta"]))
 
+    def test_unicode_bag_info(self):
+        info = {
+            'Test-BMP': u'This element contains a \N{LATIN SMALL LETTER U WITH DIAERESIS}',
+            'Test-SMP': u'This element contains a \N{LINEAR B SYMBOL B049}',
+        }
+
+        bagit.make_bag(self.tmpdir, bag_info=info, checksums=['md5'])
+
+        bag_info_txt = slurp_text_file(j(self.tmpdir, 'bag-info.txt'))
+        for v in info.values():
+            self.assertIn(v, bag_info_txt)
+
     def test_unusual_bag_info_separators(self):
         bag = bagit.make_bag(self.tmpdir)
 
