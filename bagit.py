@@ -1144,6 +1144,10 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='
     byte_value_set = set(total_bytes.values())
     file_count_set = set(num_files.values())
 
+    # allow a bag with an empty payload
+    if not (len(byte_value_set) and len(file_count_set)):
+        return 0, 0
+
     if len(file_count_set) != 1:
         raise RuntimeError(_('Expected the same number of files for each checksum'))
 
