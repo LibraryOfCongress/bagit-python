@@ -516,6 +516,22 @@ class TestBag(SelfCleaningTestCase):
     def test_make_bag_unknown_algorithm(self):
         self.assertRaises(ValueError, bagit.make_bag, self.tmpdir, checksum=['not-really-a-name'])
 
+    def test_make_bag_with_empty_directory(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            bagit.make_bag(tmpdir)
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_make_bag_with_empty_directory_tree(self):
+        tmpdir = tempfile.mkdtemp()
+        path = j(tmpdir, "test1", "test2")
+        try:
+            os.makedirs(path)
+            bagit.make_bag(tmpdir)
+        finally:
+            shutil.rmtree(tmpdir)
+
     def test_make_bag_with_bogus_directory(self):
         bogus_directory = os.path.realpath('this-directory-does-not-exist')
 

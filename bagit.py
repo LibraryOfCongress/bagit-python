@@ -1145,7 +1145,7 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding='
     file_count_set = set(num_files.values())
 
     # allow a bag with an empty payload
-    if not (len(byte_value_set) and len(file_count_set)):
+    if not byte_value_set and not file_count_set:
         return 0, 0
 
     if len(file_count_set) != 1:
