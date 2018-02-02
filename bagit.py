@@ -29,7 +29,6 @@ except ImportError:
     from urlparse import urlparse
 
 
-
 def find_locale_dir():
     for prefix in (os.path.dirname(__file__), sys.prefix):
         locale_dir = os.path.join(prefix, 'locale')
