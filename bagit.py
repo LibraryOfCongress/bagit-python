@@ -147,6 +147,11 @@ def make_bag(bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
         checksums = DEFAULT_CHECKSUMS
 
     bag_dir = os.path.abspath(bag_dir)
+    cwd = os.path.abspath(os.path.curdir)
+
+    if cwd.startswith(bag_dir) and cwd != bag_dir:
+        raise RuntimeError(_('Bagging a parent of the current directory is not supported'))
+
     LOGGER.info(_("Creating bag for directory %s"), bag_dir)
 
     if not os.path.isdir(bag_dir):
