@@ -564,7 +564,8 @@ class Bag(object):
             else:
                 search = "manifest-"
             alg = os.path.basename(manifest_filename).replace(search, "").replace(".txt", "")
-            self.algorithms.append(alg)
+            if alg not in self.algorithms:
+                self.algorithms.append(alg)
 
             with open_text_file(manifest_filename, 'r', encoding=self.encoding) as manifest_file:
                 if manifest_file.encoding.startswith('UTF'):
