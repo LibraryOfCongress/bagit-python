@@ -174,9 +174,9 @@ If you would like to see if a bag is valid, use its ``is_valid`` method:
 
     bag = bagit.Bag('/path/to/bag')
     if bag.is_valid():
-        print "yay :)"
+        print("yay :)")
     else:
-        print "boo :("
+        print("boo :(")
 
 If you'd like to get a detailed list of validation errors, execute the
 ``validate`` method and catch the ``BagValidationError`` exception. If
@@ -197,11 +197,11 @@ validate you can do this:
     try:
       bag.validate()
 
-    except bagit.BagValidationError, e:
-      for d in e.details:
-        if isinstance(d, bag.ChecksumMismatch):
-          print "expected %s to have %s checksum of %s but found %s" % \
-            (e.path, e.algorithm, e.expected, e.found)
+    except bagit.BagValidationError as e:
+        for d in e.details:
+            if isinstance(d, bagit.ChecksumMismatch):
+                print("expected %s to have %s checksum of %s but found %s" %
+                      (d.path, d.algorithm, d.expected, d.found))
 
 To iterate through a bag's manifest and retrieve checksums for the
 payload files use the bag's entries dictionary:
@@ -211,7 +211,7 @@ payload files use the bag's entries dictionary:
     bag = bagit.Bag("/path/to/bag")
 
     for path, fixity in bag.entries.items():
-      print "path:%s md5:%s" % (path, fixity["md5"])
+      print("path:%s md5:%s" % (path, fixity["md5"]))
 
 Contributing to bagit-python development
 ----------------------------------------
