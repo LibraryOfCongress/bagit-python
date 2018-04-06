@@ -267,7 +267,7 @@ License
 Note: By contributing to this project, you agree to license your work
 under the same terms as those that govern this project's distribution.
 
-.. |Build Status| image:: https://travis-ci.org/LibraryOfCongress/bagit-python.svg
+.. |Build Status| image:: https://travis-ci.org/LibraryOfCongress/bagit-python.svg?branch=master
    :target: http://travis-ci.org/LibraryOfCongress/bagit-python
 .. |Coverage Status| image:: https://coveralls.io/repos/github/LibraryOfCongress/bagit-python/badge.svg?branch=master
    :target: https://coveralls.io/github/LibraryOfCongress/bagit-python?branch=master
