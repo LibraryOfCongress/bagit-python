@@ -1443,17 +1443,14 @@ else:
 class BagArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
+        self.set_defaults(bag_info={})
 
 
 class BagHeaderAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         opt = option_string.lstrip("--")
         opt_caps = "-".join([o.capitalize() for o in opt.split("-")])
-        parser.bag_info[opt_caps] = values
-        try:
-            namespace.bag_info[opt_caps] = values
-        except AttributeError:
-            namespace.bag_info = {opt_caps: values}
+        namespace.bag_info[opt_caps] = values
 
 
 def _make_parser():
