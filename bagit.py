@@ -1522,7 +1522,7 @@ def _make_parser():
     metadata_args = parser.add_argument_group(_("Optional Bag Metadata"))
     for header in STANDARD_BAG_INFO_HEADERS:
         metadata_args.add_argument(
-            "--%s" % header.lower(), type=str, action=BagHeaderAction
+            "--%s" % header.lower(), type=str, action=BagHeaderAction, default=argparse.SUPPRESS
         )
 
     parser.add_argument(
