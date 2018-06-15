@@ -1,14 +1,15 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
 
-
-
 [dev-packages]
-
 tox = "*"
+black = "*"
+"flake8" = "*"
+isort = "*"
+
+[pipenv]
+allow_prereleases = true
