@@ -352,9 +352,6 @@ msgstr ""
 msgid "The number of processes must be 0 or greater"
 msgstr ""
 
-msgid "Multiple processes are not supported on Python 2.6"
-msgstr ""
-
 msgid "--fast is only allowed as an option for --validate!"
 msgstr ""
 

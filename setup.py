@@ -9,8 +9,8 @@ import subprocess
 import sys
 from setuptools import setup
 
-if sys.version_info < (2, 6):
-    print("Python 2.6 or higher is required")
+if sys.version_info < (2, 7):
+    print("Python 2.7 or higher is required")
     sys.exit(1)
 
 description = 'Create and validate BagIt packages'
@@ -19,9 +19,6 @@ with open('README.rst') as readme:
     long_description = readme.read()
 
 tests_require = ['mock', 'coverage']
-
-if sys.version_info < (2, 7):
-    tests_require.append('unittest2')
 
 
 def get_message_catalogs():
@@ -65,7 +62,6 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: System :: Filesystems',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.1',
         'Programming Language :: Python :: 3.2',

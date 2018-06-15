@@ -19,9 +19,6 @@ from os.path import join as j
 import bagit
 import mock
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest  # NOQA
-
 logging.basicConfig(filename='test.log', level=logging.DEBUG)
 stderr = logging.StreamHandler()
 stderr.setLevel(logging.WARNING)
@@ -633,7 +630,6 @@ Tag-File-Character-Encoding: UTF-8
             bf.write(bagfile)
         self.assertRaises(bagit.BagValidationError, bagit.Bag, self.tmpdir)
 
-    @unittest.skipIf(sys.version_info < (2, 7), 'multiprocessing is unstable on Python 2.6')
     def test_make_bag_multiprocessing(self):
         bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, 'data')))

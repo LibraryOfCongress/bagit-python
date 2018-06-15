@@ -1,12 +1,12 @@
 language: python
 python:
  - "2.7"
- - "2.6"
  - "3.3"
  - "3.4"
  - "3.5"
  - "3.6"
  - "3.6-dev"
+ - "3.7-dev"
 
 addons:
   apt:
@@ -15,11 +15,12 @@ addons:
 
 matrix:
   allow_failures:
-    python: "3.6-dev"
+    python:
+        - "3.6-dev"
+        - "3.7-dev"
 
 install:
     - pip install --upgrade pip
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
     - pip install coveralls coverage
 
 script: coverage run --include=bagit.py setup.py test
