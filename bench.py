@@ -15,20 +15,20 @@ import bagit
 
 # fetch some images from NASA to bag up
 
-if not os.path.isdir('bench-data'):
+if not os.path.isdir("bench-data"):
     print("fetching some images to bag up from nasa")
-    os.mkdir('bench-data')
-    ftp = ftplib.FTP('nssdcftp.gsfc.nasa.gov')
+    os.mkdir("bench-data")
+    ftp = ftplib.FTP("nssdcftp.gsfc.nasa.gov")
     ftp.login()
 
-    ftp.cwd('/pub/misc/photo_gallery/hi-res/planetary/mars/')
+    ftp.cwd("/pub/misc/photo_gallery/hi-res/planetary/mars/")
     files = []
-    ftp.retrlines('NLST', files.append)
+    ftp.retrlines("NLST", files.append)
 
     for file in files:
         print(("fetching %s" % file))
-        fh = open(os.path.join('bench-data', file), 'wb')
-        ftp.retrbinary('RETR %s' % file, fh.write)
+        fh = open(os.path.join("bench-data", file), "wb")
+        ftp.retrbinary("RETR %s" % file, fh.write)
         fh.close()
 
 
@@ -48,13 +48,15 @@ bagit.make_bag('bench-data', processes=%s)
 
 for p in range(1, 9):
     t = timeit.Timer(statement % p)
-    print(("create w/ %s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10))))
+    print(
+        ("create w/ %s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10)))
+    )
 
 
 # validate a bag with 1-8 processes
 
-shutil.copytree('bench-data', 'bench-data-bag')
-bagit.make_bag('bench-data-bag')
+shutil.copytree("bench-data", "bench-data-bag")
+bagit.make_bag("bench-data-bag")
 
 # validate bench-data using n processes
 statement = """
@@ -68,6 +70,11 @@ bag.validate(processes=%s)
 # try 1-8 parallel processes
 for p in range(1, 9):
     t = timeit.Timer(statement % p)
-    print(("validate w/ %s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10))))
+    print(
+        (
+            "validate w/ %s processes: %.2f seconds "
+            % (p, (10 * t.timeit(number=10) / 10))
+        )
+    )
 
-shutil.rmtree('bench-data-bag')
+shutil.rmtree("bench-data-bag")
