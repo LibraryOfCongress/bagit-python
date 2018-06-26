@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-11-02 14:47-0400\n"
+"POT-Creation-Date: 2018-06-26 10:28-0400\n"
 "PO-Revision-Date: 2017-04-27 15:02-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -69,6 +69,9 @@ msgid ""
 "The `checksum` argument for `make_bag` should be replaced with `checksums`"
 msgstr ""
 "The `checksum` argument for `make_bag` should be replaced with `checksums`"
+
+msgid "Bagging a parent of the current directory is not supported"
+msgstr ""
 
 #, python-format
 msgid "Creating bag for directory %s"
