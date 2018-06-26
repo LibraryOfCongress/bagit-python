@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 from setuptools import setup
+from codecs import open
 
 if sys.version_info < (2, 7):
     print("Python 2.7 or higher is required")
@@ -15,7 +16,7 @@ if sys.version_info < (2, 7):
 
 description = 'Create and validate BagIt packages'
 
-with open('README.rst') as readme:
+with open("README.rst", encoding="utf-8") as readme:
     long_description = readme.read()
 
 tests_require = ['mock', 'coverage']
