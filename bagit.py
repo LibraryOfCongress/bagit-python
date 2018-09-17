@@ -1442,15 +1442,15 @@ else:
 
 class BagArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
-        self.bag_info = {}
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
+        self.set_defaults(bag_info={})
 
 
 class BagHeaderAction(argparse.Action):
-    def __call__(self, parser, _, values, option_string=None):
+    def __call__(self, parser, namespace, values, option_string=None):
         opt = option_string.lstrip("--")
         opt_caps = "-".join([o.capitalize() for o in opt.split("-")])
-        parser.bag_info[opt_caps] = values
+        namespace.bag_info[opt_caps] = values
 
 
 def _make_parser():
@@ -1522,7 +1522,7 @@ def _make_parser():
     metadata_args = parser.add_argument_group(_("Optional Bag Metadata"))
     for header in STANDARD_BAG_INFO_HEADERS:
         metadata_args.add_argument(
-            "--%s" % header.lower(), type=str, action=BagHeaderAction
+            "--%s" % header.lower(), type=str, action=BagHeaderAction, default=argparse.SUPPRESS
         )
 
     parser.add_argument(
@@ -1593,7 +1593,7 @@ def main():
             try:
                 make_bag(
                     bag_dir,
-                    bag_info=parser.bag_info,
+                    bag_info=args.bag_info,
                     processes=args.processes,
                     checksums=args.checksums,
                 )
