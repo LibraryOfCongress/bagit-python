@@ -1099,6 +1099,23 @@ class TestFetch(SelfCleaningTestCase):
 
         self.assertEqual(expected_msg, str(cm.exception))
 
+    def test_bag_symlink_is_dangerous(self):
+        src = j(os.path.dirname(__file__), "README.rst")
+        dst = j(self.tmpdir, "README.rst")
+        os.symlink(src, dst)
+        self.assertRaisesRegex(
+            bagit.BagError,
+            'Path "data/README.rst" in manifest ".*?" is unsafe',
+            bagit.make_bag,
+            self.tmpdir
+        )
+
+    def test_bag_symlink_allowed(self):
+        src = j(os.path.dirname(__file__), "README.rst")
+        dst = j(self.tmpdir, "README.rst")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir, follow_links=True)
+        self.assertTrue(bag.validate())
 
 class TestUtils(unittest.TestCase):
     def setUp(self):

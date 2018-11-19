@@ -136,8 +136,13 @@ open_text_file = partial(codecs.open, encoding="utf-8", errors="strict")
 UNICODE_BYTE_ORDER_MARK = "\uFEFF"
 
 
-def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+def make_bag(bag_dir,
+    bag_info=None,
+    processes=1,
+    checksums=None,
+    checksum=None,
+    encoding="utf-8",
+    follow_links=False,
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -266,7 +271,7 @@ def make_bag(
     finally:
         os.chdir(old_dir)
 
-    return Bag(bag_dir)
+    return Bag(bag_dir, follow_links=follow_links)
 
 
 class Bag(object):
@@ -275,7 +280,7 @@ class Bag(object):
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ["data"]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, follow_links=False):
         super(Bag, self).__init__()
         self.tags = {}
         self.info = {}
@@ -297,6 +302,7 @@ class Bag(object):
 
         self.algorithms = []
         self.tag_file_name = None
+        self.follow_links = follow_links
         self.path = abspath(path)
         if path:
             # if path ends in a path separator, strip it off
@@ -921,8 +927,6 @@ class Bag(object):
     def _path_is_dangerous(self, path):
         """
         Return true if path looks dangerous, i.e. potentially operates
-        outside the bagging directory structure, e.g. ~/.bashrc, ../../../secrets.json,
-            \\?\c:\, D:\sys32\cmd.exe
         """
         if os.path.isabs(path):
             return True
@@ -930,12 +934,22 @@ class Bag(object):
             return True
         if os.path.expandvars(path) != path:
             return True
-        real_path = os.path.realpath(os.path.join(self.path, path))
-        real_path = os.path.normpath(real_path)
-        bag_path = os.path.realpath(self.path)
-        bag_path = os.path.normpath(bag_path)
-        common = os.path.commonprefix((bag_path, real_path))
-        return not (common == bag_path)
+
+        # check for unsafe character sequences like
+        # ~/.bashrc, ../../../secrets.json, \\?\c:\, D:\sys32\cmd.exe
+        norm_path = os.path.normpath(os.path.join(self.path, path))
+        norm_bag_path = os.path.normpath(self.path)
+        if os.path.commonprefix((norm_path, norm_bag_path)) != norm_bag_path:
+            return True
+
+        # check for symbolic or hard links
+        real_path = os.path.realpath(norm_path)
+        real_bag_path = os.path.realpath(norm_bag_path)
+        if os.path.commonprefix((real_path, real_bag_path)) != real_bag_path \
+            and not self.follow_links:
+            return True
+
+        return False
 
 
 class BagError(Exception):
@@ -1309,12 +1323,12 @@ def _make_tagmanifest_file(alg, bag_dir, encoding="utf-8"):
             tagmanifest.write("%s %s\n" % (digest, filename))
 
 
-def _find_tag_files(bag_dir):
+def _find_tag_files(bag_dir, follow_links=False):
     for dir in os.listdir(bag_dir):
         if dir != "data":
             if os.path.isfile(dir) and not dir.startswith("tagmanifest-"):
                 yield dir
-            for dir_name, _, filenames in os.walk(dir):
+            for dir_name, _, filenames in os.walk(dir, followlinks=follow_links):
                 for filename in filenames:
                     if filename.startswith("tagmanifest-"):
                         continue
@@ -1499,6 +1513,15 @@ def _make_parser():
             " without performing checksum validation to detect corruption."
         ),
     )
+    parser.add_argument(
+        "--follow_links",
+        action="store_true",
+        help=_(
+            "Allow bag payload directory to contain symbolic or hard links"
+            " on operating systems that support them."
+        ),
+    )
+
 
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
@@ -1508,7 +1531,6 @@ def _make_parser():
         )
         % ", ".join(DEFAULT_CHECKSUMS),
     )
-
     for i in CHECKSUM_ALGOS:
         alg_name = re.sub(r"^([A-Z]+)(\d+)$", r"\1-\2", i.upper())
         checksum_args.add_argument(
@@ -1577,6 +1599,7 @@ def main():
                     processes=args.processes,
                     fast=args.fast,
                     completeness_only=args.completeness_only,
+                    follow_links=args.follow_links,
                 )
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
@@ -1596,6 +1619,7 @@ def main():
                     bag_info=args.bag_info,
                     processes=args.processes,
                     checksums=args.checksums,
+                    follow_links=args.follow_links
                 )
             except Exception as exc:
                 LOGGER.error(
