@@ -239,7 +239,11 @@ def make_bag(bag_dir,
             os.chmod("data", os.stat(cwd).st_mode)
 
             total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=checksums, encoding=encoding
+                "data",
+                processes, 
+                algorithms=checksums,
+                encoding=encoding,
+                follow_links=follow_links
             )
 
             LOGGER.info(_("Creating bagit.txt"))
@@ -434,7 +438,8 @@ class Bag(object):
         """Returns a list of filenames which are present on the local filesystem"""
         payload_dir = os.path.join(self.path, "data")
 
-        for dirpath, _, filenames in os.walk(payload_dir):
+        for dirpath, _, filenames in os.walk(payload_dir,
+                followlinks=self.follow_links):
             for f in filenames:
                 # Jump through some hoops here to make the payload files are
                 # returned with the directory structure relative to the base
@@ -513,7 +518,11 @@ class Bag(object):
         # Generate new manifest files
         if manifests:
             total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=self.algorithms, encoding=self.encoding
+                "data",
+                processes,
+                algorithms=self.algorithms,
+                encoding=self.encoding,
+                follow_links=self.follow_links
             )
 
             # Update Payload-Oxum
@@ -1246,7 +1255,8 @@ def _make_tag_file(bag_info_path, bag_info):
                 f.write("%s: %s\n" % (h, txt))
 
 
-def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="utf-8"):
+def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS,
+        encoding="utf-8", follow_links=False):
     LOGGER.info(
         _("Using %(process_count)d processes to generate manifests: %(algorithms)s"),
         {"process_count": processes, "algorithms": ", ".join(algorithms)},
@@ -1256,11 +1266,13 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
-        checksums = pool.map(manifest_line_generator, _walk(data_dir))
+        checksums = pool.map(manifest_line_generator, _walk(data_dir,
+            follow_links=follow_links))
         pool.close()
         pool.join()
     else:
-        checksums = [manifest_line_generator(i) for i in _walk(data_dir)]
+        checksums = [manifest_line_generator(i) for i in _walk(data_dir,
+            follow_links=follow_links)]
 
     # At this point we have a list of tuples which start with the algorithm name:
     manifest_data = {}
@@ -1337,8 +1349,8 @@ def _find_tag_files(bag_dir, follow_links=False):
                     yield os.path.relpath(p, bag_dir)
 
 
-def _walk(data_dir):
-    for dirpath, dirnames, filenames in os.walk(data_dir):
+def _walk(data_dir, follow_links=False):
+    for dirpath, dirnames, filenames in os.walk(data_dir, followlinks=follow_links):
         # if we don't sort here the order of entries is non-deterministic
         # which makes it hard to test the fixity of tagmanifest-md5.txt
         filenames.sort()
@@ -1352,7 +1364,7 @@ def _walk(data_dir):
             yield path
 
 
-def _can_bag(test_dir):
+def _can_bag(test_dir, follow_links=False):
     """Scan the provided directory for files which cannot be bagged due to insufficient permissions"""
     unbaggable = []
 
@@ -1364,7 +1376,8 @@ def _can_bag(test_dir):
     if not os.access(test_dir, os.W_OK):
         unbaggable.append(test_dir)
 
-    for dirpath, dirnames, filenames in os.walk(test_dir):
+    for dirpath, dirnames, filenames in os.walk(test_dir,
+            followlinks=follow_links):
         for directory in dirnames:
             full_path = os.path.join(dirpath, directory)
             if not os.access(full_path, os.W_OK):
@@ -1373,7 +1386,7 @@ def _can_bag(test_dir):
     return unbaggable
 
 
-def _can_read(test_dir):
+def _can_read(test_dir, follow_links=False):
     """
     returns ((unreadable_dirs), (unreadable_files))
     """
@@ -1383,7 +1396,8 @@ def _can_read(test_dir):
     if not os.access(test_dir, os.R_OK):
         unreadable_dirs.append(test_dir)
     else:
-        for dirpath, dirnames, filenames in os.walk(test_dir):
+        for dirpath, dirnames, filenames in os.walk(test_dir,
+                followlinks=follow_links):
             for dn in dirnames:
                 full_path = os.path.join(dirpath, dn)
                 if not os.access(full_path, os.R_OK):
@@ -1514,7 +1528,7 @@ def _make_parser():
         ),
     )
     parser.add_argument(
-        "--follow_links",
+        "--follow-links",
         action="store_true",
         help=_(
             "Allow bag payload directory to contain symbolic or hard links"
@@ -1593,13 +1607,12 @@ def main():
         # validate the bag
         if args.validate:
             try:
-                bag = Bag(bag_dir)
+                bag = Bag(bag_dir, follow_links=args.follow_links)
                 # validate throws a BagError or BagValidationError
                 bag.validate(
                     processes=args.processes,
                     fast=args.fast,
-                    completeness_only=args.completeness_only,
-                    follow_links=args.follow_links,
+                    completeness_only=args.completeness_only
                 )
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)

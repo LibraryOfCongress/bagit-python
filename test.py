@@ -1110,12 +1110,26 @@ class TestFetch(SelfCleaningTestCase):
             self.tmpdir
         )
 
-    def test_bag_symlink_allowed(self):
+    def test_bag_symlink_file(self):
         src = j(os.path.dirname(__file__), "README.rst")
         dst = j(self.tmpdir, "README.rst")
         os.symlink(src, dst)
         bag = bagit.make_bag(self.tmpdir, follow_links=True)
         self.assertTrue(bag.validate())
+
+    def test_symlink_directory_ignored(self):
+        src = j(os.path.dirname(__file__), 'test-data', 'si')
+        dst = j(self.tmpdir, "si-again")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertEqual(len(bag.entries), 15)
+
+    def test_symlink_directory_followed(self):
+        src = j(os.path.dirname(__file__), 'test-data', 'si')
+        dst = j(self.tmpdir, "si-again")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir, follow_links=True)
+        self.assertEqual(len(bag.entries), 17)
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
