@@ -14,7 +14,6 @@ import re
 import signal
 import sys
 import tempfile
-import urllib
 import unicodedata
 import warnings
 from collections import defaultdict
@@ -27,10 +26,9 @@ from pkg_resources import DistributionNotFound, get_distribution
 # pylint: disable=no-name-in-module, import-error, wrong-import-position
 if sys.version_info >= (3,):
     from urllib.parse import urlparse
-    from urllib.request import urlopen, FancyURLopener
-    import urllib.request
+    from urllib.request import ProxyHandler, Request, build_opener
 else:
-    from urllib import urlopen, FancyURLopener
+    from urllib2 import ProxyHandler, Request, build_opener
     from urlparse import urlparse
 
 
@@ -591,16 +589,17 @@ class Bag(object):
         """
         Fetches files from the fetch.txt
         """
-        if sys.version_info >= (3,):
-            urllib.request._urlopener = BagFetcherURLOpener() # pylint: disable=protected-access
-        else:
-            urllib._urlopener = BagFetcherURLOpener() # pylint: disable=protected-access
+        proxy_handler = ProxyHandler() # will default to adhere to *_proxy env vars
+        opener = build_opener(proxy_handler)
+        user_agent = "bagit.py/%s (Python/%s)" % (VERSION, sys.version_info)
         for url, expected_size, filename in self.fetch_entries():
             expected_size = int(expected_size)  # FIXME should be int in the first place
             if filename in self.payload_files():
                 LOGGER.info(_("File already fetched: %s"), filename)
                 continue
-            resp = urlopen(url)
+            req = Request(url)
+            req.add_header('User-Agent', user_agent)
+            resp = opener.open(req)
             headers = resp.info()
             if "content-length" not in headers:
                 LOGGER.warning(_("Server sent no content-length for <%s>"), url)
@@ -977,8 +976,6 @@ class Bag(object):
         common = os.path.commonprefix((bag_path, real_path))
         return not (common == bag_path)
 
-class BagFetcherURLOpener(FancyURLopener):
-    version = "bagit.py/%s (Python/%s)" % (VERSION, sys.version_info)
 
 class BagError(Exception):
     pass
