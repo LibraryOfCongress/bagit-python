@@ -14,6 +14,7 @@ import re
 import signal
 import sys
 import tempfile
+import urllib
 import unicodedata
 import warnings
 from collections import defaultdict
@@ -23,9 +24,12 @@ from os.path import abspath, isdir, isfile, join
 
 from pkg_resources import DistributionNotFound, get_distribution
 
-try:
+# pylint: disable=no-name-in-module, import-error, wrong-import-position
+if sys.version_info >= (3,):
     from urllib.parse import urlparse
-except ImportError:
+    from urllib.request import urlopen, FancyURLopener
+else:
+    from urllib import urlopen, FancyURLopener
     from urlparse import urlparse
 
 
@@ -582,6 +586,37 @@ class Bag(object):
         for url, file_size, filename in self.fetch_entries():
             yield filename
 
+    def fetch_files_to_be_fetched(self):
+        """
+        Fetches files from the fetch.txt
+        """
+        urllib._urlopener = BagFetcherURLOpener # pylint: disable=protected-access
+        for url, expected_size, filename in self.fetch_entries():
+            expected_size = int(expected_size)  # FIXME should be int in the first place
+            if filename in self.payload_files():
+                LOGGER.info(_("File already fetched: %s"), filename)
+                continue
+            resp = urlopen(url)
+            headers = resp.info()
+            if "content-length" not in headers:
+                LOGGER.warning(_("Server sent no content-length for <%s>"), url)
+            else:
+                content_length = int(headers['content-length'])
+                if content_length != expected_size:
+                    raise BagError(_("Inconsistent size of %s: Expected %s but Content-Length is %s") % (filename, expected_size, content_length))
+            with open(join(self.path, filename), 'wb') as out:
+                read = 0
+                while True:
+                    block = resp.read(1024 * 8)
+                    if not block:
+                        break
+                    read += len(block)
+                    out.write(block)
+                if read != expected_size:
+                    raise BagError(_("Inconsistent size of %s: Expected %s but received %s") % (filename, expected_size, read))
+            LOGGER.info(_("Fetched %s from %s"), filename, url)
+
+
     def has_oxum(self):
         return "Payload-Oxum" in self.info
 
@@ -767,6 +802,7 @@ class Bag(object):
             # well formed:
             parsed_url = urlparse(url)
 
+            # ensure url is a remote URL, not file://
             if not all((parsed_url.scheme, parsed_url.netloc)):
                 raise BagError(_("Malformed URL in fetch.txt: %s") % url)
 
@@ -937,6 +973,8 @@ class Bag(object):
         common = os.path.commonprefix((bag_path, real_path))
         return not (common == bag_path)
 
+class BagFetcherURLOpener(FancyURLopener):
+    version = "bagit.py/%s (Python/%s)" % (VERSION, sys.version)
 
 class BagError(Exception):
     pass

@@ -1099,6 +1099,33 @@ class TestFetch(SelfCleaningTestCase):
 
         self.assertEqual(expected_msg, str(cm.exception))
 
+    # FIXME: Won't work since file:// URLs are rejected
+    #  def test_fetching_payload_file(self):
+    #      with open(j(self.tmpdir, "mock_data"), "w") as mock_data:
+    #          print("Lorem ipsum dolor sit", file=mock_data)
+    #      with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+    #          print("file://%s 21 data/mock_data" % j(self.tmpdir, "mock_data"), file=fetch_txt)
+    #      self.bag.save(manifests=True)
+    #      self.bag.validate_fetch()
+
+    def test_fetching_payload_file(self):
+        test_payload = 'loc/2478433644_2839c5e8b8_o_d.jpg'
+        with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+            print("https://github.com/LibraryOfCongress/bagit-python/raw/master/test-data/%s %s data/%s" % (
+                  test_payload, 139367, test_payload), file=fetch_txt)
+        self.bag.save(manifests=True)
+        # should be valid
+        self.bag.validate()
+        # now delete the payload, should be invalid
+        os.unlink(j(self.tmpdir, "data", test_payload))
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 1, '1 file to fetch')
+        with self.assertRaises(bagit.BagError):
+            self.bag.validate()
+        # re-fetch it
+        self.bag.fetch_files_to_be_fetched()
+        # should be valid again
+        self.bag.validate()
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 0, 'complete')
 
 class TestUtils(unittest.TestCase):
     def setUp(self):

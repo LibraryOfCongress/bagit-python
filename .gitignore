@@ -3,5 +3,10 @@ bench-data
 build
 dist
 MANIFEST
-bagit.egg-info
 .idea
+test.log
+*.egg-info
+.eggs
+*.egg
+.tox
+locale/**/*.mo
