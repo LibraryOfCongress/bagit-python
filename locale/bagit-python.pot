@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-06-26 10:28-0400\n"
+"POT-Creation-Date: 2018-11-27 15:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -166,6 +166,26 @@ msgstr ""
 
 #, python-format
 msgid "Path \"%(payload_file)s\" in \"%(source_file)s\" is unsafe"
+msgstr ""
+
+#, python-format
+msgid "File already fetched: %s"
+msgstr ""
+
+#, python-format
+msgid "Server sent no content-length for <%s>"
+msgstr ""
+
+#, python-format
+msgid "Inconsistent size of %s: Expected %s but Content-Length is %s"
+msgstr ""
+
+#, python-format
+msgid "Inconsistent size of %s: Expected %s but received %s"
+msgstr ""
+
+#, python-format
+msgid "Fetched %s from %s"
 msgstr ""
 
 #, python-format
