@@ -28,6 +28,7 @@ from pkg_resources import DistributionNotFound, get_distribution
 if sys.version_info >= (3,):
     from urllib.parse import urlparse
     from urllib.request import urlopen, FancyURLopener
+    import urllib.request
 else:
     from urllib import urlopen, FancyURLopener
     from urlparse import urlparse
@@ -590,7 +591,10 @@ class Bag(object):
         """
         Fetches files from the fetch.txt
         """
-        urllib._urlopener = BagFetcherURLOpener # pylint: disable=protected-access
+        if sys.version_info >= (3,):
+            urllib.request._urlopener = BagFetcherURLOpener() # pylint: disable=protected-access
+        else:
+            urllib._urlopener = BagFetcherURLOpener() # pylint: disable=protected-access
         for url, expected_size, filename in self.fetch_entries():
             expected_size = int(expected_size)  # FIXME should be int in the first place
             if filename in self.payload_files():
@@ -974,7 +978,7 @@ class Bag(object):
         return not (common == bag_path)
 
 class BagFetcherURLOpener(FancyURLopener):
-    version = "bagit.py/%s (Python/%s)" % (VERSION, sys.version)
+    version = "bagit.py/%s (Python/%s)" % (VERSION, sys.version_info)
 
 class BagError(Exception):
     pass
