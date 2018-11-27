@@ -4,9 +4,3 @@ build
 dist
 MANIFEST
 .idea
-test.log
-*.egg-info
-.eggs
-*.egg
-.tox
-locale/**/*.mo
