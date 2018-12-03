@@ -16,6 +16,7 @@ import sys
 import tempfile
 import unicodedata
 import warnings
+from fnmatch import fnmatch
 from collections import defaultdict
 from datetime import date
 from functools import partial
@@ -127,6 +128,7 @@ STANDARD_BAG_INFO_HEADERS = [
 
 CHECKSUM_ALGOS = hashlib.algorithms_guaranteed
 DEFAULT_CHECKSUMS = ["sha256", "sha512"]
+DEFAULT_FETCH_URL_WHITELIST = ["https://*", "http://*", "ftp://*", "sftp://"]
 
 #: Block size used when reading files for hashing:
 HASH_BLOCK_SIZE = 512 * 1024
@@ -140,7 +142,7 @@ UNICODE_BYTE_ORDER_MARK = "\uFEFF"
 
 
 def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8", fetch_url_whitelist=None
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -278,7 +280,7 @@ class Bag(object):
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ["data"]
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, fetch_url_whitelist=None):
         super(Bag, self).__init__()
         self.tags = {}
         self.info = {}
@@ -299,6 +301,7 @@ class Bag(object):
         self.normalized_manifest_names = {}
 
         self.algorithms = []
+        self.fetch_url_whitelist = DEFAULT_FETCH_URL_WHITELIST if fetch_url_whitelist is None else fetch_url_whitelist
         self.tag_file_name = None
         self.path = abspath(path)
         if path:
@@ -582,7 +585,7 @@ class Bag(object):
         local filename
         """
 
-        for url, file_size, filename in self.fetch_entries():
+        for _, _, filename in self.fetch_entries():
             yield filename
 
     def fetch_files_to_be_fetched(self):
@@ -593,7 +596,9 @@ class Bag(object):
         opener = build_opener(proxy_handler)
         user_agent = "bagit.py/%s (Python/%s)" % (VERSION, sys.version_info)
         for url, expected_size, filename in self.fetch_entries():
-            expected_size = int(expected_size)  # FIXME should be int in the first place
+            if not fnmatch_any(url, self.fetch_url_whitelist):
+                raise BagError(_("Malformed URL in fetch.txt: %s, matches none of the whitelisted URL patterns %s") % (url, self.fetch_url_whitelist))
+            expected_size = -1 if expected_size == '-' else int(expected_size)
             if filename in self.payload_files():
                 LOGGER.info(_("File already fetched: %s"), filename)
                 continue
@@ -601,12 +606,13 @@ class Bag(object):
             req.add_header('User-Agent', user_agent)
             resp = opener.open(req)
             headers = resp.info()
-            if "content-length" not in headers:
-                LOGGER.warning(_("Server sent no content-length for <%s>"), url)
-            else:
-                content_length = int(headers['content-length'])
-                if content_length != expected_size:
-                    raise BagError(_("Inconsistent size of %s: Expected %s but Content-Length is %s") % (filename, expected_size, content_length))
+            if expected_size >= 0:
+                if "content-length" not in headers:
+                    LOGGER.warning(_("Server sent no content-length for <%s>"), url)
+                else:
+                    content_length = int(headers['content-length'])
+                    if content_length != expected_size:
+                        raise BagError(_("Inconsistent size of %s: Expected %s but Content-Length is %s") % (filename, expected_size, content_length))
             with open(join(self.path, filename), 'wb') as out:
                 read = 0
                 while True:
@@ -615,7 +621,7 @@ class Bag(object):
                         break
                     read += len(block)
                     out.write(block)
-                if read != expected_size:
+                if expected_size >= 0 and read != expected_size:
                     raise BagError(_("Inconsistent size of %s: Expected %s but received %s") % (filename, expected_size, read))
             LOGGER.info(_("Fetched %s from %s"), filename, url)
 
@@ -799,15 +805,10 @@ class Bag(object):
         Raises `BagError` for errors and otherwise returns no value
         """
 
-        for url, file_size, filename in self.fetch_entries():
-            # fetch_entries will raise a BagError for unsafe filenames
-            # so at this point we will check only that the URL is minimally
-            # well formed:
-            parsed_url = urlparse(url)
-
-            # ensure url is a remote URL, not file://
-            if not all((parsed_url.scheme, parsed_url.netloc)):
-                raise BagError(_("Malformed URL in fetch.txt: %s") % url)
+        for url, expected_size, filename in self.fetch_entries():
+            # ensure url matches one of the allowed patterns
+            if not fnmatch_any(url, self.fetch_url_whitelist):
+                raise BagError(_("Malformed URL in fetch.txt: %s, matches none of the whitelisted URL patterns %s") % (url, self.fetch_url_whitelist))
 
     def _validate_contents(self, processes=1, fast=False, completeness_only=False):
         if fast and not self.has_oxum():
@@ -1450,6 +1451,12 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
 
     return results
 
+# Return true if any of the pattern fnmatches a string
+def fnmatch_any(s, pats):
+    for pat in pats:
+        if fnmatch(s, pat):
+            return True
+    return False
 
 def _encode_filename(s):
     s = s.replace("\r", "%0D")
