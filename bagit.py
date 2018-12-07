@@ -588,9 +588,12 @@ class Bag(object):
         for _, _, filename in self.fetch_entries():
             yield filename
 
-    def fetch_files_to_be_fetched(self):
+    def fetch(self, force=False):
         """
         Fetches files from the fetch.txt
+
+        Arguments:
+            force (boolean): Fetch files even when they are present in the data directory
         """
         proxy_handler = ProxyHandler() # will default to adhere to *_proxy env vars
         opener = build_opener(proxy_handler)
@@ -599,7 +602,7 @@ class Bag(object):
             if not fnmatch_any(url, self.fetch_url_whitelist):
                 raise BagError(_("Malformed URL in fetch.txt: %s, matches none of the whitelisted URL patterns %s") % (url, self.fetch_url_whitelist))
             expected_size = -1 if expected_size == '-' else int(expected_size)
-            if filename in self.payload_files():
+            if filename in self.payload_files() and not force:
                 LOGGER.info(_("File already fetched: %s"), filename)
                 continue
             req = Request(url)

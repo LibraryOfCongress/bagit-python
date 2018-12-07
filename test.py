@@ -1130,7 +1130,30 @@ class TestFetch(SelfCleaningTestCase):
         with self.assertRaises(bagit.BagError):
             self.bag.validate()
         # re-fetch it
-        self.bag.fetch_files_to_be_fetched()
+        self.bag.fetch()
+        # should be valid again
+        self.bag.validate()
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 0, 'complete')
+
+    def test_force_fetching(self):
+        test_payload = 'loc/2478433644_2839c5e8b8_o_d.jpg'
+        with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+            print("https://github.com/LibraryOfCongress/bagit-python/raw/master/test-data/%s %s data/%s" % (
+                  test_payload, 139367, test_payload), file=fetch_txt)
+        self.bag.save(manifests=True)
+        # now replace one payload file with an empty string
+        with open(j(self.tmpdir, "data", test_payload), 'w') as payload:
+            payload.write('')
+        # should be invalid now
+        with self.assertRaisesRegexp(bagit.BagError, "^Payload-Oxum validation failed."):
+            self.bag.validate()
+        # non-forcefully downloading should not help
+        self.bag.fetch()
+        # should **still* be invalid now
+        with self.assertRaisesRegexp(bagit.BagError, "^Payload-Oxum validation failed."):
+            self.bag.validate()
+        # fetch with force
+        self.bag.fetch(force=True)
         # should be valid again
         self.bag.validate()
         self.assertEqual(len(self.bag.compare_fetch_with_fs()), 0, 'complete')
