@@ -1103,7 +1103,7 @@ class TestFetch(SelfCleaningTestCase):
         src = j(os.path.dirname(__file__), "README.rst")
         dst = j(self.tmpdir, "README.rst")
         os.symlink(src, dst)
-        self.assertRaisesRegex(
+        self.assertRaisesRegexp(
             bagit.BagError,
             'Path "data/README.rst" in manifest ".*?" is unsafe',
             bagit.make_bag,
