@@ -15,7 +15,7 @@ import unicodedata
 import unittest
 from os.path import join as j
 
-import mock
+from unittest import mock
 
 import bagit
 
