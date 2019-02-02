@@ -12,6 +12,7 @@ import re
 import signal
 import sys
 import tempfile
+import textwrap
 import unicodedata
 import warnings
 from collections import defaultdict
@@ -140,7 +141,8 @@ UNICODE_BYTE_ORDER_MARK = "\ufeff"
 
 
 def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
+    encoding="utf-8", line_length=0
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -259,7 +261,7 @@ def make_bag(
                 )
 
             bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
-            _make_tag_file("bag-info.txt", bag_info)
+            _make_tag_file("bag-info.txt", bag_info, line_length)
 
             for c in checksums:
                 _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
@@ -453,7 +455,7 @@ class Bag(object):
             if key.startswith("data" + os.sep)
         )
 
-    def save(self, processes=1, manifests=False):
+    def save(self, processes=1, manifests=False, line_length=0):
         """
         save will persist any changes that have been made to the bag
         metadata (self.info).
@@ -466,6 +468,11 @@ class Bag(object):
 
         If you want to control the number of processes that are used when
         recalculating checksums use the processes parameter.
+
+        If you want long tag values to be wrapped by breaking long strings at
+        whitespace characters, set line_length to a value greater than 0. An
+        integer value greater than 0 causes line-wrapping to be performed on
+        a best-effort basis to limit line lengths to the given value.
         """
         # Error checking
         if not self.path:
@@ -517,7 +524,7 @@ class Bag(object):
             LOGGER.info(_("Updating Payload-Oxum in %s"), self.tag_file_name)
             self.info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
 
-        _make_tag_file(self.tag_file_name, self.info)
+        _make_tag_file(self.tag_file_name, self.info, line_length)
 
         # Update tag-manifest for changes to manifest & bag-info files
         for alg in self.algorithms:
@@ -1217,7 +1224,7 @@ def _parse_tags(tag_file):
         yield (tag_name, tag_value.strip())
 
 
-def _make_tag_file(bag_info_path, bag_info):
+def _make_tag_file(bag_info_path, bag_info, line_length):
     headers = sorted(bag_info.keys())
     with open_text_file(bag_info_path, "w") as f:
         for h in headers:
@@ -1225,8 +1232,18 @@ def _make_tag_file(bag_info_path, bag_info):
             if not isinstance(values, list):
                 values = [values]
             for txt in values:
-                # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub(r"\n|\r|(\r\n)", "", str(txt))
+                txt = force_unicode(txt)
+                if line_length > 1:
+                    # Need to account for the length of the tag name. This
+                    # adds an initial space, then removes it below.
+                    txt = '\n'.join(textwrap.wrap(txt, width=line_length,
+                                                  initial_indent=' '*(len(h) + 2),
+                                                  break_long_words=False,
+                                                  break_on_hyphens=False,
+                                                  subsequent_indent=' '))
+                    txt = txt[len(h) + 2:]
+                else:
+                    txt = re.sub(r"\n|\r|(\r\n)", "", txt)
                 f.write("%s: %s\n" % (h, txt))
 
 
@@ -1484,6 +1501,17 @@ def _make_parser():
             " without performing checksum validation to detect corruption."
         ),
     )
+    parser.add_argument(
+        "--wrap",
+        type=int,
+        dest="line_length",
+        default=0,
+        help=_(
+            "Limit line lengths in the tag file (bag-info.txt) by"
+            " wrapping long values and indenting subsequent lines with a"
+            " space character. (Default: don't.)"
+        ),
+    )
 
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
@@ -1593,6 +1621,7 @@ def main():
                     bag_info=args.bag_info,
                     processes=args.processes,
                     checksums=args.checksums,
+                    line_length=args.line_length,
                 )
             except Exception as exc:
                 LOGGER.error(
