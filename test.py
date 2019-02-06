@@ -127,14 +127,14 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
-    def test_validate_wrapped_tag_lines_shorter(self):
+    def test_validate_wrapped_tag_lines_short(self):
         info = {"External-Description":
                 ('BagIt is a set of hierarchical file layout conventions'
                  ' designed to support storage and transfer of arbitrary'
                  ' digital content.  A bag consists of a directory containing'
                  ' the payload files and other accompanying metadata files'
                  ' known as "tag" files.')}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info, line_length=30)
+        bag = bagit.make_bag(self.tmpdir, bag_info=info, line_length=18)
         self.assertEqual(self.validate(bag, fast=True), True)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
