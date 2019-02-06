@@ -1234,14 +1234,25 @@ def _make_tag_file(bag_info_path, bag_info, line_length):
             for txt in values:
                 txt = force_unicode(txt)
                 if line_length > 1:
-                    # Need to account for the length of the tag name. This
-                    # adds an initial space, then removes it below.
-                    txt = '\n'.join(textwrap.wrap(txt, width=line_length,
-                                                  initial_indent=' '*(len(h) + 2),
-                                                  break_long_words=False,
-                                                  break_on_hyphens=False,
-                                                  subsequent_indent=' '))
-                    txt = txt[len(h) + 2:]
+                    # Account for colon & space written after the property name.
+                    prop_width = len(h) + 2
+                    first_break = prop_width + len(txt.split(None, 1)[0])
+                    if line_length <= first_break:
+                        # Start value on the next line.
+                        txt = '\n'.join(textwrap.wrap(txt, width=line_length,
+                                                      break_long_words=False,
+                                                      break_on_hyphens=False,
+                                                      initial_indent='\n ',
+                                                      subsequent_indent=' '))
+                    else:
+                        # Account for tag name by temporarily adding a leading
+                        # space before calling wrap(), then removing the space.
+                        txt = '\n'.join(textwrap.wrap(txt, width=line_length,
+                                                      break_long_words=False,
+                                                      break_on_hyphens=False,
+                                                      initial_indent=' '*prop_width,
+                                                      subsequent_indent=' '))
+                        txt = txt[prop_width:]
                 else:
                     txt = re.sub(r"\n|\r|(\r\n)", "", txt)
                 f.write("%s: %s\n" % (h, txt))
