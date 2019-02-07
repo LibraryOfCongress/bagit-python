@@ -123,7 +123,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
                  ' digital content.  A bag consists of a directory containing'
                  ' the payload files and other accompanying metadata files'
                  ' known as "tag" files.')}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info, line_length=79)
+        bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=79)
         self.assertEqual(self.validate(bag, fast=True), True)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
@@ -135,7 +135,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
                  ' digital content.  A bag consists of a directory containing'
                  ' the payload files and other accompanying metadata files'
                  ' known as "tag" files.')}
-        bag = bagit.make_bag(self.tmpdir, bag_info=info, line_length=18)
+        bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=18)
         self.assertEqual(self.validate(bag, fast=True), True)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
