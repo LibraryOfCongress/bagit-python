@@ -1021,7 +1021,7 @@ def posix_multiprocessing_worker_initializer():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
-# The Unicode normalization form used here doesn't matter – all we care about
+# The Unicode normalization form used here doesn't matter - all we care about
 # is consistency since the input value will be preserved:
 
 
