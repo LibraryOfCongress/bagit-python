@@ -125,6 +125,7 @@ STANDARD_BAG_INFO_HEADERS = [
 try:
     CHECKSUM_ALGOS = hashlib.algorithms_guaranteed
 except AttributeError:
+    # FIXME: remove when we drop Python 2 (https://github.com/LibraryOfCongress/bagit-python/issues/102)
     # Python 2.7.0-2.7.8
     CHECKSUM_ALGOS = set(hashlib.algorithms)
 DEFAULT_CHECKSUMS = ["sha256", "sha512"]
