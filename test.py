@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import codecs
 import datetime
+import filecmp
 import hashlib
 import logging
 import os
@@ -95,6 +96,48 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertTrue(os.path.isfile(j(self.tmpdir, "manifest-sha256.txt")))
         # check valid with three manifests
         self.assertTrue(self.validate(bag, fast=True))
+
+    def test_make_bag_with_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-')
+        dest_dir = j(tmp_dir_out, 'test-dest')
+        bag = bagit.make_bag(
+            self.tmpdir, dest_dir=dest_dir, checksums=['sha256', 'sha512']
+        )
+        subdir = os.path.basename(self.tmpdir)
+        self.assertTrue(os.path.isfile(j(dest_dir, subdir, 'manifest-sha256.txt')))
+        self.assertTrue(os.path.isfile(j(dest_dir, subdir, 'manifest-sha512.txt')))
+        self.assertTrue(self.validate(bag, fast=True))
+        diff = filecmp.dircmp(self.tmpdir, os.path.join(dest_dir, subdir, 'data'))
+        self.assertTrue(len(diff.left_only+diff.right_only) == 0)
+        shutil.rmtree(tmp_dir_out)
+
+    def test_make_bags_with_destinations(self):
+        dest = tempfile.mkdtemp(prefix='bagit-test-dest-')
+        src_par = tempfile.mkdtemp(prefix='bagit-test-src-')
+        srcs = tuple(os.path.join(src_par, '%04d' % i) for i in range(10))
+        subdirs = tuple(os.path.relpath(src, src_par) for src in srcs)
+        for src in srcs:
+            shutil.copytree('test-data', src)
+            bag = bagit.make_bag(src, dest_dir=dest, checksum=['sha256'])
+        self.assertTrue(tuple(sorted(os.listdir(dest))) == subdirs)
+        for src, subdir in zip(srcs, subdirs):
+            diff = filecmp.dircmp(src, os.path.join(dest, subdir, 'data'))
+            self.assertTrue(len(diff.left_only+diff.right_only) == 0)
+        self.assertTrue(self.validate(bag))
+        shutil.rmtree(src_par)
+        shutil.rmtree(dest)
+
+    def test_make_bag_bad_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-dest')
+        subdir = os.path.basename(self.tmpdir)
+        os.makedirs(os.path.join(tmp_dir_out, subdir))
+
+        self.assertRaises(
+            RuntimeError, bagit.make_bag,
+            self.tmpdir, dest_dir=tmp_dir_out, checksum=['sha256', 'sha512']
+        )
+
+        shutil.rmtree(tmp_dir_out)
 
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
