@@ -622,7 +622,7 @@ class TestBag(SelfCleaningTestCase):
             bagit.make_bag(bogus_directory)
 
         self.assertEqual(
-            "Bag directory %s does not exist" % bogus_directory,
+            "Bag source directory %s does not exist" % bogus_directory,
             str(error_catcher.exception),
         )
 
