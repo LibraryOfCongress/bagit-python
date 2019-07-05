@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import re
 import signal
+import shutil
 import sys
 import tempfile
 import unicodedata
@@ -163,8 +164,12 @@ def make_bag(
         checksums = DEFAULT_CHECKSUMS
 
     if dest_dir:
-        bag_name = os.path.dirname(bag_dir)
+        bag_name = os.path.basename(bag_dir)
         dest_dir = os.path.abspath(os.path.join(dest_dir, bag_name))
+        if not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir)
+        else:
+            raise RuntimeError(_("The following directory already exists:\n%s"), dest_dir)
     else:
         dest_dir = os.path.abspath(bag_dir)
 
@@ -186,7 +191,7 @@ def make_bag(
     # FIXME: we should do the permissions checks before changing directories
     old_dir = os.path.abspath(os.path.curdir)
 
-    try:
+    try: 
         # TODO: These two checks are currently redundant since an unreadable directory will also
         #       often be unwritable, and this code will require review when we add the option to
         #       bag to a destination other than the source. It would be nice if we could avoid
@@ -237,21 +242,41 @@ def make_bag(
                         {"source": f, "destination": new_f},
                     )
                     os.rename(f, new_f)
+            else:
+                for f in os.listdir("."):
+                    new_f = os.path.join(temp_data, f)
+                    LOGGER.info(
+                        _("Copying %(source)s to %(destination)s"),
+                        {"source": f, "destination": new_f},
+                    )
+                    if os.path.isdir(f):
+                        shutil.copytree(f, new_f)
+                    else:
+                        shutil.copy(f, new_f)
 
             LOGGER.info(
                 _("Moving %(source)s to %(destination)s"),
                 {"source": temp_data, "destination": "data"},
             )
-            os.rename(temp_data, "data")
+
+            os.rename(temp_data, os.path.join(dest_dir, "data"))
 
             # permissions for the payload directory should match those of the
             # original directory
 
             os.chmod(os.path.join(dest_dir, "data"), os.stat(cwd).st_mode)
 
-            total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=checksums, encoding=encoding
-            )
+            if source_dir == dest_dir:
+                total_bytes, total_files = make_manifests(
+                    "data", processes, algorithms=checksums, encoding=encoding
+                )
+            else:
+                total_bytes, total_files = make_manifests(
+                    ".", processes, algorithms=checksums, encoding=encoding, dest_dir=dest_dir, rel_path="data"
+                )
+
+            os.chdir(dest_dir)
+            cwd = os.getcwd()
 
             LOGGER.info(_("Creating bagit.txt"))
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -275,7 +300,7 @@ def make_bag(
             _make_tag_file("bag-info.txt", bag_info)
 
             for c in checksums:
-                _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
+                _make_tagmanifest_file(c, dest_dir, encoding="utf-8")
     except Exception:
         LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
         raise
@@ -1248,13 +1273,18 @@ def _make_tag_file(bag_info_path, bag_info):
                 f.write("%s: %s\n" % (h, txt))
 
 
-def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="utf-8"):
+def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="utf-8", dest_dir=None, rel_path=None):
     LOGGER.info(
         _("Using %(process_count)d processes to generate manifests: %(algorithms)s"),
         {"process_count": processes, "algorithms": ", ".join(algorithms)},
     )
 
-    manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms)
+    if not dest_dir:
+        dest_dir = os.getcwd()
+
+    data_dir = os.path.relpath(data_dir)
+
+    manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms, rel_path=rel_path)
 
     if processes > 1:
         pool = multiprocessing.Pool(processes=processes)
@@ -1277,8 +1307,9 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="
 
     for algorithm, values in manifest_data.items():
         manifest_filename = "manifest-%s.txt" % algorithm
+        manifest_path = os.path.join(dest_dir, manifest_filename)
 
-        with open_text_file(manifest_filename, "w", encoding=encoding) as manifest:
+        with open_text_file(manifest_path, "w", encoding=encoding) as manifest:
             for digest, filename, byte_count in values:
                 manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
                 num_files[algorithm] += 1
@@ -1397,7 +1428,7 @@ def _can_read(test_dir):
     return (tuple(unreadable_dirs), tuple(unreadable_files))
 
 
-def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
+def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS, rel_path=None):
     LOGGER.info(_("Generating manifest lines for file %s"), filename)
 
     # For performance we'll read the file only once and pass it block
@@ -1418,6 +1449,9 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
                 hasher.update(block)
 
     decoded_filename = _decode_filename(filename)
+
+    if rel_path:
+        decoded_filename = os.path.join(rel_path, decoded_filename)
 
     # We'll generate a list of results in roughly manifest format but prefixed with the algorithm:
     results = [
