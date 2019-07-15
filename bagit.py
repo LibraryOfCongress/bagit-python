@@ -141,36 +141,16 @@ open_text_file = partial(codecs.open, encoding="utf-8", errors="strict")
 UNICODE_BYTE_ORDER_MARK = "\uFEFF"
 
 
-def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
-):
-    """
-    Convert a given directory into a bag. You can pass in arbitrary
-    key/value pairs to put into the bag-info.txt metadata file as
-    the bag_info dictionary.
-    """
-
-    if checksum is not None:
-        warnings.warn(
-            _(
-                "The `checksum` argument for `make_bag` should be replaced with `checksums`"
-            ),
-            DeprecationWarning,
-        )
-        checksums = checksum
-
-    if checksums is None:
-        checksums = DEFAULT_CHECKSUMS
-
+def create_filesystem_bag(bag_dir):
     bag_dir = os.path.abspath(bag_dir)
     cwd = os.path.abspath(os.path.curdir)
 
     if cwd.startswith(bag_dir) and cwd != bag_dir:
         raise RuntimeError(
             _("Bagging a parent of the current directory is not supported")
+        
         )
 
-    LOGGER.info(_("Creating bag for directory %s"), bag_dir)
 
     if not os.path.isdir(bag_dir):
         LOGGER.error(_("Bag directory %s does not exist"), bag_dir)
@@ -271,6 +251,39 @@ def make_bag(
     finally:
         os.chdir(old_dir)
 
+
+def create_s3_bag(bag_dir):
+    pass
+
+def make_bag(
+    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+):
+    """
+    Convert a given directory into a bag. You can pass in arbitrary
+    key/value pairs to put into the bag-info.txt metadata file as
+    the bag_info dictionary.
+    """
+
+    if checksum is not None:
+        warnings.warn(
+            _(
+                "The `checksum` argument for `make_bag` should be replaced with `checksums`"
+            ),
+            DeprecationWarning,
+        )
+        checksums = checksum
+
+    if checksums is None:
+        checksums = DEFAULT_CHECKSUMS
+
+    if bag_dir.startswith("s3://"):
+        # Instantiate boto client        
+        LOGGER.info(_("Creating bag directory on S3 location: %s"), bag_dir)
+        create_s3_bag(bag_dir)
+    else:
+        LOGGER.info(_("Creating bag for directory %s"), bag_dir)
+        create_filesystem_bag(bag_dir)
+
     return Bag(bag_dir)
 
 
@@ -302,7 +315,12 @@ class Bag(object):
 
         self.algorithms = []
         self.tag_file_name = None
-        self.path = abspath(path)
+        if(path.startswith("s3://")):
+            self.path = path
+            S3_MODE = True
+        else:
+            self.path = abspath(path)
+            S3_MODE = False
         if path:
             # if path ends in a path separator, strip it off
             if path[-1] == os.sep:
