@@ -98,16 +98,15 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertTrue(self.validate(bag, fast=True))
 
     def test_make_bag_with_destination(self):
-        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-')
-        dest_dir = j(tmp_dir_out, 'test-dest')
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-dest')
         bag = bagit.make_bag(
-            self.tmpdir, dest_dir=dest_dir, checksums=['sha256', 'sha512']
+            self.tmpdir, dest_dir=tmp_dir_out, checksums=['sha256', 'sha512']
         )
         subdir = os.path.basename(self.tmpdir)
-        self.assertTrue(os.path.isfile(j(dest_dir, subdir, 'manifest-sha256.txt')))
-        self.assertTrue(os.path.isfile(j(dest_dir, subdir, 'manifest-sha512.txt')))
+        self.assertTrue(os.path.isfile(j(tmp_dir_out, subdir, 'manifest-sha256.txt')))
+        self.assertTrue(os.path.isfile(j(tmp_dir_out, subdir, 'manifest-sha512.txt')))
         self.assertTrue(self.validate(bag, fast=True))
-        diff = filecmp.dircmp(self.tmpdir, os.path.join(dest_dir, subdir, 'data'))
+        diff = filecmp.dircmp(self.tmpdir, os.path.join(tmp_dir_out, subdir, 'data'))
         self.assertTrue(len(diff.left_only+diff.right_only) == 0)
         shutil.rmtree(tmp_dir_out)
 
@@ -154,6 +153,27 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         # fast doesn't catch the flipped bit, since oxsum is the same
         self.assertTrue(self.validate(bag, fast=True))
         self.assertTrue(self.validate(bag, completeness_only=True))
+
+    def test_validate_flipped_bit_at_destination(self):
+        tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-dest')
+    
+        bag = bagit.make_bag(
+            self.tmpdir, dest_dir=tmp_dir_out, checksums=['sha256', 'sha512']
+        )
+        readme = j(tmp_dir_out, os.path.basename(self.tmpdir), 'data', 'README')
+        txt = slurp_text_file(readme)
+        txt = "A" + txt[1:]
+        with open(readme, 'w') as r:
+            r.write(txt)
+        bag = bagit.Bag(bag.path)
+        self.assertRaises(bagit.BagValidationError, self.validate, bag)
+    
+        hasher = hashlib.new('sha256')
+        contents = slurp_text_file(j(self.tmpdir, 'README')).encode('utf-8')
+        hasher.update(contents)
+        self.assertTrue(hasher.hexdigest() == bag.entries['data/README']['sha256'])
+
+        shutil.rmtree(tmp_dir_out)
 
     def test_validate_fast(self):
         bag = bagit.make_bag(self.tmpdir)
