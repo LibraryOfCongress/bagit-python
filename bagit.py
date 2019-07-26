@@ -168,8 +168,8 @@ def make_bag(
         dest_dir = realpath(os.path.join(dest_dir, bag_name))
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir)
-        else:
-            raise RuntimeError(_("The following directory already exists:\n%s"), dest_dir)
+        elif len(os.listdir(dest_dir)) > 0:
+            raise RuntimeError(_("The following directory already exists and contains files:\n%s"), dest_dir)
     else:
         dest_dir = realpath(bag_dir)
 

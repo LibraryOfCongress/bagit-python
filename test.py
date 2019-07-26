@@ -129,8 +129,11 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
     def test_make_bag_bad_destination(self):
         tmp_dir_out = tempfile.mkdtemp(prefix='bagit-test-dest')
-        subdir = os.path.basename(self.tmpdir)
-        os.makedirs(os.path.join(tmp_dir_out, subdir))
+        pre_existing_bag_dir = j(tmp_dir_out, os.path.basename(self.tmpdir))
+        os.makedirs(pre_existing_bag_dir)
+        pre_existing_file = j(pre_existing_bag_dir, '.DS_Store')
+        with open(pre_existing_file, 'w') as f:
+            f.write('ugh')
 
         self.assertRaises(
             RuntimeError, bagit.make_bag,
