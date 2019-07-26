@@ -20,7 +20,7 @@ import warnings
 from collections import defaultdict
 from datetime import date
 from functools import partial
-from os.path import abspath, isdir, isfile, join
+from os.path import abspath, isdir, isfile, join, realpath
 
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -165,17 +165,17 @@ def make_bag(
 
     if dest_dir:
         bag_name = os.path.basename(bag_dir)
-        dest_dir = os.path.abspath(os.path.join(dest_dir, bag_name))
+        dest_dir = realpath(os.path.join(dest_dir, bag_name))
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir)
         else:
             raise RuntimeError(_("The following directory already exists:\n%s"), dest_dir)
     else:
-        dest_dir = os.path.abspath(bag_dir)
+        dest_dir = realpath(bag_dir)
 
-    source_dir = os.path.abspath(bag_dir)
+    source_dir = realpath(bag_dir)
 
-    cwd = os.path.abspath(os.path.curdir)
+    cwd = realpath(os.path.curdir)
 
     if cwd.startswith(source_dir) and cwd != source_dir:
         raise RuntimeError(
@@ -189,7 +189,7 @@ def make_bag(
         raise RuntimeError(_("Bag source directory %s does not exist") % bag_dir)
         
     # FIXME: we should do the permissions checks before changing directories
-    old_dir = os.path.abspath(os.path.curdir)
+    old_dir = realpath(os.path.curdir)
 
     try: 
         # TODO: These two checks are currently redundant since an unreadable directory will also
@@ -228,13 +228,11 @@ def make_bag(
             # FIXME: if we calculate full paths we won't need to deal with changing directories
             os.chdir(source_dir)
             cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=dest_dir)
-            # getcwd resolves symlinks, dest_dir used abspath, which doesn't
-            temp_data = os.path.realpath(temp_data)
+            temp_data = realpath(tempfile.mkdtemp(dir=dest_dir))
 
             if source_dir == dest_dir:
                 for f in os.listdir("."):
-                    if os.path.abspath(f) == temp_data:
+                    if realpath(f) == temp_data:
                         continue
                     new_f = os.path.join(temp_data, f)
                     LOGGER.info(
@@ -338,7 +336,7 @@ class Bag(object):
 
         self.algorithms = []
         self.tag_file_name = None
-        self.path = abspath(path)
+        self.path = realpath(path)
         if path:
             # if path ends in a path separator, strip it off
             if path[-1] == os.sep:
@@ -542,7 +540,7 @@ class Bag(object):
             )
 
         # Change working directory to bag directory so helper functions work
-        old_dir = os.path.abspath(os.path.curdir)
+        old_dir = realpath(os.path.curdir)
         os.chdir(self.path)
 
         # Generate new manifest files

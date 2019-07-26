@@ -43,7 +43,7 @@ class SelfCleaningTestCase(unittest.TestCase):
         self.starting_directory = (
             os.getcwd()
         )  # FIXME: remove this after we stop changing directories in bagit.py
-        self.tmpdir = tempfile.mkdtemp()
+        self.tmpdir = os.path.realpath(tempfile.mkdtemp())
         if os.path.isdir(self.tmpdir):
             shutil.rmtree(self.tmpdir)
         shutil.copytree("test-data", self.tmpdir)
