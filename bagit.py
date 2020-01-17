@@ -10,6 +10,7 @@ import hashlib
 import logging
 import multiprocessing
 import os
+import random
 import re
 import signal
 import shutil
@@ -228,9 +229,9 @@ def make_bag(
             # FIXME: if we calculate full paths we won't need to deal with changing directories
             os.chdir(source_dir)
             cwd = os.getcwd()
-            temp_data = realpath(tempfile.mkdtemp(dir=dest_dir))
 
             if source_dir == dest_dir:
+                temp_data = realpath(tempfile.mkdtemp(dir=dest_dir))
                 for f in os.listdir("."):
                     if realpath(f) == temp_data:
                         continue
@@ -241,16 +242,12 @@ def make_bag(
                     )
                     os.rename(f, new_f)
             else:
-                for f in os.listdir("."):
-                    new_f = os.path.join(temp_data, f)
-                    LOGGER.info(
-                        _("Copying %(source)s to %(destination)s"),
-                        {"source": f, "destination": new_f},
-                    )
-                    if os.path.isdir(f):
-                        shutil.copytree(f, new_f)
-                    else:
-                        shutil.copy(f, new_f)
+                temp_data_name = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(6))
+                temp_data = os.path.join(dest_dir, temp_data_name)
+                while os.path.isdir(temp_data):
+                    temp_data = temp_data + random.choice('abcdefghijklmnopqrstuvwxyz0123456789')
+                
+                shutil.copytree(".", temp_data)
 
             LOGGER.info(
                 _("Moving %(source)s to %(destination)s"),
@@ -270,7 +267,8 @@ def make_bag(
                 )
             else:
                 total_bytes, total_files = make_manifests(
-                    ".", processes, algorithms=checksums, encoding=encoding, dest_dir=dest_dir, rel_path="data"
+                    ".", processes, algorithms=checksums, encoding=encoding,
+                    dest_dir=dest_dir, rel_path="data"
                 )
 
             os.chdir(dest_dir)
