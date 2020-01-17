@@ -141,6 +141,13 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
         shutil.rmtree(tmp_dir_out)
 
+    def test_make_bag_parentdir(self): 
+        os.chdir(j(self.tmpdir, 'loc'))
+        self.assertRaises(
+            RuntimeError, bagit.make_bag,
+            self.tmpdir, checksum=['sha256', 'sha512']
+        )
+
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
