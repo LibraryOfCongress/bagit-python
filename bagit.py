@@ -1651,7 +1651,7 @@ def main():
                     bag_info=args.bag_info,
                     processes=args.processes,
                     checksums=args.checksums,
-                    dest_dir=args.destination
+                    dest_dir=args.dest_dir
                 )
             except Exception as exc:
                 if args.dest_dir:
