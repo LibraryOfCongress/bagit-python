@@ -631,7 +631,7 @@ class Bag(object):
             manifests += list(self.tagmanifest_files())
 
         for manifest_filename in manifests:
-            if not manifest_filename.find("tagmanifest-") is -1:
+            if manifest_filename.find("tagmanifest-") != -1:
                 search = "tagmanifest-"
             else:
                 search = "manifest-"
