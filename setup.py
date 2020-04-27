@@ -55,7 +55,7 @@ setup(
     author="Ed Summers",
     author_email="ehs@pobox.com",
     py_modules=["bagit"],
-    scripts=["bagit.py"],
+    scripts=["bagit.py", "bagitfs.py"],
     data_files=get_message_catalogs(),
     description=description,
     long_description=long_description,
@@ -76,5 +76,6 @@ setup(
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
 )
