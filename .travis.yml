@@ -15,9 +15,8 @@ addons:
 
 matrix:
   allow_failures:
-    python:
-        - "3.7-dev"
-        - "3.8-dev"
+    - python: "3.7-dev"
+    - python: "3.8-dev"
 
 install:
     - pip install --upgrade pip
