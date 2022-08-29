@@ -1100,6 +1100,69 @@ class TestFetch(SelfCleaningTestCase):
         self.assertEqual(expected_msg, str(cm.exception))
 
 
+class TestCLI(SelfCleaningTestCase):
+
+    def test_directory_required(self):
+        # assert exit code 2
+        # assert message is raised
+        return False
+
+    def test_not_enough_processes(self):
+        # assert exit code 2
+        # assert message is raised
+        return False
+
+    def test_fast_flag_without_validate(self):
+        # assert exit code 2
+        # assert message is raised
+        return False
+
+    def test_invalid_fast_validate(self):
+        # assert exit code 1
+        # assert invalid message
+        return False
+
+    def test_valid_fast_validate(self):
+        # assert exit code 0
+        # assert valid message
+        return False
+
+    def test_completeness_flag_without_validate(self):
+        # assert exit code 2
+        # assert message is raised
+        return False
+
+    def test_invalid_completeness_validate(self):
+        # assert exit code 1
+        # assert invalid message
+        return False
+
+    def test_valid_completeness_validate(self):
+        # assert exit code 0
+        # assert valid message
+        return False
+
+    def test_invalid_full_validate(self):
+        # assert exit code 1
+        # assert invalid message
+        return False
+
+    def test_valid_full_validate(self):
+        # assert exit code 0
+        # assert valid message
+        return False
+
+    def test_failed_create_bag(self):
+        # assert exit code 1
+        # assert failure message
+        return False
+
+    def test_create_bag(self):
+        # assert exit code 0
+        # assert creation message
+        return False
+
+
 class TestUtils(unittest.TestCase):
     def setUp(self):
         super(TestUtils, self).setUp()
@@ -1116,6 +1179,8 @@ class TestUtils(unittest.TestCase):
 
     def test_force_unicode_int(self):
         self.assertIsInstance(bagit.force_unicode(1234), self.unicode_class)
+
+
 
 
 if __name__ == "__main__":
