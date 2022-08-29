@@ -1588,6 +1588,8 @@ def main():
                 )
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
+                elif args.completeness_only:
+                    LOGGER.info(_("%s is complete and valid according to Payload-Oxum"), bag_dir)
                 else:
                     LOGGER.info(_("%s is valid"), bag_dir)
             except BagError as e:
