@@ -1117,10 +1117,19 @@ class TestCLI(SelfCleaningTestCase):
             mock_stderr.getvalue()
         )
 
-    def test_not_enough_processes(self):
-        # assert exit code 2
-        # assert message is raised
-        return False
+    @mock.patch('sys.stderr', new_callable=StringIO)
+    def test_not_enough_processes(self, mock_stderr):
+        testargs = ["bagit.py", "--processes", "0", self.tmpdir]
+
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, 'argv', testargs):
+                bagit.main()
+
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn(
+            "error: The number of processes must be greater than 0",
+            mock_stderr.getvalue()
+        )
 
     def test_fast_flag_without_validate(self):
         # assert exit code 2
