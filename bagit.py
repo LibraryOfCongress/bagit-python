@@ -1569,6 +1569,9 @@ def main():
     if args.fast and not args.validate:
         parser.error(_("--fast is only allowed as an option for --validate!"))
 
+    if args.completeness_only and not args.validate:
+        parser.error(_("--completeness-only is only allowed as an option for --validate!"))
+
     _configure_logging(args)
 
     rc = 0
