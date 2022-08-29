@@ -1152,9 +1152,19 @@ class TestCLI(SelfCleaningTestCase):
         return False
 
     def test_valid_fast_validate(self):
-        # assert exit code 0
-        # assert valid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        testargs = ["bagit.py", "--validate", "--fast", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(
+            "%s valid according to Payload-Oxum" % self.tmpdir,
+            captured.records[0].getMessage()
+        )
 
     @mock.patch('sys.stderr', new_callable=StringIO)
     def test_completeness_flag_without_validate(self, mock_stderr):
@@ -1177,9 +1187,19 @@ class TestCLI(SelfCleaningTestCase):
         return False
 
     def test_valid_completeness_validate(self):
-        # assert exit code 0
-        # assert valid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(
+            "%s is complete and valid according to Payload-Oxum" % self.tmpdir,
+            captured.records[0].getMessage()
+        )
 
     def test_invalid_full_validate(self):
         # assert exit code 1
@@ -1187,9 +1207,19 @@ class TestCLI(SelfCleaningTestCase):
         return False
 
     def test_valid_full_validate(self):
-        # assert exit code 0
-        # assert valid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        testargs = ["bagit.py", "--validate", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 0)
+        self.assertEqual(
+            "%s is valid" % self.tmpdir,
+            captured.records[-1].getMessage()
+        )
 
     def test_failed_create_bag(self):
         # assert exit code 1
