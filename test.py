@@ -219,7 +219,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
             got_exception = True
 
             exc_str = str(e)
-            self.assertIn("Bag validation failed: ", exc_str)
+            self.assertIn("Bag is incomplete: ", exc_str)
             self.assertIn(
                 "bag-info.txt exists in manifest but was not found on filesystem",
                 exc_str,

@@ -855,7 +855,7 @@ class Bag(object):
             errors.append(e)
 
         if errors:
-            raise BagValidationError(_("Bag validation failed"), errors)
+            raise BagValidationError(_("Bag is incomplete"), errors)
 
     def _validate_entries(self, processes):
         """
