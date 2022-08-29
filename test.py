@@ -1131,10 +1131,20 @@ class TestCLI(SelfCleaningTestCase):
             mock_stderr.getvalue()
         )
 
-    def test_fast_flag_without_validate(self):
-        # assert exit code 2
-        # assert message is raised
-        return False
+    @mock.patch('sys.stderr', new_callable=StringIO)
+    def test_fast_flag_without_validate(self, mock_stderr):
+        bag = bagit.make_bag(self.tmpdir)
+        testargs = ["bagit.py", "--fast", self.tmpdir]
+
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, 'argv', testargs):
+                bagit.main()
+
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn(
+            "error: --fast is only allowed as an option for --validate!",
+            mock_stderr.getvalue()
+        )
 
     def test_invalid_fast_validate(self):
         # assert exit code 1
@@ -1146,10 +1156,20 @@ class TestCLI(SelfCleaningTestCase):
         # assert valid message
         return False
 
-    def test_completeness_flag_without_validate(self):
-        # assert exit code 2
-        # assert message is raised
-        return False
+    @mock.patch('sys.stderr', new_callable=StringIO)
+    def test_completeness_flag_without_validate(self, mock_stderr):
+        bag = bagit.make_bag(self.tmpdir)
+        testargs = ["bagit.py", "--completeness-only", self.tmpdir]
+
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, 'argv', testargs):
+                bagit.main()
+
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn(
+            "error: --completeness-only is only allowed as an option for --validate!",
+            mock_stderr.getvalue()
+        )
 
     def test_invalid_completeness_validate(self):
         # assert exit code 1
