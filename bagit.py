@@ -1563,8 +1563,8 @@ def main():
     parser = _make_parser()
     args = parser.parse_args()
 
-    if args.processes < 0:
-        parser.error(_("The number of processes must be 0 or greater"))
+    if args.processes <= 0:
+        parser.error(_("The number of processes must be greater than 0"))
 
     if args.fast and not args.validate:
         parser.error(_("--fast is only allowed as an option for --validate!"))
