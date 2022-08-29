@@ -16,6 +16,7 @@ import unittest
 from os.path import join as j
 
 import mock
+from io import StringIO
 
 import bagit
 
@@ -1102,10 +1103,19 @@ class TestFetch(SelfCleaningTestCase):
 
 class TestCLI(SelfCleaningTestCase):
 
-    def test_directory_required(self):
-        # assert exit code 2
-        # assert message is raised
-        return False
+    @mock.patch('sys.stderr', new_callable=StringIO)
+    def test_directory_required(self, mock_stderr):
+        testargs = ["bagit.py"]
+
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, 'argv', testargs):
+                bagit.main()
+
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn(
+            "error: the following arguments are required: directory",
+            mock_stderr.getvalue()
+        )
 
     def test_not_enough_processes(self):
         # assert exit code 2
