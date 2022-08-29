@@ -1147,9 +1147,20 @@ class TestCLI(SelfCleaningTestCase):
         )
 
     def test_invalid_fast_validate(self):
-        # assert exit code 1
-        # assert invalid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
+        testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn(
+            "%s is invalid: Payload-Oxum validation failed." % self.tmpdir,
+            captured.records[0].getMessage()
+        )
 
     def test_valid_fast_validate(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -1182,9 +1193,23 @@ class TestCLI(SelfCleaningTestCase):
         )
 
     def test_invalid_completeness_validate(self):
-        # assert exit code 1
-        # assert invalid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        old_path = j(self.tmpdir, "data", "README")
+        new_path = j(self.tmpdir, "data", "extra_file")
+        os.rename(old_path, new_path)
+
+        testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn(
+            "%s is invalid: Bag is incomplete" % self.tmpdir,
+            captured.records[-1].getMessage()
+        )
 
     def test_valid_completeness_validate(self):
         bag = bagit.make_bag(self.tmpdir)
@@ -1202,9 +1227,22 @@ class TestCLI(SelfCleaningTestCase):
         )
 
     def test_invalid_full_validate(self):
-        # assert exit code 1
-        # assert invalid message
-        return False
+        bag = bagit.make_bag(self.tmpdir)
+        readme = j(self.tmpdir, "data", "README")
+        txt = slurp_text_file(readme)
+        txt = "A" + txt[1:]
+        with open(readme, "w") as r:
+            r.write(txt)
+
+        testargs = ["bagit.py", "--validate", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn("Bag validation failed", captured.records[-1].getMessage())
 
     def test_valid_full_validate(self):
         bag = bagit.make_bag(self.tmpdir)
