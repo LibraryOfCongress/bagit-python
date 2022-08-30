@@ -1260,14 +1260,33 @@ class TestCLI(SelfCleaningTestCase):
         )
 
     def test_failed_create_bag(self):
-        # assert exit code 1
-        # assert failure message
-        return False
+        os.chmod(self.tmpdir, 0)
+
+        testargs = ["bagit.py", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        self.assertEqual(cm.exception.code, 1)
+        self.assertIn(
+            "Failed to create bag in %s" % self.tmpdir,
+            captured.records[-1].getMessage()
+        )
 
     def test_create_bag(self):
-        # assert exit code 0
-        # assert creation message
-        return False
+        testargs = ["bagit.py", self.tmpdir]
+
+        with self.assertLogs() as captured:
+            with self.assertRaises(SystemExit) as cm:
+                with mock.patch.object(sys, 'argv', testargs):
+                    bagit.main()
+
+        for rec in captured.records:
+            print(rec.getMessage())
+
+        self.assertEqual(cm.exception.code, 0)
 
 
 class TestUtils(unittest.TestCase):
