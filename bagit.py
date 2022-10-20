@@ -855,7 +855,7 @@ class Bag(object):
             errors.append(e)
 
         if errors:
-            raise BagValidationError(_("Bag validation failed"), errors)
+            raise BagValidationError(_("Bag is incomplete"), errors)
 
     def _validate_entries(self, processes):
         """
@@ -1563,11 +1563,14 @@ def main():
     parser = _make_parser()
     args = parser.parse_args()
 
-    if args.processes < 0:
-        parser.error(_("The number of processes must be 0 or greater"))
+    if args.processes <= 0:
+        parser.error(_("The number of processes must be greater than 0"))
 
     if args.fast and not args.validate:
         parser.error(_("--fast is only allowed as an option for --validate!"))
+
+    if args.completeness_only and not args.validate:
+        parser.error(_("--completeness-only is only allowed as an option for --validate!"))
 
     _configure_logging(args)
 
@@ -1585,6 +1588,8 @@ def main():
                 )
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
+                elif args.completeness_only:
+                    LOGGER.info(_("%s is complete and valid according to Payload-Oxum"), bag_dir)
                 else:
                     LOGGER.info(_("%s is valid"), bag_dir)
             except BagError as e:
