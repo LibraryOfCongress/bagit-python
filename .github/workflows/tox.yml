@@ -2,13 +2,7 @@ name: tox
 on: [push, pull_request]
 jobs:
   tox:
-    strategy:
-      fail-fast: false
-      # max-parallel: 4
-      matrix:
-        os: [ubuntu-latest]  # [macos-latest, ubuntu-latest, windows-latest]
-        # python: ['3.7', '3.8', '3.9', '3.10', '3.11']  # '2.7' tests fail
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -19,7 +13,6 @@ jobs:
             '3.9'
             '3.10'
             '3.11'
-          # python-version: ${{ matrix.python }}
       - run: pip install --upgrade pip
       - run: pip install tox
       - run: tox
