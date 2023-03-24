@@ -13,6 +13,7 @@ jobs:
             3.9
             3.10
             3.11
+      - run: sudo apt-get install -qy gettext
       - run: pip install --upgrade pip
       - run: pip install tox
       - run: tox
