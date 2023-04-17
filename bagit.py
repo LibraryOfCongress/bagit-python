@@ -277,7 +277,7 @@ class Bag(object):
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ["data"]
 
-    def __init__(self, path=None):
+    def __init__(self, path):
         super(Bag, self).__init__()
         self.tags = {}
         self.info = {}
@@ -300,11 +300,7 @@ class Bag(object):
         self.algorithms = []
         self.tag_file_name = None
         self.path = os.path.abspath(path)
-        if path:
-            # if path ends in a path separator, strip it off
-            if path[-1] == os.sep:
-                self.path = path[:-1]
-            self._open()
+        self._open()
 
     def __str__(self):
         # FIXME: develop a more informative string representation for a Bag
