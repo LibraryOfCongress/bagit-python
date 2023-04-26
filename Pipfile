@@ -8,8 +8,5 @@ name = "pypi"
 [dev-packages]
 tox = "*"
 black = "*"
-"flake8" = "*"
+flake8 = "*"
 isort = "*"
-
-[pipenv]
-allow_prereleases = true
