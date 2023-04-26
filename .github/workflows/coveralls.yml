@@ -1,0 +1,22 @@
+name: LibraryOfCongress/tests-bagit-python
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-16.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3.5.0
+    - uses: actions/setup-python@v4.6.0
+      with:
+        python-version: "${{ matrix.python }}"
+    - run: apt-get -y install gettext
+    - run: pip install --upgrade pip
+    - run: pip install coveralls coverage
+    - run: coverage run --include=bagit.py setup.py test
+    - run: coveralls
+      if: "${{ success() }}"
+    strategy:
+      matrix:
+        python:
+        - '3.10'
