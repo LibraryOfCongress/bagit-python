@@ -1100,6 +1100,37 @@ class TestFetch(SelfCleaningTestCase):
 
         self.assertEqual(expected_msg, str(cm.exception))
 
+    def test_bag_symlink_is_dangerous(self):
+        src = j(os.path.dirname(__file__), "README.rst")
+        dst = j(self.tmpdir, "README.rst")
+        os.symlink(src, dst)
+        self.assertRaisesRegexp(
+            bagit.BagError,
+            'Path "data/README.rst" in manifest ".*?" is unsafe',
+            bagit.make_bag,
+            self.tmpdir
+        )
+
+    def test_bag_symlink_file(self):
+        src = j(os.path.dirname(__file__), "README.rst")
+        dst = j(self.tmpdir, "README.rst")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir, follow_links=True)
+        self.assertTrue(bag.validate())
+
+    def test_symlink_directory_ignored(self):
+        src = j(os.path.dirname(__file__), 'test-data', 'si')
+        dst = j(self.tmpdir, "si-again")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertEqual(len(bag.entries), 15)
+
+    def test_symlink_directory_followed(self):
+        src = j(os.path.dirname(__file__), 'test-data', 'si')
+        dst = j(self.tmpdir, "si-again")
+        os.symlink(src, dst)
+        bag = bagit.make_bag(self.tmpdir, follow_links=True)
+        self.assertEqual(len(bag.entries), 17)
 
 class TestCLI(SelfCleaningTestCase):
 
