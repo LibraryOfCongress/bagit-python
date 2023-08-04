@@ -927,7 +927,7 @@ class Bag(object):
         """
         Return true if path looks dangerous, i.e. potentially operates
         outside the bagging directory structure, e.g. ~/.bashrc, ../../../secrets.json,
-            \\?\c:\, D:\sys32\cmd.exe
+        \\\\?\\c:\\, D:\\sys32\\cmd.exe
         """
         if os.path.isabs(path):
             return True
