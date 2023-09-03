@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-06-26 10:28-0400\n"
+"POT-Creation-Date: 2018-12-03 12:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -169,6 +169,30 @@ msgid "Path \"%(payload_file)s\" in \"%(source_file)s\" is unsafe"
 msgstr ""
 
 #, python-format
+msgid "Malformed URL in fetch.txt: %s, matches none of the whitelisted URL patterns %s"
+msgstr ""
+
+#, python-format
+msgid "File already fetched: %s"
+msgstr ""
+
+#, python-format
+msgid "Server sent no content-length for <%s>"
+msgstr ""
+
+#, python-format
+msgid "Inconsistent size of %s: Expected %s but Content-Length is %s"
+msgstr ""
+
+#, python-format
+msgid "Inconsistent size of %s: Expected %s but received %s"
+msgstr ""
+
+#, python-format
+msgid "Fetched %s from %s"
+msgstr ""
+
+#, python-format
 msgid ""
 "%s is encoded using UTF-8 but contains an unnecessary byte-order mark, which "
 "is not in compliance with the BagIt RFC"
@@ -203,10 +227,6 @@ msgstr ""
 
 #, python-format
 msgid "Expected %s to contain \"bagit.txt\""
-msgstr ""
-
-#, python-format
-msgid "Malformed URL in fetch.txt: %s"
 msgstr ""
 
 msgid "Fast validation requires bag-info.txt to include Payload-Oxum"

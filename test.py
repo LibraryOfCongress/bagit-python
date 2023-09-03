@@ -1082,24 +1082,82 @@ class TestFetch(SelfCleaningTestCase):
 
         self.assertEqual(expected_msg, str(cm.exception))
 
-    def test_fetch_malformed_url(self):
-        with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
-            print(
-                "//photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg - data/nasa/PIA21390.jpg",
-                file=fetch_txt,
-            )
+    def test_invalid_urls(self):
+        invalid_urls = [
+                '//photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg',
+                'file://%s' % j(self.tmpdir, "mock_data"),
+                '../../../../../etc/passwd',
+        ]
+        for url in invalid_urls:
+            with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+                print("%s - data/mock_data" % url, file=fetch_txt)
+            with self.assertRaisesRegexp(bagit.BagError, "^Malformed URL in fetch.txt: %s" % url):
+                self.bag.validate_fetch()
 
-        self.bag.save(manifests=True)
-
-        expected_msg = (
-            "Malformed URL in fetch.txt: //photojournal.jpl.nasa.gov/jpeg/PIA21390.jpg"
-        )
-
-        with self.assertRaises(bagit.BagError) as cm:
+    def test_invalid_urls_whitelist(self):
+        self.bag.fetch_url_whitelist = [
+            'https://my.inst.edu/data/*.png'
+        ]
+        valid_urls = [
+            'https://my.inst.edu/data/foo.png'
+        ]
+        invalid_urls = [
+            'https://my.inst.edu/data/foo'
+            'https://my.inst.edu/robots.txt',
+            'http://my.inst.edu/data/foo',
+            'https://example.org',
+        ]
+        for url in invalid_urls:
+            with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+                print("%s - data/mock_data" % url, file=fetch_txt)
+            with self.assertRaisesRegexp(bagit.BagError, "^Malformed URL in fetch.txt: %s" % url):
+                self.bag.validate_fetch()
+        for url in valid_urls:
+            with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+                print("%s - data/mock_data" % url, file=fetch_txt)
             self.bag.validate_fetch()
 
-        self.assertEqual(expected_msg, str(cm.exception))
+    def test_fetching_payload_file(self):
+        test_payload = 'loc/2478433644_2839c5e8b8_o_d.jpg'
+        with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+            print("https://github.com/LibraryOfCongress/bagit-python/raw/master/test-data/%s %s data/%s" % (
+                  test_payload, 139367, test_payload), file=fetch_txt)
+        self.bag.save(manifests=True)
+        # should be valid
+        self.bag.validate()
+        # now delete the payload, should be invalid
+        os.unlink(j(self.tmpdir, "data", test_payload))
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 1, '1 file to fetch')
+        with self.assertRaises(bagit.BagError):
+            self.bag.validate()
+        # re-fetch it
+        self.bag.fetch()
+        # should be valid again
+        self.bag.validate()
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 0, 'complete')
 
+    def test_force_fetching(self):
+        test_payload = 'loc/2478433644_2839c5e8b8_o_d.jpg'
+        with open(j(self.tmpdir, "fetch.txt"), "w") as fetch_txt:
+            print("https://github.com/LibraryOfCongress/bagit-python/raw/master/test-data/%s %s data/%s" % (
+                  test_payload, 139367, test_payload), file=fetch_txt)
+        self.bag.save(manifests=True)
+        # now replace one payload file with an empty string
+        with open(j(self.tmpdir, "data", test_payload), 'w') as payload:
+            payload.write('')
+        # should be invalid now
+        with self.assertRaisesRegexp(bagit.BagError, "^Payload-Oxum validation failed."):
+            self.bag.validate()
+        # non-forcefully downloading should not help
+        self.bag.fetch()
+        # should **still* be invalid now
+        with self.assertRaisesRegexp(bagit.BagError, "^Payload-Oxum validation failed."):
+            self.bag.validate()
+        # fetch with force
+        self.bag.fetch(force=True)
+        # should be valid again
+        self.bag.validate()
+        self.assertEqual(len(self.bag.compare_fetch_with_fs()), 0, 'complete')
 
 class TestCLI(SelfCleaningTestCase):
 

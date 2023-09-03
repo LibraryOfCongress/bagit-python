@@ -3,5 +3,4 @@ bench-data
 build
 dist
 MANIFEST
-bagit.egg-info
 .idea
