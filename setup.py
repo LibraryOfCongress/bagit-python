@@ -62,6 +62,7 @@ setup(
     platforms=["POSIX"],
     test_suite="test",
     setup_requires=["setuptools_scm"],
+    install_requires=["importlib_metadata ; python_version < '3.8'"],
     tests_require=tests_require,
     classifiers=[
         "License :: Public Domain",

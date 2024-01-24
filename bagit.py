@@ -21,7 +21,10 @@ from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
 
-from importlib.metadata import version
+try:
+    from importlib.metadata import version
+except ImportError:
+    from importlib_metadata import version
 
 try:
     from urllib.parse import urlparse
