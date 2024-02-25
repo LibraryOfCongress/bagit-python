@@ -882,13 +882,12 @@ class Bag(object):
             if processes == 1:
                 hash_results = [_calc_hashes(i) for i in args]
             else:
-                try:
-                    pool = multiprocessing.Pool(
-                        processes if processes else None, initializer=worker_init
-                    )
-                    hash_results = pool.map(_calc_hashes, args)
-                finally:
-                    pool.terminate()
+                pool = multiprocessing.Pool(
+                    processes if processes else None, initializer=worker_init
+                )
+                hash_results = pool.map(_calc_hashes, args)
+                pool.close()
+                pool.join()
 
         # Any unhandled exceptions are probably fatal
         except:
