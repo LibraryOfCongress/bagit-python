@@ -781,10 +781,9 @@ class Bag(object):
                 _("Fast validation requires bag-info.txt to include Payload-Oxum")
             )
 
-        # Perform the fast file count + size check so we can fail early:
-        self._validate_oxum()
-
         if fast:
+            # Perform the fast file count + size check so we can fail early:
+            self._validate_oxum()
             return
 
         self._validate_completeness()
