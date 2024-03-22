@@ -774,7 +774,9 @@ class Bag(object):
             # well formed:
             parsed_url = urlparse(url)
 
-            if not all((parsed_url.scheme, parsed_url.netloc)):
+            # each parsed url must resolve to a scheme and point to a netloc
+            # if the scheme is file, netloc is not necessary
+            if not (all((parsed_url.scheme, parsed_url.netloc)) or parsed_url.scheme == "file"):
                 raise BagError(_("Malformed URL in fetch.txt: %s") % url)
 
     def _validate_contents(self, processes=1, fast=False, completeness_only=False):
