@@ -612,13 +612,13 @@ class Bag(object):
 
         return True
 
-    def is_valid(self, fast=False, completeness_only=False):
+    def is_valid(self, processes=1, fast=False, completeness_only=False):
         """Returns validation success or failure as boolean.
-        Optional fast parameter passed directly to validate().
+        Optional processes and fast parameters passed directly to validate().
         """
 
         try:
-            self.validate(fast=fast, completeness_only=completeness_only)
+            self.validate(processes=processes, fast=fast, completeness_only=completeness_only)
         except BagError:
             return False
 
