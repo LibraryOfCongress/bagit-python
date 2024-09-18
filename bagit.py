@@ -20,6 +20,7 @@ from collections import defaultdict
 from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
+import shutil
 
 try:
     from importlib.metadata import version
@@ -144,7 +145,7 @@ UNICODE_BYTE_ORDER_MARK = "\uFEFF"
 
 
 def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8", destination=None, name=None
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -165,6 +166,35 @@ def make_bag(
         checksums = DEFAULT_CHECKSUMS
 
     bag_dir = os.path.abspath(bag_dir)
+
+    source_dir = None
+
+    # If a destination is provided, copy the directory to the new destination
+    if destination:
+        destination = os.path.abspath(destination)
+
+        if name != None:
+            bagdir = name
+        else:
+            bagdir = os.path.basename(bag_dir)
+
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+        
+        # Get the final path where the contents of bag_dir will be copied
+        destination_subdir = os.path.join(destination, bagdir)
+
+
+         # Check if the destination subdirectory already exists
+        if not os.path.exists(destination_subdir):
+            # Copy the contents of the source bag_dir to the destination subdirectory
+            shutil.copytree(bag_dir, destination_subdir)
+        else:
+            raise FileExistsError(f"The directory '{destination_subdir}' already exists. Choose a different destination or delete the existing folder.")
+
+        source_dir = bag_dir
+        bag_dir = destination_subdir  # Update bag_dir to point to the new location
+
     cwd = os.path.abspath(os.path.curdir)
 
     if cwd.startswith(bag_dir) and cwd != bag_dir:
@@ -240,9 +270,14 @@ def make_bag(
             # original directory
             os.chmod("data", os.stat(cwd).st_mode)
 
-            total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=checksums, encoding=encoding
+            if source_dir != None:
+                total_bytes, total_files = make_manifests(
+                source_dir, processes, algorithms=checksums, encoding=encoding
             )
+            else:
+                total_bytes, total_files = make_manifests(
+                    "data", processes, algorithms=checksums, encoding=encoding
+                )
 
             LOGGER.info(_("Creating bagit.txt"))
             txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
@@ -1273,6 +1308,9 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="
 
         with open_text_file(manifest_filename, "w", encoding=encoding) as manifest:
             for digest, filename, byte_count in values:
+                if data_dir != "data":
+                    relative_path = os.path.relpath(filename, data_dir)
+                    filename = os.path.join("data", relative_path)
                 manifest.write("%s  %s\n" % (digest, _encode_filename(filename)))
                 num_files[algorithm] += 1
                 total_bytes[algorithm] += byte_count
@@ -1509,6 +1547,21 @@ def _make_parser():
         ),
     )
 
+    parser.add_argument(
+        "--destination",
+        help=_(
+            "The directory where the bag will be created (default: the same as the"
+            " source directory)"
+        ),
+    )
+
+    parser.add_argument(
+        "--name",
+        help=_(
+            "this is what the encolsing directory will be named. If not provided it will use tha name of the source directory"
+        ),
+    )
+
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
         _(
@@ -1543,6 +1596,7 @@ def _make_parser():
             " and creating the manifests and other metadata."
         ),
     )
+
 
     return parser
 
@@ -1610,6 +1664,8 @@ def main():
                     bag_info=args.bag_info,
                     processes=args.processes,
                     checksums=args.checksums,
+                    destination=args.destination,
+                    name=args.name,
                 )
             except Exception as exc:
                 LOGGER.error(
