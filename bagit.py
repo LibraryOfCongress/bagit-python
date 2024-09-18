@@ -21,7 +21,10 @@ from datetime import date
 from functools import partial
 from os.path import abspath, isdir, isfile, join
 
-from pkg_resources import DistributionNotFound, get_distribution
+try:
+    from importlib.metadata import version
+except ImportError:
+    from importlib_metadata import version
 
 try:
     from urllib.parse import urlparse
@@ -48,9 +51,8 @@ MODULE_NAME = "bagit" if __name__ == "__main__" else __name__
 
 LOGGER = logging.getLogger(MODULE_NAME)
 
-try:
-    VERSION = get_distribution(MODULE_NAME).version
-except DistributionNotFound:
+VERSION = version(MODULE_NAME)
+if not VERSION:
     VERSION = "0.0.dev0"
 
 PROJECT_URL = "https://github.com/LibraryOfCongress/bagit-python"
@@ -610,13 +612,13 @@ class Bag(object):
 
         return True
 
-    def is_valid(self, fast=False, completeness_only=False):
+    def is_valid(self, processes=1, fast=False, completeness_only=False):
         """Returns validation success or failure as boolean.
-        Optional fast parameter passed directly to validate().
+        Optional processes and fast parameters passed directly to validate().
         """
 
         try:
-            self.validate(fast=fast, completeness_only=completeness_only)
+            self.validate(processes=processes, fast=fast, completeness_only=completeness_only)
         except BagError:
             return False
 
@@ -772,7 +774,9 @@ class Bag(object):
             # well formed:
             parsed_url = urlparse(url)
 
-            if not all((parsed_url.scheme, parsed_url.netloc)):
+            # each parsed url must resolve to a scheme and point to a netloc
+            # if the scheme is file, netloc is not necessary
+            if not (all((parsed_url.scheme, parsed_url.netloc)) or parsed_url.scheme == "file"):
                 raise BagError(_("Malformed URL in fetch.txt: %s") % url)
 
     def _validate_contents(self, processes=1, fast=False, completeness_only=False):
