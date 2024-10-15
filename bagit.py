@@ -17,7 +17,6 @@ import warnings
 from collections import defaultdict
 from datetime import date
 from functools import partial
-from os.path import abspath, isdir, isfile, join
 
 try:
     from importlib.metadata import version
@@ -278,7 +277,7 @@ class Bag(object):
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ["data"]
 
-    def __init__(self, path=None):
+    def __init__(self, path):
         super(Bag, self).__init__()
         self.tags = {}
         self.info = {}
@@ -300,12 +299,8 @@ class Bag(object):
 
         self.algorithms = []
         self.tag_file_name = None
-        self.path = abspath(path)
-        if path:
-            # if path ends in a path separator, strip it off
-            if path[-1] == os.sep:
-                self.path = path[:-1]
-            self._open()
+        self.path = os.path.abspath(path)
+        self._open()
 
     def __str__(self):
         # FIXME: develop a more informative string representation for a Bag
@@ -329,7 +324,7 @@ class Bag(object):
         # the required version and encoding.
         bagit_file_path = os.path.join(self.path, "bagit.txt")
 
-        if not isfile(bagit_file_path):
+        if not os.path.isfile(bagit_file_path):
             raise BagError(_("Expected bagit.txt does not exist: %s") % bagit_file_path)
 
         self.tags = tags = _load_tag_file(bagit_file_path)
@@ -378,13 +373,13 @@ class Bag(object):
     def manifest_files(self):
         for filename in ["manifest-%s.txt" % a for a in CHECKSUM_ALGOS]:
             f = os.path.join(self.path, filename)
-            if isfile(f):
+            if os.path.isfile(f):
                 yield f
 
     def tagmanifest_files(self):
         for filename in ["tagmanifest-%s.txt" % a for a in CHECKSUM_ALGOS]:
             f = os.path.join(self.path, filename)
-            if isfile(f):
+            if os.path.isfile(f):
                 yield f
 
     def compare_manifests_with_fs(self):
@@ -558,7 +553,7 @@ class Bag(object):
 
         fetch_file_path = os.path.join(self.path, "fetch.txt")
 
-        if isfile(fetch_file_path):
+        if os.path.isfile(fetch_file_path):
             with open_text_file(
                 fetch_file_path, "r", encoding=self.encoding
             ) as fetch_file:
@@ -744,7 +739,7 @@ class Bag(object):
     def _validate_structure_payload_directory(self):
         data_dir_path = os.path.join(self.path, "data")
 
-        if not isdir(data_dir_path):
+        if not os.path.isdir(data_dir_path):
             raise BagValidationError(
                 _("Expected data directory %s does not exist") % data_dir_path
             )
@@ -1284,14 +1279,14 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="
 
 
 def _make_tagmanifest_file(alg, bag_dir, encoding="utf-8"):
-    tagmanifest_file = join(bag_dir, "tagmanifest-%s.txt" % alg)
+    tagmanifest_file = os.path.join(bag_dir, "tagmanifest-%s.txt" % alg)
     LOGGER.info(_("Creating %s"), tagmanifest_file)
 
     checksums = []
     for f in _find_tag_files(bag_dir):
         if re.match(r"^tagmanifest-.+\.txt$", f):
             continue
-        with open(join(bag_dir, f), "rb") as fh:
+        with open(os.path.join(bag_dir, f), "rb") as fh:
             m = hashlib.new(alg)
             while True:
                 block = fh.read(HASH_BLOCK_SIZE)
@@ -1301,7 +1296,7 @@ def _make_tagmanifest_file(alg, bag_dir, encoding="utf-8"):
             checksums.append((m.hexdigest(), f))
 
     with open_text_file(
-        join(bag_dir, tagmanifest_file), mode="w", encoding=encoding
+        os.path.join(bag_dir, tagmanifest_file), mode="w", encoding=encoding
     ) as tagmanifest:
         for digest, filename in checksums:
             tagmanifest.write("%s %s\n" % (digest, filename))
@@ -1317,7 +1312,7 @@ def _find_tag_files(bag_dir):
                     if filename.startswith("tagmanifest-"):
                         continue
                     # remove everything up to the bag_dir directory
-                    p = join(dir_name, filename)
+                    p = os.path.join(dir_name, filename)
                     yield os.path.relpath(p, bag_dir)
 
 
