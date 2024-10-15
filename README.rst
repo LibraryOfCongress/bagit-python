@@ -1,8 +1,6 @@
 bagit-python
 ============
 
-|Build Status| |Coverage Status|
-
 bagit is a Python library and command line utility for working with
 `BagIt <http://purl.org/net/bagit>`__ style packages.
 
