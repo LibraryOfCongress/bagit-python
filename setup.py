@@ -7,7 +7,6 @@ import glob
 import os
 import subprocess
 import sys
-from codecs import open
 
 from setuptools import setup
 
@@ -17,8 +16,6 @@ if sys.version_info < (2, 7):
 
 description = "Create and validate BagIt packages"
 
-with open("README.rst", encoding="utf-8") as readme:
-    long_description = readme.read()
 
 tests_require = ["mock", "coverage"]
 
@@ -58,7 +55,6 @@ setup(
     scripts=["bagit.py"],
     data_files=get_message_catalogs(),
     description=description,
-    long_description=long_description,
     platforms=["POSIX"],
     test_suite="test",
     setup_requires=["setuptools_scm"],
