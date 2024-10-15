@@ -1438,19 +1438,6 @@ def _decode_filename(s):
     return s
 
 
-def force_unicode_py2(s):
-    """Reliably return a Unicode string given a possible unicode or byte string"""
-    if isinstance(s, str):
-        return s.decode("utf-8")
-    else:
-        return unicode(s)
-
-
-if sys.version_info > (3, 0):
-    force_unicode = str
-else:
-    force_unicode = force_unicode_py2
-
 # following code is used for command line program
 
 
