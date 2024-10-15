@@ -1,7 +1,6 @@
 prune test-data
 exclude .*
 exclude Dockerfile
-exclude tox.ini
 exclude MANIFEST.in
 exclude test.py
 exclude bench.py

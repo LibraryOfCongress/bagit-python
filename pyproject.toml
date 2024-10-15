@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bagit"
+dynamic = ["version"]
+description = "Create and validate BagIt packages"
+readme = {file = "README.rst", content-type = "text/x-rst"}
+authors = [
+    { name = "Ed Summers", email = "ehs@pobox.com" },
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: Public Domain",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: File Sharing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Filesystems",
+]
+
+[project.urls]
+Homepage = "https://libraryofcongress.github.io/bagit-python/"
+
+[tool]
+
+[tool.ruff]
+target-version = "py38"
+
+
+[tool.setuptools_scm]
+
+[tool.isort]
+line_length = 110
+default_section = "THIRDPARTY"
+known_first_party = "bagit"
+
+[tool.coverage.run]
+branch = true
+include = "bagit.py"

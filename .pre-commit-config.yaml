@@ -1,0 +1,36 @@
+exclude: ".*test-data.*"
+
+repos:
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.6.9
+      hooks:
+          - id: ruff
+            args: [--fix, --exit-non-zero-on-fix]
+          - id: ruff-format
+
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          - id: check-added-large-files
+            args: ["--maxkb=128"]
+          - id: check-ast
+          - id: check-byte-order-marker
+          - id: check-case-conflict
+          - id: check-docstring-first
+          - id: check-executables-have-shebangs
+          - id: check-json
+          - id: check-merge-conflict
+          - id: check-symlinks
+          - id: check-xml
+          - id: check-yaml
+            args: ["--unsafe"]
+          - id: debug-statements
+          - id: detect-aws-credentials
+            args: ["--allow-missing-credentials"]
+          - id: detect-private-key
+          - id: end-of-file-fixer
+          - id: mixed-line-ending
+            args: ["--fix=lf"]
+          - id: trailing-whitespace
+          - id: pretty-format-json
+            args: ["--autofix", "--no-sort-keys", "--indent=4"]

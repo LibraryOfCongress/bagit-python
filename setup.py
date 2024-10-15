@@ -7,20 +7,10 @@ import glob
 import os
 import subprocess
 import sys
-from codecs import open
 
 from setuptools import setup
 
-if sys.version_info < (2, 7):
-    print("Python 2.7 or higher is required")
-    sys.exit(1)
-
 description = "Create and validate BagIt packages"
-
-with open("README.rst", encoding="utf-8") as readme:
-    long_description = readme.read()
-
-tests_require = ["mock", "coverage"]
 
 
 def get_message_catalogs():
@@ -58,28 +48,14 @@ setup(
     scripts=["bagit.py"],
     data_files=get_message_catalogs(),
     description=description,
-    long_description=long_description,
     platforms=["POSIX"],
-    test_suite="test",
     setup_requires=["setuptools_scm"],
-    install_requires=["importlib_metadata ; python_version < '3.8'"],
-    tests_require=tests_require,
     classifiers=[
         "License :: Public Domain",
         "Intended Audience :: Developers",
         "Topic :: Communications :: File Sharing",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Filesystems",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.1",
-        "Programming Language :: Python :: 3.2",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
     ],
 )

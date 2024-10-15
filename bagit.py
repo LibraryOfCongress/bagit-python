@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import argparse
 import codecs
 import gettext
@@ -42,10 +40,8 @@ def find_locale_dir():
 TRANSLATION_CATALOG = gettext.translation(
     "bagit-python", localedir=find_locale_dir(), fallback=True
 )
-if sys.version_info < (3,):
-    _ = TRANSLATION_CATALOG.ugettext
-else:
-    _ = TRANSLATION_CATALOG.gettext
+
+_ = TRANSLATION_CATALOG.gettext
 
 MODULE_NAME = "bagit" if __name__ == "__main__" else __name__
 
@@ -140,7 +136,7 @@ HASH_BLOCK_SIZE = 512 * 1024
 open_text_file = partial(codecs.open, encoding="utf-8", errors="strict")
 
 # This is the same as decoding the byte values in codecs.BOM:
-UNICODE_BYTE_ORDER_MARK = "\uFEFF"
+UNICODE_BYTE_ORDER_MARK = "\ufeff"
 
 
 def make_bag(
@@ -422,8 +418,8 @@ class Bag(object):
 
     def compare_fetch_with_fs(self):
         """Compares the fetch entries with the files actually
-           in the payload, and returns a list of all the files
-           that still need to be fetched.
+        in the payload, and returns a list of all the files
+        that still need to be fetched.
         """
 
         files_on_fs = set(self.payload_files())
@@ -449,7 +445,7 @@ class Bag(object):
                 yield rel_path
 
     def payload_entries(self):
-        """Return a dictionary of items """
+        """Return a dictionary of items"""
         # Don't use dict comprehension (compatibility with Python < 2.7)
         return dict(
             (key, value)
@@ -618,7 +614,9 @@ class Bag(object):
         """
 
         try:
-            self.validate(processes=processes, fast=fast, completeness_only=completeness_only)
+            self.validate(
+                processes=processes, fast=fast, completeness_only=completeness_only
+            )
         except BagError:
             return False
 
@@ -776,7 +774,10 @@ class Bag(object):
 
             # each parsed url must resolve to a scheme and point to a netloc
             # if the scheme is file, netloc is not necessary
-            if not (all((parsed_url.scheme, parsed_url.netloc)) or parsed_url.scheme == "file"):
+            if not (
+                all((parsed_url.scheme, parsed_url.netloc))
+                or parsed_url.scheme == "file"
+            ):
                 raise BagError(_("Malformed URL in fetch.txt: %s") % url)
 
     def _validate_contents(self, processes=1, fast=False, completeness_only=False):
@@ -851,11 +852,11 @@ class Bag(object):
         only_in_manifests, only_on_fs = self.compare_manifests_with_fs()
         for path in only_in_manifests:
             e = FileMissing(path)
-            LOGGER.warning(force_unicode(e))
+            LOGGER.warning(str(e))
             errors.append(e)
         for path in only_on_fs:
             e = UnexpectedFile(path)
-            LOGGER.warning(force_unicode(e))
+            LOGGER.warning(str(e))
             errors.append(e)
 
         if errors:
@@ -906,7 +907,7 @@ class Bag(object):
                     e = ChecksumMismatch(
                         rel_path, alg, stored_hash.lower(), computed_hash
                     )
-                    LOGGER.warning(force_unicode(e))
+                    LOGGER.warning(str(e))
                     errors.append(e)
 
         if errors:
@@ -963,7 +964,7 @@ class BagValidationError(BagError):
 
     def __str__(self):
         if len(self.details) > 0:
-            details = "; ".join([force_unicode(e) for e in self.details])
+            details = "; ".join([str(e) for e in self.details])
             return "%s: %s" % (self.message, details)
         return self.message
 
@@ -988,7 +989,7 @@ class ChecksumMismatch(ManifestErrorDetail):
         return _(
             '%(path)s %(algorithm)s validation failed: expected="%(expected)s" found="%(found)s"'
         ) % {
-            "path": force_unicode(self.path),
+            "path": str(self.path),
             "algorithm": self.algorithm,
             "expected": self.expected,
             "found": self.found,
@@ -997,9 +998,9 @@ class ChecksumMismatch(ManifestErrorDetail):
 
 class FileMissing(ManifestErrorDetail):
     def __str__(self):
-        return _(
-            "%s exists in manifest but was not found on filesystem"
-        ) % force_unicode(self.path)
+        return _("%s exists in manifest but was not found on filesystem") % str(
+            self.path
+        )
 
 
 class UnexpectedFile(ManifestErrorDetail):
@@ -1034,20 +1035,8 @@ def posix_multiprocessing_worker_initializer():
 # is consistency since the input value will be preserved:
 
 
-def normalize_unicode_py3(s):
+def normalize_unicode(s):
     return unicodedata.normalize("NFC", s)
-
-
-def normalize_unicode_py2(s):
-    if isinstance(s, str):
-        s = s.decode("utf-8")
-    return unicodedata.normalize("NFC", s)
-
-
-if sys.version_info > (3, 0):
-    normalize_unicode = normalize_unicode_py3
-else:
-    normalize_unicode = normalize_unicode_py2
 
 
 def build_unicode_normalized_lookup_dict(filenames):
@@ -1138,7 +1127,7 @@ def _calc_hashes(args):
     try:
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError as e:
-        f_hashes = dict((alg, force_unicode(e)) for alg in f_hashers.keys())
+        f_hashes = dict((alg, str(e)) for alg in f_hashers.keys())
 
     return rel_path, f_hashes, hashes
 
@@ -1161,7 +1150,7 @@ def _calculate_file_hashes(full_path, f_hashers):
     except (OSError, IOError) as e:
         raise BagValidationError(
             _("Could not read %(filename)s: %(error)s")
-            % {"filename": full_path, "error": force_unicode(e)}
+            % {"filename": full_path, "error": str(e)}
         )
 
     return dict((alg, h.hexdigest()) for alg, h in f_hashers.items())
@@ -1187,11 +1176,11 @@ def _load_tag_file(tag_file_name, encoding="utf-8-sig"):
 
 def _parse_tags(tag_file):
     """Parses a tag file, according to RFC 2822.  This
-       includes line folding, permitting extra-long
-       field values.
+    includes line folding, permitting extra-long
+    field values.
 
-       See http://www.faqs.org/rfcs/rfc2822.html for
-       more information.
+    See http://www.faqs.org/rfcs/rfc2822.html for
+    more information.
     """
 
     tag_name = None
@@ -1237,7 +1226,7 @@ def _make_tag_file(bag_info_path, bag_info):
                 values = [values]
             for txt in values:
                 # strip CR, LF and CRLF so they don't mess up the tag file
-                txt = re.sub(r"\n|\r|(\r\n)", "", force_unicode(txt))
+                txt = re.sub(r"\n|\r|(\r\n)", "", str(txt))
                 f.write("%s: %s\n" % (h, txt))
 
 
@@ -1433,19 +1422,6 @@ def _decode_filename(s):
     return s
 
 
-def force_unicode_py2(s):
-    """Reliably return a Unicode string given a possible unicode or byte string"""
-    if isinstance(s, str):
-        return s.decode("utf-8")
-    else:
-        return unicode(s)
-
-
-if sys.version_info > (3, 0):
-    force_unicode = str
-else:
-    force_unicode = force_unicode_py2
-
 # following code is used for command line program
 
 
@@ -1531,7 +1507,10 @@ def _make_parser():
     metadata_args = parser.add_argument_group(_("Optional Bag Metadata"))
     for header in STANDARD_BAG_INFO_HEADERS:
         metadata_args.add_argument(
-            "--%s" % header.lower(), type=str, action=BagHeaderAction, default=argparse.SUPPRESS
+            "--%s" % header.lower(),
+            type=str,
+            action=BagHeaderAction,
+            default=argparse.SUPPRESS,
         )
 
     parser.add_argument(
@@ -1574,7 +1553,9 @@ def main():
         parser.error(_("--fast is only allowed as an option for --validate!"))
 
     if args.completeness_only and not args.validate:
-        parser.error(_("--completeness-only is only allowed as an option for --validate!"))
+        parser.error(
+            _("--completeness-only is only allowed as an option for --validate!")
+        )
 
     _configure_logging(args)
 
@@ -1593,7 +1574,9 @@ def main():
                 if args.fast:
                     LOGGER.info(_("%s valid according to Payload-Oxum"), bag_dir)
                 elif args.completeness_only:
-                    LOGGER.info(_("%s is complete and valid according to Payload-Oxum"), bag_dir)
+                    LOGGER.info(
+                        _("%s is complete and valid according to Payload-Oxum"), bag_dir
+                    )
                 else:
                     LOGGER.info(_("%s is valid"), bag_dir)
             except BagError as e:

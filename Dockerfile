@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.11
 RUN useradd --user-group bagit-tester
 RUN install -d -o bagit-tester /bagit
 USER bagit-tester
