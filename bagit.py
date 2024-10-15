@@ -266,7 +266,7 @@ def make_bag(
                 )
 
             bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
-            _make_tag_file("bag-info.txt", bag_info, tag_wrap_column)
+            _make_tag_file("bag-info.txt", bag_info, tag_wrap_column=tag_wrap_column)
 
             for c in checksums:
                 _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
@@ -529,7 +529,7 @@ class Bag(object):
             LOGGER.info(_("Updating Payload-Oxum in %s"), self.tag_file_name)
             self.info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
 
-        _make_tag_file(self.tag_file_name, self.info, tag_wrap_column)
+        _make_tag_file(self.tag_file_name, self.info, tag_wrap_column=tag_wrap_column)
 
         # Update tag-manifest for changes to manifest & bag-info files
         for alg in self.algorithms:
@@ -1229,7 +1229,7 @@ def _parse_tags(tag_file):
         yield (tag_name, tag_value.strip())
 
 
-def _make_tag_file(bag_info_path, bag_info, tag_wrap_column):
+def _make_tag_file(bag_info_path, bag_info, *, tag_wrap_column):
     headers = sorted(bag_info.keys())
     with open_text_file(bag_info_path, "w") as f:
         for h in headers:
