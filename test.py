@@ -13,10 +13,10 @@ import sys
 import tempfile
 import unicodedata
 import unittest
-from os.path import join as j
-
-from unittest import mock
 from io import StringIO
+from os.path import join as j
+from textwrap import dedent
+from unittest import mock
 
 import bagit
 
@@ -116,6 +116,23 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
+    def test_validate_tag_are_not_wrapped_unrequested(self):
+        info = {
+            "External-Description": (
+                # noqa: E501
+                """
+                BagIt is a set of hierarchical file layout conventions designed to support storage and transfer of arbitrary digital content.  A bag consists of a directory containing the payload files and other accompanying metadata files known as "tag" files.
+                """.strip()
+            )
+        }
+        bag = bagit.make_bag(self.tmpdir, bag_info=info)
+        self.assertEqual(len(bag.info["External-Description"].splitlines()), 1)
+
+        self.assertEqual(self.validate(bag, fast=True), True)
+        self.maxDiff = None
+        os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
+        self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
+
     def test_validate_wrapped_tag_lines(self):
         info = {
             "External-Description": (
@@ -127,7 +144,19 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
             )
         }
         bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=79)
+        self.assertEqual(
+            bag.info["External-Description"],
+            dedent(
+                """
+                BagIt is a set of hierarchical file layout conventions designed to support storage and transfer of arbitrary digital content.  A bag
+                 consists of a directory containing the payload files and other accompanying
+                 metadata files known as "tag" files.
+                """
+            ).strip(),
+        )
+
         self.assertEqual(self.validate(bag, fast=True), True)
+        self.maxDiff = None
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
@@ -143,6 +172,32 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         }
         bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=18)
         self.assertEqual(self.validate(bag, fast=True), True)
+        self.maxDiff = None
+        self.assertEqual(
+            bag.info["External-Description"],
+            dedent(
+                """
+                BagIt is a set
+                 of hierarchical
+                 file layout
+                 conventions
+                 designed to
+                 support storage
+                 and transfer of
+                 arbitrary digital
+                 content.  A bag
+                 consists of a
+                 directory
+                 containing the
+                 payload files and
+                 other
+                 accompanying
+                 metadata files
+                 known as "tag"
+                 files.
+                """
+            ).strip(),
+        )
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
