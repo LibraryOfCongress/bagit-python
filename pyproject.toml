@@ -24,6 +24,10 @@ Homepage = "https://libraryofcongress.github.io/bagit-python/"
 
 [tool]
 
+[tool.ruff]
+target-version = "py38"
+
+
 [tool.setuptools_scm]
 
 [tool.isort]

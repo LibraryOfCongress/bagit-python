@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import argparse
 import codecs
 import gettext
@@ -42,10 +40,8 @@ def find_locale_dir():
 TRANSLATION_CATALOG = gettext.translation(
     "bagit-python", localedir=find_locale_dir(), fallback=True
 )
-if sys.version_info < (3,):
-    _ = TRANSLATION_CATALOG.ugettext
-else:
-    _ = TRANSLATION_CATALOG.gettext
+
+_ = TRANSLATION_CATALOG.gettext
 
 MODULE_NAME = "bagit" if __name__ == "__main__" else __name__
 
@@ -1039,20 +1035,8 @@ def posix_multiprocessing_worker_initializer():
 # is consistency since the input value will be preserved:
 
 
-def normalize_unicode_py3(s):
+def normalize_unicode(s):
     return unicodedata.normalize("NFC", s)
-
-
-def normalize_unicode_py2(s):
-    if isinstance(s, str):
-        s = s.decode("utf-8")
-    return unicodedata.normalize("NFC", s)
-
-
-if sys.version_info > (3, 0):
-    normalize_unicode = normalize_unicode_py3
-else:
-    normalize_unicode = normalize_unicode_py2
 
 
 def build_unicode_normalized_lookup_dict(filenames):

@@ -266,9 +266,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
     def test_bom_in_bagit_txt(self):
         bag = bagit.make_bag(self.tmpdir)
-        BOM = codecs.BOM_UTF8
-        if sys.version_info[0] >= 3:
-            BOM = BOM.decode("utf-8")
+        BOM = codecs.BOM_UTF8.decode("utf-8")
         with open(j(self.tmpdir, "bagit.txt"), "r") as bf:
             bagfile = BOM + bf.read()
         with open(j(self.tmpdir, "bagit.txt"), "w") as bf:

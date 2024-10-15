@@ -10,10 +10,6 @@ import sys
 
 from setuptools import setup
 
-if sys.version_info < (2, 7):
-    print("Python 2.7 or higher is required")
-    sys.exit(1)
-
 description = "Create and validate BagIt packages"
 
 
