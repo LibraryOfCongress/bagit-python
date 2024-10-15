@@ -15,7 +15,7 @@ import unicodedata
 import unittest
 from os.path import join as j
 
-import mock
+from unittest import mock
 from io import StringIO
 
 import bagit
@@ -1102,98 +1102,97 @@ class TestFetch(SelfCleaningTestCase):
 
 
 class TestCLI(SelfCleaningTestCase):
-
-    @mock.patch('sys.stderr', new_callable=StringIO)
+    @mock.patch("sys.stderr", new_callable=StringIO)
     def test_directory_required(self, mock_stderr):
         testargs = ["bagit.py"]
 
         with self.assertRaises(SystemExit) as cm:
-            with mock.patch.object(sys, 'argv', testargs):
+            with mock.patch.object(sys, "argv", testargs):
                 bagit.main()
 
         self.assertEqual(cm.exception.code, 2)
         self.assertIn(
             "error: the following arguments are required: directory",
-            mock_stderr.getvalue()
+            mock_stderr.getvalue(),
         )
 
-    @mock.patch('sys.stderr', new_callable=StringIO)
+    @mock.patch("sys.stderr", new_callable=StringIO)
     def test_not_enough_processes(self, mock_stderr):
         testargs = ["bagit.py", "--processes", "0", self.tmpdir]
 
         with self.assertRaises(SystemExit) as cm:
-            with mock.patch.object(sys, 'argv', testargs):
+            with mock.patch.object(sys, "argv", testargs):
                 bagit.main()
 
         self.assertEqual(cm.exception.code, 2)
         self.assertIn(
             "error: The number of processes must be greater than 0",
-            mock_stderr.getvalue()
+            mock_stderr.getvalue(),
         )
 
-    @mock.patch('sys.stderr', new_callable=StringIO)
+    @mock.patch("sys.stderr", new_callable=StringIO)
     def test_fast_flag_without_validate(self, mock_stderr):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--fast", self.tmpdir]
 
         with self.assertRaises(SystemExit) as cm:
-            with mock.patch.object(sys, 'argv', testargs):
+            with mock.patch.object(sys, "argv", testargs):
                 bagit.main()
 
         self.assertEqual(cm.exception.code, 2)
         self.assertIn(
             "error: --fast is only allowed as an option for --validate!",
-            mock_stderr.getvalue()
+            mock_stderr.getvalue(),
         )
 
     def test_invalid_fast_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
             "%s is invalid: Payload-Oxum validation failed." % self.tmpdir,
-            captured.records[0].getMessage()
+            captured.records[0].getMessage(),
         )
 
     def test_valid_fast_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", "--fast", self.tmpdir]
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(
             "%s valid according to Payload-Oxum" % self.tmpdir,
-            captured.records[0].getMessage()
+            captured.records[0].getMessage(),
         )
 
-    @mock.patch('sys.stderr', new_callable=StringIO)
+    @mock.patch("sys.stderr", new_callable=StringIO)
     def test_completeness_flag_without_validate(self, mock_stderr):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--completeness-only", self.tmpdir]
 
         with self.assertRaises(SystemExit) as cm:
-            with mock.patch.object(sys, 'argv', testargs):
+            with mock.patch.object(sys, "argv", testargs):
                 bagit.main()
 
         self.assertEqual(cm.exception.code, 2)
         self.assertIn(
             "error: --completeness-only is only allowed as an option for --validate!",
-            mock_stderr.getvalue()
+            mock_stderr.getvalue(),
         )
 
     def test_invalid_completeness_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         old_path = j(self.tmpdir, "data", "README")
         new_path = j(self.tmpdir, "data", "extra_file")
         os.rename(old_path, new_path)
@@ -1202,32 +1201,32 @@ class TestCLI(SelfCleaningTestCase):
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
             "%s is invalid: Bag is incomplete" % self.tmpdir,
-            captured.records[-1].getMessage()
+            captured.records[-1].getMessage(),
         )
 
     def test_valid_completeness_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(
             "%s is complete and valid according to Payload-Oxum" % self.tmpdir,
-            captured.records[0].getMessage()
+            captured.records[0].getMessage(),
         )
 
     def test_invalid_full_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
         txt = slurp_text_file(readme)
         txt = "A" + txt[1:]
@@ -1238,26 +1237,23 @@ class TestCLI(SelfCleaningTestCase):
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("Bag validation failed", captured.records[-1].getMessage())
 
     def test_valid_full_validate(self):
-        bag = bagit.make_bag(self.tmpdir)
+        bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", self.tmpdir]
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
-        self.assertEqual(
-            "%s is valid" % self.tmpdir,
-            captured.records[-1].getMessage()
-        )
+        self.assertEqual("%s is valid" % self.tmpdir, captured.records[-1].getMessage())
 
     def test_failed_create_bag(self):
         os.chmod(self.tmpdir, 0)
@@ -1266,13 +1262,13 @@ class TestCLI(SelfCleaningTestCase):
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
             "Failed to create bag in %s" % self.tmpdir,
-            captured.records[-1].getMessage()
+            captured.records[-1].getMessage(),
         )
 
     def test_create_bag(self):
@@ -1280,7 +1276,7 @@ class TestCLI(SelfCleaningTestCase):
 
         with self.assertLogs() as captured:
             with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, 'argv', testargs):
+                with mock.patch.object(sys, "argv", testargs):
                     bagit.main()
 
         for rec in captured.records:
@@ -1290,23 +1286,14 @@ class TestCLI(SelfCleaningTestCase):
 
 
 class TestUtils(unittest.TestCase):
-    def setUp(self):
-        super(TestUtils, self).setUp()
-        if sys.version_info >= (3,):
-            self.unicode_class = str
-        else:
-            self.unicode_class = unicode
-
     def test_force_unicode_str_to_unicode(self):
-        self.assertIsInstance(bagit.force_unicode("foobar"), self.unicode_class)
+        self.assertIsInstance(bagit.force_unicode("foobar"), str)
 
     def test_force_unicode_pass_through(self):
-        self.assertIsInstance(bagit.force_unicode("foobar"), self.unicode_class)
+        self.assertIsInstance(bagit.force_unicode("foobar"), str)
 
     def test_force_unicode_int(self):
-        self.assertIsInstance(bagit.force_unicode(1234), self.unicode_class)
-
-
+        self.assertIsInstance(bagit.force_unicode(1234), str)
 
 
 if __name__ == "__main__":

@@ -17,9 +17,6 @@ if sys.version_info < (2, 7):
 description = "Create and validate BagIt packages"
 
 
-tests_require = ["mock", "coverage"]
-
-
 def get_message_catalogs():
     message_catalogs = []
 
@@ -56,9 +53,7 @@ setup(
     data_files=get_message_catalogs(),
     description=description,
     platforms=["POSIX"],
-    test_suite="test",
     setup_requires=["setuptools_scm"],
-    tests_require=tests_require,
     classifiers=[
         "License :: Public Domain",
         "Intended Audience :: Developers",
