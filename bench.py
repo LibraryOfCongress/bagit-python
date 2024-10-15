@@ -2,7 +2,7 @@
 
 """
 This is a little benchmarking script to exercise bagit.make_bag and
-bagit.validate using 1-8 parallel processes. It will download some images 
+bagit.validate using 1-8 parallel processes. It will download some images
 from NASA for use in bagging the first time it is run.
 """
 

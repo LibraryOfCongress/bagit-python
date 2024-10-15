@@ -34,4 +34,3 @@ known_first_party = "bagit"
 [tool.coverage.run]
 branch = true
 include = "bagit.py"
-

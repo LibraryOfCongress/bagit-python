@@ -226,11 +226,11 @@ Contributing to bagit-python development
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-You can quickly run the tests by having setuptools install dependencies:
+You can quickly run the tests using the built-in unittest framework:
 
 ::
 
-    python setup.py test
+    python -m unittest discover
 
 If you have Docker installed, you can run the tests under Linux inside a
 container:
