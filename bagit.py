@@ -141,8 +141,13 @@ UNICODE_BYTE_ORDER_MARK = "\ufeff"
 
 
 def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None,
-    encoding="utf-8", tag_wrap_column=0
+    bag_dir,
+    bag_info=None,
+    processes=1,
+    checksums=None,
+    checksum=None,
+    encoding="utf-8",
+    tag_wrap_column=0,
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
@@ -1237,7 +1242,7 @@ def _make_tag_file(bag_info_path, bag_info, tag_wrap_column):
 
 
 def _format_tag_value(header, txt, tag_wrap_column):
-    txt = force_unicode(txt)
+    txt = str(txt)
     if tag_wrap_column > 1:
         # Account for colon & space written after the property name.
         prop_width = len(header) + 2
@@ -1246,19 +1251,29 @@ def _format_tag_value(header, txt, tag_wrap_column):
         first_break = prop_width + len(txt.split(None, 1)[0])
         if tag_wrap_column <= first_break:
             # Start value on the next line.
-            txt = '\n'.join(textwrap.wrap(txt, initial_indent='\n ',
-                                          width=tag_wrap_column,
-                                          break_long_words=False,
-                                          break_on_hyphens=False,
-                                          subsequent_indent=' '))
+            txt = "\n".join(
+                textwrap.wrap(
+                    txt,
+                    initial_indent="\n ",
+                    width=tag_wrap_column,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                    subsequent_indent=" ",
+                )
+            )
         else:
             # Account for tag name by temporarily adding a leading space
             # before calling wrap(), then removing the space later below.
-            txt = '\n'.join(textwrap.wrap(txt, initial_indent=' '*prop_width,
-                                          width=tag_wrap_column,
-                                          break_long_words=False,
-                                          break_on_hyphens=False,
-                                          subsequent_indent=' '))
+            txt = "\n".join(
+                textwrap.wrap(
+                    txt,
+                    initial_indent=" " * prop_width,
+                    width=tag_wrap_column,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                    subsequent_indent=" ",
+                )
+            )
             txt = txt[prop_width:]
     else:
         txt = re.sub(r"\n|\r|(\r\n)", "", txt)

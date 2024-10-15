@@ -117,24 +117,30 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
     def test_validate_wrapped_tag_lines(self):
-        info = {"External-Description":
-                ('BagIt is a set of hierarchical file layout conventions'
-                 ' designed to support storage and transfer of arbitrary'
-                 ' digital content.  A bag consists of a directory containing'
-                 ' the payload files and other accompanying metadata files'
-                 ' known as "tag" files.')}
+        info = {
+            "External-Description": (
+                "BagIt is a set of hierarchical file layout conventions"
+                " designed to support storage and transfer of arbitrary"
+                " digital content.  A bag consists of a directory containing"
+                " the payload files and other accompanying metadata files"
+                ' known as "tag" files.'
+            )
+        }
         bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=79)
         self.assertEqual(self.validate(bag, fast=True), True)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         self.assertRaises(bagit.BagValidationError, self.validate, bag, fast=True)
 
     def test_validate_wrapped_tag_lines_short(self):
-        info = {"External-Description":
-                ('BagIt is a set of hierarchical file layout conventions'
-                 ' designed to support storage and transfer of arbitrary'
-                 ' digital content.  A bag consists of a directory containing'
-                 ' the payload files and other accompanying metadata files'
-                 ' known as "tag" files.')}
+        info = {
+            "External-Description": (
+                "BagIt is a set of hierarchical file layout conventions"
+                " designed to support storage and transfer of arbitrary"
+                " digital content.  A bag consists of a directory containing"
+                " the payload files and other accompanying metadata files"
+                ' known as "tag" files.'
+            )
+        }
         bag = bagit.make_bag(self.tmpdir, bag_info=info, tag_wrap_column=18)
         self.assertEqual(self.validate(bag, fast=True), True)
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
