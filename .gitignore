@@ -1,12 +1,7 @@
-*.py[cod]
+*.pyc
 bench-data
 build
 dist
 MANIFEST
 bagit.egg-info
 .idea
-.eggs/
-.tox/
-*~
-*.mo
-test.log
