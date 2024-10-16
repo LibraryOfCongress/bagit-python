@@ -458,6 +458,15 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
             bag, *args, processes=2, **kwargs
         )
 
+    @mock.patch("bagit.multiprocessing.Pool")
+    def test_validate_pool_error(self, pool):
+        # Simulate the Pool constructor raising a RuntimeError.
+        pool.side_effect = RuntimeError
+        bag = bagit.make_bag(self.tmpdir)
+        # Previously, this raised UnboundLocalError if uninitialized.
+        with self.assertRaises(RuntimeError):
+            self.validate(bag)
+
 
 @mock.patch(
     "bagit.VERSION", new="1.5.4"
