@@ -932,8 +932,6 @@ class Bag(object):
             return True
         if os.path.expanduser(path) != path:
             return True
-        if os.path.expandvars(path) != path:
-            return True
         real_path = os.path.realpath(os.path.join(self.path, path))
         real_path = os.path.normpath(real_path)
         bag_path = os.path.realpath(self.path)
