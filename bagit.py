@@ -138,13 +138,27 @@ open_text_file = partial(codecs.open, encoding="utf-8", errors="strict")
 UNICODE_BYTE_ORDER_MARK = "\ufeff"
 
 
+def is_bag(bag_dir):
+    """
+    Return a boolean whether the given directory is already a bag.
+    """
+    try:
+        Bag(bag_dir)
+        return True
+    except BagError:
+        return False
+
+
 def make_bag(
-    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8"
+    bag_dir, bag_info=None, processes=1, checksums=None, checksum=None, encoding="utf-8", allow_nested_bag=False
 ):
     """
     Convert a given directory into a bag. You can pass in arbitrary
     key/value pairs to put into the bag-info.txt metadata file as
     the bag_info dictionary.
+
+    By default creating a bag of directory that is already a bag will raise an error.
+    Set allow_nested_bag to allow creation of nested bags.
     """
 
     if checksum is not None:
@@ -166,6 +180,13 @@ def make_bag(
         raise RuntimeError(
             _("Bagging a parent of the current directory is not supported")
         )
+
+    if not allow_nested_bag:
+        if is_bag(bag_dir):
+            raise RuntimeError(
+                _(f"The directory '{bag_dir}' is already a bag. "
+                  "Use allow_nested_bag=True to allow creation of a nested bag.")
+            )
 
     LOGGER.info(_("Creating bag for directory %s"), bag_dir)
 
