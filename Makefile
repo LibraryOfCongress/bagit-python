@@ -3,13 +3,13 @@ COMPILED_MESSAGES=$(patsubst %.po,%.mo, $(wildcard locale/*/LC_MESSAGES/bagit-py
 all: messages compile
 
 clean:
-	rm -f locale/*/LC_MESSAGES/*.mo
+	rm -f src/bagit/locale/*/LC_MESSAGES/*.mo
 
 messages:
-	xgettext --language=python -d bagit-python --no-location -o locale/bagit-python.pot bagit.py
+	xgettext --language=python -d bagit-python --no-location -o src/bagit/locale/bagit-python.pot src/bagit/__init__.py
 	# Until http://savannah.gnu.org/bugs/?20923 is fixed:
-	sed -i '' -e 's/CHARSET/UTF-8/g' locale/bagit-python.pot
-	msgmerge --no-fuzzy-matching --lang=en --output-file=locale/en/LC_MESSAGES/bagit-python.po locale/en/LC_MESSAGES/bagit-python.po locale/bagit-python.pot
+	sed -i '' -e 's/CHARSET/UTF-8/g' src/bagit/locale/bagit-python.pot
+	msgmerge --no-fuzzy-matching --lang=en --output-file=src/bagit/locale/en/LC_MESSAGES/bagit-python.po src/bagit/locale/en/LC_MESSAGES/bagit-python.po src/bagit/locale/bagit-python.pot
 
 %.mo: %.po
 	msgfmt -o $@ $<

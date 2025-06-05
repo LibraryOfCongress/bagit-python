@@ -523,7 +523,7 @@ class TestBag(SelfCleaningTestCase):
         tagmanifest_txt = slurp_text_file(
             j(self.tmpdir, "tagmanifest-md5.txt")
         ).splitlines()
-        self.assertIn("9e5ad981e0d29adc278f6a294b8c2aca bagit.txt", tagmanifest_txt)
+        self.assertIn("eaa2c609ff6371712f623f5531945b44 bagit.txt", tagmanifest_txt)
         self.assertIn(
             "a0ce6631a2a6d1a88e6d38453ccc72a5 manifest-md5.txt", tagmanifest_txt
         )
