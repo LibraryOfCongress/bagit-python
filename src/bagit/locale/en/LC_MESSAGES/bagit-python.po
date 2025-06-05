@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-06-26 10:28-0400\n"
+"POT-Creation-Date: 2025-06-05 12:14-0400\n"
 "PO-Revision-Date: 2017-04-27 15:02-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -233,20 +233,23 @@ msgid ""
 "%(found_byte_count)d bytes"
 msgstr ""
 
-msgid "Bag validation failed"
+msgid "Bag is incomplete"
 msgstr ""
 
 #, python-format
 msgid "Unable to calculate file hashes for %s"
 msgstr "Unable to calculate file hashes for %s"
 
+msgid "Bag validation failed"
+msgstr ""
+
 msgid "bagit.txt must not contain a byte-order mark"
 msgstr ""
 
 #, python-format
 msgid ""
-"%(path)s %(algorithm)s validation failed: expected=\"%(expected)s\" found="
-"\"%(found)s\""
+"%(path)s %(algorithm)s validation failed: expected=\"%(expected)s\" "
+"found=\"%(found)s\""
 msgstr ""
 
 #, python-format
@@ -352,15 +355,22 @@ msgstr ""
 msgid "bagit-python version %s"
 msgstr ""
 
-msgid "The number of processes must be 0 or greater"
+msgid "The number of processes must be greater than 0"
 msgstr ""
 
 msgid "--fast is only allowed as an option for --validate!"
 msgstr ""
 
+msgid "--completeness-only is only allowed as an option for --validate!"
+msgstr ""
+
 #, python-format
 msgid "%s valid according to Payload-Oxum"
 msgstr "%s valid according to Payload-Oxum"
+
+#, python-format
+msgid "%s is complete and valid according to Payload-Oxum"
+msgstr ""
 
 #, python-format
 msgid "%s is valid"

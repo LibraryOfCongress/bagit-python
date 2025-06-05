@@ -5,3 +5,5 @@ dist
 MANIFEST
 bagit.egg-info
 .idea
+uv.lock
+*.log

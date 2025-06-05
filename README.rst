@@ -219,23 +219,23 @@ Contributing to bagit-python development
     % git clone git://github.com/LibraryOfCongress/bagit-python.git
     % cd bagit-python
     # MAKE CHANGES
-    % python test.py
+    % uv run pytest
 
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-You can quickly run the tests using the built-in unittest framework:
+You can quickly run the tests using `uv <https://docs.astral.sh/uv/>`_.
 
 ::
 
-    python -m unittest discover
+    uv run pytest
 
 If you have Docker installed, you can run the tests under Linux inside a
 container:
 
 ::
 
-    % docker build -t bagit:latest . && docker run -it bagit:latest
+    docker build -t bagit:latest . && docker run -it bagit:latest
 
 Benchmarks
 ----------
@@ -246,7 +246,7 @@ bench utility:
 
 ::
 
-    % ./bench.py
+    ./utils/bench.py
 
 License
 -------
