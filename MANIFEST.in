@@ -1,7 +1,0 @@
-prune test-data
-exclude .*
-exclude Dockerfile
-exclude MANIFEST.in
-exclude test.py
-exclude bench.py
-recursive-include locale *.po *.mo
