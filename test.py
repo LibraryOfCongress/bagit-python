@@ -97,6 +97,31 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         # check valid with three manifests
         self.assertTrue(self.validate(bag, fast=True))
 
+    def test_is_bag_false_initially(self):
+        self.assertFalse(bagit.is_bag(self.tmpdir))
+
+    def test_is_bag_true_after_make_bag(self):
+        bagit.make_bag(self.tmpdir)
+        self.assertTrue(bagit.is_bag(self.tmpdir))
+
+    def test_make_nested_bag_without_flag(self):
+        bagit.make_bag(self.tmpdir)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            tmpdir = self.tmpdir
+            bagit.make_bag(tmpdir, allow_nested_bag=False)
+
+        expected_msg = (f"The directory '{tmpdir}' is already a bag. "
+                        "Use allow_nested_bag=True to allow creation of a nested bag.")
+        self.assertEqual(str(ctx.exception), expected_msg)
+
+    def test_make_nested_bag_with_flag(self):
+        bagit.make_bag(self.tmpdir)
+
+        bag = bagit.make_bag(self.tmpdir, allow_nested_bag=True)
+
+        self.assertIsInstance(bag, bagit.Bag)
+
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
