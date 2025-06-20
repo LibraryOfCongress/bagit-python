@@ -240,7 +240,7 @@ def make_bag(
             )
 
             LOGGER.info(_("Creating bagit.txt"))
-            txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
+            txt = """BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"""
             with open_text_file("bagit.txt", "w") as bagit_file:
                 bagit_file.write(txt)
 
@@ -1479,10 +1479,7 @@ def _make_parser():
 
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
-        _(
-            "Select the manifest algorithms to be used when creating bags"
-            " (default=%s)"
-        )
+        _("Select the manifest algorithms to be used when creating bags (default=%s)")
         % ", ".join(DEFAULT_CHECKSUMS),
     )
 
