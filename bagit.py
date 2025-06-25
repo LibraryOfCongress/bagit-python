@@ -1409,8 +1409,8 @@ def _encode_filename(s):
 
 
 def _decode_filename(s):
-    s = re.sub(r"%0D", "\r", s, re.IGNORECASE)
-    s = re.sub(r"%0A", "\n", s, re.IGNORECASE)
+    s = re.sub(r"%0D", "\r", s, flags=re.IGNORECASE)
+    s = re.sub(r"%0A", "\n", s, flags=re.IGNORECASE)
     return s
 
 
