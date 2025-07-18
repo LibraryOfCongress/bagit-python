@@ -1295,7 +1295,7 @@ def _walk(data_dir):
 def _check_can_bag(test_dir):
     """
     Scan the provided directory to ensure all files and directories can be read
-    and alldirectories can be written.
+    and all directories can be written.
 
     If there are any permission issues, a BagError is raised.
     """
