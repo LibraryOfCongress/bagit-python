@@ -178,100 +178,78 @@ def make_bag(
     old_dir = os.path.abspath(os.path.curdir)
 
     try:
-        # TODO: These two checks are currently redundant since an unreadable directory will also
-        #       often be unwritable, and this code will require review when we add the option to
-        #       bag to a destination other than the source. It would be nice if we could avoid
-        #       walking the directory tree more than once even if most filesystems will cache it
+        # An exception is raised if any permissions will prevent the bagging of this path
+        _check_can_bag(bag_dir)
 
-        unbaggable = _can_bag(bag_dir)
+        LOGGER.info(_("Creating data directory"))
 
-        if unbaggable:
-            LOGGER.error(
-                _("Unable to write to the following directories and files:\n%s"),
-                unbaggable,
-            )
-            raise BagError(_("Missing permissions to move all files and directories"))
+        # FIXME: if we calculate full paths we won't need to deal with changing directories
+        os.chdir(bag_dir)
+        cwd = os.getcwd()
+        temp_data = tempfile.mkdtemp(dir=cwd)
 
-        unreadable_dirs, unreadable_files = _can_read(bag_dir)
-
-        if unreadable_dirs or unreadable_files:
-            if unreadable_dirs:
-                LOGGER.error(
-                    _("The following directories do not have read permissions:\n%s"),
-                    unreadable_dirs,
-                )
-            if unreadable_files:
-                LOGGER.error(
-                    _("The following files do not have read permissions:\n%s"),
-                    unreadable_files,
-                )
-            raise BagError(
-                _("Read permissions are required to calculate file fixities")
-            )
-        else:
-            LOGGER.info(_("Creating data directory"))
-
-            # FIXME: if we calculate full paths we won't need to deal with changing directories
-            os.chdir(bag_dir)
-            cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=cwd)
-
-            for f in os.listdir("."):
-                if os.path.abspath(f) == temp_data:
-                    continue
-                new_f = os.path.join(temp_data, f)
-                LOGGER.info(
-                    _("Moving %(source)s to %(destination)s"),
-                    {"source": f, "destination": new_f},
-                )
-                os.rename(f, new_f)
-
+        for f in os.listdir("."):
+            if os.path.abspath(f) == temp_data:
+                continue
+            new_f = os.path.join(temp_data, f)
             LOGGER.info(
                 _("Moving %(source)s to %(destination)s"),
-                {"source": temp_data, "destination": "data"},
+                {"source": f, "destination": new_f},
             )
-            while True:
-                try:
-                    os.rename(temp_data, "data")
-                    break
-                except PermissionError as e:
-                    if hasattr(e, "winerror") and e.winerror == 5:
-                        LOGGER.warning(_("PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."))
-                        time.sleep(10)
-                    else:
-                        raise
+            os.rename(f, new_f)
 
-            # permissions for the payload directory should match those of the
-            # original directory
-            os.chmod("data", os.stat(cwd).st_mode)
+        LOGGER.info(
+            _("Moving %(source)s to %(destination)s"),
+            {"source": temp_data, "destination": "data"},
+        )
 
-            total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=checksums, encoding=encoding
+        while True:
+            try:
+                os.rename(temp_data, "data")
+                break
+            except PermissionError as e:
+                if hasattr(e, "winerror") and e.winerror == 5:
+                    LOGGER.warning(
+                        _(
+                            "PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."
+                        )
+                    )
+                    time.sleep(10)
+                else:
+                    raise
+
+        # permissions for the payload directory should match those of the
+        # original directory
+        os.chmod("data", os.stat(cwd).st_mode)
+
+        total_bytes, total_files = make_manifests(
+            "data", processes, algorithms=checksums, encoding=encoding
+        )
+
+        LOGGER.info(_("Creating bagit.txt"))
+        txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
+        with open_text_file("bagit.txt", "w") as bagit_file:
+            bagit_file.write(txt)
+
+        LOGGER.info(_("Creating bag-info.txt"))
+        if bag_info is None:
+            bag_info = {}
+
+        # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
+        if "Bagging-Date" not in bag_info:
+            bag_info["Bagging-Date"] = date.strftime(date.today(), "%Y-%m-%d")
+        if "Bag-Software-Agent" not in bag_info:
+            bag_info["Bag-Software-Agent"] = "bagit.py v%s <%s>" % (
+                VERSION,
+                PROJECT_URL,
             )
 
-            LOGGER.info(_("Creating bagit.txt"))
-            txt = """BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"""
-            with open_text_file("bagit.txt", "w") as bagit_file:
-                bagit_file.write(txt)
+        bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
+        _make_tag_file("bag-info.txt", bag_info)
 
-            LOGGER.info(_("Creating bag-info.txt"))
-            if bag_info is None:
-                bag_info = {}
+        for c in checksums:
+            _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
 
-            # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
-            if "Bagging-Date" not in bag_info:
-                bag_info["Bagging-Date"] = date.strftime(date.today(), "%Y-%m-%d")
-            if "Bag-Software-Agent" not in bag_info:
-                bag_info["Bag-Software-Agent"] = "bagit.py v%s <%s>" % (
-                    VERSION,
-                    PROJECT_URL,
-                )
-
-            bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
-            _make_tag_file("bag-info.txt", bag_info)
-
-            for c in checksums:
-                _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
     except Exception:
         LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
         raise
@@ -482,31 +460,7 @@ class Bag(object):
                 % self.path
             )
 
-        unbaggable = _can_bag(self.path)
-        if unbaggable:
-            LOGGER.error(
-                _(
-                    "Missing write permissions for the following directories and files:\n%s"
-                ),
-                unbaggable,
-            )
-            raise BagError(_("Missing permissions to move all files and directories"))
-
-        unreadable_dirs, unreadable_files = _can_read(self.path)
-        if unreadable_dirs or unreadable_files:
-            if unreadable_dirs:
-                LOGGER.error(
-                    _("The following directories do not have read permissions:\n%s"),
-                    unreadable_dirs,
-                )
-            if unreadable_files:
-                LOGGER.error(
-                    _("The following files do not have read permissions:\n%s"),
-                    unreadable_files,
-                )
-            raise BagError(
-                _("Read permissions are required to calculate file fixities")
-            )
+        _check_can_bag(self.path)
 
         # Change working directory to bag directory so helper functions work
         old_dir = os.path.abspath(os.path.curdir)
@@ -1338,47 +1292,69 @@ def _walk(data_dir):
             yield path
 
 
-def _can_bag(test_dir):
-    """Scan the provided directory for files which cannot be bagged due to insufficient permissions"""
-    unbaggable = []
+def _check_can_bag(test_dir):
+    """
+    Scan the provided directory to ensure all files and directories can be read
+    and alldirectories can be written.
 
+    If there are any permission issues, a BagError is raised.
+    """
     if not os.access(test_dir, os.R_OK):
-        # We cannot continue without permission to read the source directory
-        unbaggable.append(test_dir)
-        return unbaggable
+        LOGGER.error(_("Cannot read the source directory %s"), test_dir)
+        raise BagError(
+            _(
+                "Cannot read the source directory %s. Read permissions are "
+                "required to find files"
+            )
+            % test_dir
+        )
 
     if not os.access(test_dir, os.W_OK):
-        unbaggable.append(test_dir)
+        LOGGER.error(_("Cannot write to the source directory %s"), test_dir)
+        raise BagError(
+            _(
+                "Cannot write to the source directory %s. Write permissions "
+                "are required to move files within the bag"
+            )
+            % test_dir
+        )
 
-    for dirpath, dirnames, filenames in os.walk(test_dir):
-        for directory in dirnames:
+    for dirpath, directories, filenames in os.walk(test_dir, topdown=True):
+        for filename in filenames:
+            full_path = os.path.join(dirpath, filename)
+
+            if not os.access(full_path, os.R_OK):
+                LOGGER.error(_("Cannot read the file %s"), full_path)
+                raise BagError(
+                    _(
+                        "Cannot read the file %s. Read permissions are "
+                        "required to calculate file fixities"
+                    )
+                    % full_path
+                )
+
+        for directory in directories:
             full_path = os.path.join(dirpath, directory)
-            if not os.access(full_path, os.W_OK):
-                unbaggable.append(full_path)
 
-    return unbaggable
+            if not os.access(full_path, os.R_OK):
+                LOGGER.error(_("Cannot read the sub-directory %s"), full_path)
+                raise BagError(
+                    _(
+                        "Cannot read the sub-directory %s. Read permissions "
+                        "are required to find files"
+                    )
+                    % full_path
+                )
 
-
-def _can_read(test_dir):
-    """
-    returns ((unreadable_dirs), (unreadable_files))
-    """
-    unreadable_dirs = []
-    unreadable_files = []
-
-    if not os.access(test_dir, os.R_OK):
-        unreadable_dirs.append(test_dir)
-    else:
-        for dirpath, dirnames, filenames in os.walk(test_dir):
-            for dn in dirnames:
-                full_path = os.path.join(dirpath, dn)
-                if not os.access(full_path, os.R_OK):
-                    unreadable_dirs.append(full_path)
-            for fn in filenames:
-                full_path = os.path.join(dirpath, fn)
-                if not os.access(full_path, os.R_OK):
-                    unreadable_files.append(full_path)
-    return (tuple(unreadable_dirs), tuple(unreadable_files))
+            elif not os.access(full_path, os.W_OK):
+                LOGGER.error(_("Cannot write to the sub-directory %s"), full_path)
+                raise BagError(
+                    _(
+                        "Cannot write to the sub-directory %s. Write permissions "
+                        "are required to move files within the bag"
+                    )
+                    % full_path
+                )
 
 
 def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
@@ -1489,10 +1465,7 @@ def _make_parser():
 
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
-        _(
-            "Select the manifest algorithms to be used when creating bags"
-            " (default=%s)"
-        )
+        _("Select the manifest algorithms to be used when creating bags (default=%s)")
         % ", ".join(DEFAULT_CHECKSUMS),
     )
 
