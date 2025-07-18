@@ -174,7 +174,6 @@ def make_bag(
         LOGGER.error(_("Bag directory %s does not exist"), bag_dir)
         raise RuntimeError(_("Bag directory %s does not exist") % bag_dir)
 
-    # FIXME: we should do the permissions checks before changing directories
     old_dir = os.path.abspath(os.path.curdir)
 
     try:
