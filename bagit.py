@@ -12,6 +12,7 @@ import re
 import signal
 import sys
 import tempfile
+import time
 import unicodedata
 import warnings
 from collections import defaultdict
@@ -229,7 +230,16 @@ def make_bag(
                 _("Moving %(source)s to %(destination)s"),
                 {"source": temp_data, "destination": "data"},
             )
-            os.rename(temp_data, "data")
+            while True:
+                try:
+                    os.rename(temp_data, "data")
+                    break
+                except PermissionError as e:
+                    if hasattr(e, "winerror") and e.winerror == 5:
+                        LOGGER.warning(_("PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."))
+                        time.sleep(10)
+                    else:
+                        raise
 
             # permissions for the payload directory should match those of the
             # original directory
