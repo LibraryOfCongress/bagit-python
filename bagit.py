@@ -214,7 +214,8 @@ def make_bag(
             # FIXME: if we calculate full paths we won't need to deal with changing directories
             os.chdir(bag_dir)
             cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=cwd)
+            temp_data = os.path.join(cwd, next(tempfile._get_candidate_names()))
+            os.mkdir(temp_data)
 
             for f in os.listdir("."):
                 if os.path.abspath(f) == temp_data:
