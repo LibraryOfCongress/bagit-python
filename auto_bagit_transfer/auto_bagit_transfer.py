@@ -40,7 +40,7 @@ def check_dependencies():
     missing_deps = []
     
     try:
-        import bagit
+        import bagit  # noqa: F401
     except ImportError:
         missing_deps.append("bagit")
     
@@ -152,10 +152,9 @@ def is_folder_empty(folder_path):
 def is_existing_bag(folder_path):
     """Check if a folder is already a valid BagIt bag"""
     try:
-        import bagit
         bag = bagit.Bag(str(folder_path))
         return bag.is_valid()
-    except:
+    except Exception:
         return False
 
 def has_bag_structure(folder_path):
@@ -188,7 +187,7 @@ def create_bag_from_folder(folder_path, temp_dir, config, logger):
         }
         
         # Create the bag
-        bag = bagit.make_bag(
+        bagit.make_bag(
             str(temp_folder),
             bag_info=bag_info,
             checksums=checksums,
@@ -261,7 +260,7 @@ def rebag_existing_bag(bag_path, temp_dir, config, logger):
             logger.debug(f"Could not read original bag-info.txt: {e}")
         
         # Create the new bag
-        bag = bagit.make_bag(
+        bagit.make_bag(
             str(temp_folder),
             bag_info=bag_info,
             checksums=checksums,
@@ -412,7 +411,7 @@ def main():
                 else:
                     failed_transfers += 1
                 
-                logger.info(f"--- Completed processing: {folder.name} ---\n")
+                logger.info("--- Completed processing: %s ---\n", folder.name)
             
             # Process existing bags
             for bag_folder in existing_bags:
@@ -439,7 +438,7 @@ def main():
         
         # Summary
         total_processed = len(folders_to_transfer) + len(existing_bags)
-        logger.info(f"\n=== Transfer Summary ===")
+        logger.info("\n=== Transfer Summary ===")
         logger.info(f"Regular folders processed: {len(folders_to_transfer)}")
         logger.info(f"Existing bags re-bagged: {len(existing_bags)}")
         logger.info(f"Total items processed: {total_processed}")
