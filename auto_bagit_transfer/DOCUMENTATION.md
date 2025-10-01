@@ -34,6 +34,7 @@ The BagIt specification is widely used by libraries, archives, and institutions 
 - Transfer only SPECIFIC folders you choose
 - EXCLUDE certain folders you don't want
 - Skip empty folders automatically
+- **Handles existing BagIt bags** by re-bagging them with fresh checksums and validation
 
 ### 🔒 **Data Protection**
 
@@ -41,11 +42,14 @@ The BagIt specification is widely used by libraries, archives, and institutions 
 - Validates all files after transfer
 - Detects any corruption or missing files
 - Keeps original files safe (never modifies them)
+- **Automatically excludes system/hidden files** (macOS .DS_Store, ._files, Windows Thumbs.db, desktop.ini, etc.)
+- **Cross-platform hidden file detection** for clean, portable bags
 
 ### 📊 **Detailed Logging**
 
 - Records every action with timestamps
 - Shows success/failure for each folder
+- Provides detailed validation error messages for troubleshooting
 - Provides transfer statistics
 - Saves logs for future reference
 
@@ -60,6 +64,16 @@ The BagIt specification is widely used by libraries, archives, and institutions 
 - Use config files for repeated tasks
 - Override settings with command-line options
 - Customize metadata and processing options
+- **Configurable batch processing** for memory-efficient handling of large datasets
+- **Space-efficient processing** with automatic temporary file cleanup after each batch
+
+### 🚀 **Performance & Efficiency**
+
+- **Batch processing** to manage memory usage and disk space efficiently
+- **Default batch size of 1** for maximum space efficiency (configurable)
+- Automatic cleanup of temporary files after each batch
+- **Handles existing bags intelligently** by re-bagging with fresh validation
+- Processes regular folders and existing bags separately for optimal handling
 
 ## Usage
 
@@ -82,6 +96,9 @@ python auto_bagit_transfer.py --source "C:\Photos" --destination "D:\Backup" --d
 
 # Use config file
 python auto_bagit_transfer.py
+
+# Process in batches (default is 1 for space efficiency)
+python auto_bagit_transfer.py --source "C:\Photos" --destination "D:\Backup" --batch-size 5
 ```
 
 ### Configuration File
@@ -106,6 +123,7 @@ destination_path = D:\1_USA\AICIC\bagit\auto_transfer
 [BAGIT_OPTIONS]
 checksums = sha256,sha512
 processes = 4
+batch_size = 1
 
 [METADATA]
 source_organization = My Organization
@@ -125,6 +143,7 @@ Once configured, simply run `python auto_bagit_transfer.py` without any argument
 | `--dry-run`                     | Preview without transferring |
 | `--include-empty`               | Include empty folders        |
 | `--config FILE`                 | Use different config file    |
+| `--batch-size NUMBER`           | Process folders in batches (default: 1 for space efficiency)   |
 
 ## What Happens When You Run the Tool?
 
@@ -137,16 +156,19 @@ Once configured, simply run `python auto_bagit_transfer.py` without any argument
 ### Step 2: Folder Discovery
 
 - Scans source directory for folders
+- **Identifies existing BagIt bags** and regular folders separately
 - Applies your include/exclude filters
 - Skips empty folders (unless you say otherwise)
-- Shows you what will be processed
+- Shows you what will be processed (regular folders and existing bags)
 
-### Step 3: Bag Creation (for each folder)
+### Step 3: Batch Processing
 
-- Creates a temporary copy of the folder
+- **Processes folders in configurable batches** (default: 1 for space efficiency)
+- Creates temporary directory for each batch
+- **For regular folders:** Creates clean copy excluding hidden/system files, then bags
+- **For existing bags:** Extracts data directory, excludes hidden files, creates fresh bag
 - Calculates checksums for all files
-- Adds BagIt metadata
-- Creates the bag structure
+- Adds BagIt metadata with processing information
 
 ### Step 4: Transfer
 
@@ -155,11 +177,12 @@ Once configured, simply run `python auto_bagit_transfer.py` without any argument
 - Confirms all files arrived safely
 - Records success or failure
 
-### Step 5: Cleanup
+### Step 5: Cleanup & Summary
 
-- Removes temporary files
-- Shows transfer summary
-- Saves detailed log file
+- **Automatically removes temporary files after each batch**
+- Shows detailed transfer summary with separate counts for regular folders and re-bagged items
+- Provides success rate statistics
+- Saves comprehensive log file with batch processing details
 
 ## Output Structure
 
@@ -183,15 +206,81 @@ Creates timestamped logs (e.g., `auto_bagit_transfer_20250904_114137.log`) showi
 - Success/failure for each folder
 - Final transfer statistics
 
+## Batch Processing & Space Efficiency
+
+### Why Batch Processing?
+
+The tool uses **batch processing by default** to ensure efficient use of temporary disk space and system resources:
+
+- **Prevents temporary space exhaustion** - Only processes one folder at a time by default
+- **Memory efficient** - Doesn't load all folders into memory simultaneously  
+- **Automatic cleanup** - Removes temporary files after each batch
+- **Handles large datasets** - Can process thousands of folders without running out of space
+
+### How Batch Processing Works
+
+1. **Creates temporary directory** for current batch (e.g., `bagit_batch_1_`)
+2. **Processes folders in batch:**
+   - Regular folders: Creates clean copy (excluding hidden files) → bags → transfers
+   - Existing bags: Extracts data directory → excludes hidden files → creates fresh bag → transfers
+3. **Validates each transfer** with detailed error reporting
+4. **Cleans up temporary directory** completely before next batch
+5. **Moves to next batch** until all folders processed
+
+### Default Space-Efficient Settings
+
+```bash
+# Default behavior (batch size = 1, maximum space efficiency)
+python auto_bagit_transfer.py --source "SOURCE" --destination "DEST"
+
+# Process multiple folders per batch (if you have more temp space)
+python auto_bagit_transfer.py --batch-size 5 --source "SOURCE" --destination "DEST"
+
+# Set default in config.ini
+[BAGIT_OPTIONS]
+batch_size = 1
+```
+
+### Hidden File Exclusion
+
+The tool automatically excludes problematic system/hidden files that can cause validation issues:
+
+**macOS files excluded:**
+- `.DS_Store` (Finder metadata)
+- `._filename` (resource forks)
+- Files starting with `._`
+
+**Windows files excluded:**
+- `Thumbs.db` / `thumbs.db` (thumbnail cache)
+- `desktop.ini` (folder customization)
+- `folder.jpg`, `albumartsmall.jpg` (media metadata)
+
+**General exclusions:**
+- Hidden files starting with `.` (except in existing bag structure)
+
 ## Troubleshooting
 
-| Problem                      | Solution                                  |
-| ---------------------------- | ----------------------------------------- |
-| "Python not found"           | Install Python 3.x, ensure it's in PATH   |
-| "Source path does not exist" | Check path spelling and existence         |
-| "Permission denied"          | Run as Administrator or check permissions |
-| "Out of space"               | Bags need ~10% more space than originals  |
-| "Bag validation failed"      | Check storage/network, retry transfer     |
+| Problem                      | Solution                                                                |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| "Python not found"           | Install Python 3.x, ensure it's in PATH                                 |
+| "Source path does not exist" | Check path spelling and existence                                       |
+| "Permission denied"          | Run as Administrator or check permissions                               |
+| "Out of space"               | Default batch size of 1 should prevent this; check available temp space |
+| "Bag validation failed"      | Check detailed error in logs; tool now excludes problematic hidden files |
+
+### Cross-Platform Compatibility
+
+**Hidden File Handling:**
+The tool now **automatically excludes** problematic system files that previously caused validation issues:
+
+- **macOS:** `.DS_Store`, `._files`, resource forks automatically excluded
+- **Windows:** `Thumbs.db`, `desktop.ini`, media cache files automatically excluded  
+- **All platforms:** Generic hidden files (starting with `.`) excluded from data
+
+**Benefits:**
+- **Clean, portable bags** that work across different operating systems
+- **No more validation failures** due to hidden system files
+- **Consistent behavior** whether source is Windows, Mac, or Linux
 
 ## Safety & Best Practices
 
@@ -212,7 +301,7 @@ Creates timestamped logs (e.g., `auto_bagit_transfer_20250904_114137.log`) showi
 ## FAQ
 
 **Q: Can I stop and resume a transfer?**  
-A: No, restart from the beginning if interrupted.
+A: Yes! Check the destination directory to see which folders transferred successfully, then use `--exclude-folders` to skip completed ones or `--include-folders` to process only remaining ones.
 
 **Q: What about duplicate folder names?**  
 A: Tool automatically adds numbers (folder_1, folder_2, etc.)
@@ -221,7 +310,10 @@ A: Tool automatically adds numbers (folder_1, folder_2, etc.)
 A: Yes, with proper write permissions.
 
 **Q: How to verify successful transfer?**  
-A: Check log for "Success rate: 100.0%" and no errors.
+A: Check log for "Success rate: 100.0%" and detailed batch summaries showing successful transfers.
+
+**Q: What happens to existing BagIt bags in my source?**  
+A: The tool detects existing bags and re-bags them with fresh checksums and validation, excluding any hidden files that may have been added.
 
 ## Quick Reference
 
@@ -241,7 +333,17 @@ python auto_bagit_transfer.py --dry-run
 
 **Files needed:** `auto_bagit_transfer.py`, `config.ini`  
 **Dependencies:** `bagit-python` library (automatically installed)  
-**Creates:** BagIt-compliant bags, timestamped log files
+**Creates:** BagIt-compliant bags, timestamped log files with batch processing details
+
+### For Large Datasets
+
+```bash
+# Default space-efficient processing (recommended)
+python auto_bagit_transfer.py --source "SOURCE" --destination "DEST"
+
+# Process multiple folders per batch (if you have temp space)
+python auto_bagit_transfer.py --batch-size 5 --source "SOURCE" --destination "DEST"
+```
 
 ## About BagIt and Library of Congress
 
@@ -250,7 +352,7 @@ This tool implements the **BagIt File Packaging Format** (RFC 8493), a specifica
 ### Key Benefits of the BagIt Standard:
 
 - **Widely adopted** by libraries, archives, and digital preservation communities
-- **Platform independent** - works across different operating systems and storage systems  
+- **Platform independent** - works across different operating systems and storage systems
 - **Self-describing** - bags contain all necessary metadata and validation information
 - **Tamper evident** - any changes to files are immediately detectable
 - **Future-proof** - based on open standards and simple file formats
@@ -263,4 +365,4 @@ This tool implements the **BagIt File Packaging Format** (RFC 8493), a specifica
 
 ---
 
-*This tool is released under CC0 1.0 Universal (CC0 1.0) Public Domain Dedication, making it freely available for any use.*
+_This tool is released under CC0 1.0 Universal (CC0 1.0) Public Domain Dedication, making it freely available for any use._

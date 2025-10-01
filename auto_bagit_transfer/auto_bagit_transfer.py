@@ -71,7 +71,8 @@ def load_config(config_file='config.ini'):
         }
         config['BAGIT_OPTIONS'] = {
             'checksums': 'sha256,sha512',
-            'processes': '4'
+            'processes': '4',
+            'batch_size': '1'
         }
         config['METADATA'] = {
             'source_organization': 'Auto BagIt Transfer Tool',
@@ -79,6 +80,32 @@ def load_config(config_file='config.ini'):
             'bag_software_agent': 'auto_bagit_transfer.py'
         }
         return config
+
+def should_exclude_file(file_path):
+    """Check if a file should be excluded from bagging (cross-platform hidden/system files)"""
+    filename = file_path.name.lower()
+    
+    # macOS hidden files
+    if file_path.name.startswith('._'):
+        return True
+    if filename == '.DS_Store':
+        return True
+    
+    # Windows system files
+    if filename == 'thumbs.db' or filename == 'Thumbs.db':
+        return True
+    if filename == 'desktop.ini':
+        return True
+    if filename == 'folder.jpg':
+        return True
+    if filename == 'albumartsmall.jpg':
+        return True
+    
+    # General hidden files (starting with dot)
+    if file_path.name.startswith('.') and len(file_path.name) > 1:
+        return True
+    
+    return False
 
 def setup_logging():
     """Set up logging configuration"""
@@ -164,14 +191,33 @@ def has_bag_structure(folder_path):
     has_required_files = all((folder_path / f).exists() for f in required_files)
     return has_data_dir and has_required_files
 
+def copy_folder_excluding_hidden(src, dst, logger):
+    """Copy folder contents excluding hidden/system files from both Windows and macOS"""
+    dst.mkdir(parents=True, exist_ok=True)
+    
+    for item in src.rglob('*'):
+        if item.is_file() and not should_exclude_file(item):
+            # Calculate relative path from source
+            rel_path = item.relative_to(src)
+            dest_file = dst / rel_path
+            
+            # Create parent directories if needed
+            dest_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Copy the file
+            shutil.copy2(item, dest_file)
+            logger.debug(f"Copied: {rel_path}")
+        elif item.is_file():
+            logger.debug(f"Excluded: {item.relative_to(src)} (hidden/system file)")
+
 def create_bag_from_folder(folder_path, temp_dir, config, logger):
     """Create a bag from a folder"""
     try:
         logger.info(f"Creating bag for folder: {folder_path.name}")
         
-        # Create a temporary copy of the folder for bagging
+        # Create a temporary copy of the folder for bagging, excluding hidden files
         temp_folder = temp_dir / folder_path.name
-        shutil.copytree(folder_path, temp_folder)
+        copy_folder_excluding_hidden(folder_path, temp_folder, logger)
         
         # Get configuration values
         checksums = [alg.strip() for alg in config.get('BAGIT_OPTIONS', 'checksums').split(',')]
@@ -209,8 +255,12 @@ def rebag_existing_bag(bag_path, temp_dir, config, logger):
         # Validate the existing bag first
         try:
             existing_bag = bagit.Bag(str(bag_path))
-            if not existing_bag.is_valid():
-                logger.warning(f"Existing bag {bag_path.name} is not valid, proceeding anyway...")
+            try:
+                existing_bag.validate()
+                logger.info(f"Existing bag {bag_path.name} is valid")
+            except bagit.BagValidationError as e:
+                logger.warning(f"Existing bag {bag_path.name} validation failed: {str(e)} - proceeding to re-bag anyway...")
+
         except Exception as e:
             logger.warning(f"Could not validate existing bag {bag_path.name}: {e}")
         
@@ -218,14 +268,10 @@ def rebag_existing_bag(bag_path, temp_dir, config, logger):
         temp_folder = temp_dir / bag_path.name
         temp_folder.mkdir()
         
-        # Copy only the data directory contents (not the bag structure)
+        # Copy only the data directory contents (not the bag structure), excluding hidden files
         data_dir = bag_path / 'data'
         if data_dir.exists():
-            for item in data_dir.iterdir():
-                if item.is_dir():
-                    shutil.copytree(item, temp_folder / item.name)
-                else:
-                    shutil.copy2(item, temp_folder / item.name)
+            copy_folder_excluding_hidden(data_dir, temp_folder, logger)
         else:
             logger.warning(f"No data directory found in bag {bag_path.name}")
             return None
@@ -274,6 +320,60 @@ def rebag_existing_bag(bag_path, temp_dir, config, logger):
         logger.error(f"Failed to re-bag {bag_path.name}: {str(e)}")
         return None
 
+def process_batch(folders_batch, temp_dir, destination_path, config, logger, batch_num, total_batches):
+    """Process a batch of folders"""
+    logger.info(f"\n=== Processing Batch {batch_num}/{total_batches} ({len(folders_batch)} folders) ===")
+    
+    batch_successful = 0
+    batch_failed = 0
+    
+    for folder in folders_batch:
+        logger.info(f"\n--- Processing folder: {folder.name} ---")
+        
+        # Create bag
+        bag_path = create_bag_from_folder(folder, temp_dir, config, logger)
+        
+        if bag_path:
+            # Transfer bag
+            if transfer_bag(bag_path, destination_path, logger):
+                batch_successful += 1
+            else:
+                batch_failed += 1
+        else:
+            batch_failed += 1
+        
+        logger.info(f"--- Completed processing: {folder.name} ---")
+    
+    logger.info(f"=== Batch {batch_num} Summary: {batch_successful} successful, {batch_failed} failed ===\n")
+    return batch_successful, batch_failed
+
+def process_existing_bags_batch(bags_batch, temp_dir, destination_path, config, logger, batch_num, total_batches):
+    """Process a batch of existing bags"""
+    logger.info(f"\n=== Re-bagging Batch {batch_num}/{total_batches} ({len(bags_batch)} existing bags) ===")
+    
+    batch_successful = 0
+    batch_failed = 0
+    
+    for bag_folder in bags_batch:
+        logger.info(f"\n--- Re-bagging existing bag: {bag_folder.name} ---")
+        
+        # Re-bag the existing bag
+        bag_path = rebag_existing_bag(bag_folder, temp_dir, config, logger)
+        
+        if bag_path:
+            # Transfer bag
+            if transfer_bag(bag_path, destination_path, logger):
+                batch_successful += 1
+            else:
+                batch_failed += 1
+        else:
+            batch_failed += 1
+        
+        logger.info(f"--- Completed re-bagging: {bag_folder.name} ---")
+    
+    logger.info(f"=== Re-bagging Batch {batch_num} Summary: {batch_successful} successful, {batch_failed} failed ===\n")
+    return batch_successful, batch_failed
+
 def transfer_bag(bag_path, destination_path, logger):
     """Transfer the bagged folder to destination"""
     try:
@@ -289,15 +389,27 @@ def transfer_bag(bag_path, destination_path, logger):
         logger.info(f"Transferring bag to: {dest_bag_path}")
         shutil.copytree(bag_path, dest_bag_path)
         
-        # Validate the transferred bag
+        # Validate the transferred bag with detailed error reporting
         try:
             transferred_bag = bagit.Bag(str(dest_bag_path))
-            if transferred_bag.is_valid():
-                logger.info(f"Successfully transferred and validated bag: {dest_bag_path.name}")
-                return True
-            else:
-                logger.error(f"Transferred bag failed validation: {dest_bag_path.name}")
-                return False
+            transferred_bag.validate()  # This will raise if invalid
+            logger.info(f"Successfully transferred and validated bag: {dest_bag_path.name}")
+            return True
+        except bagit.BagValidationError as e:
+            logger.error(f"Transferred bag failed validation: {dest_bag_path.name} - Details: {str(e)}")
+            
+            # Additional debugging for macOS hidden file issues
+            data_dir = dest_bag_path / 'data'
+            if data_dir.exists():
+                logger.debug(f"Files found in data directory of {dest_bag_path.name}:")
+                try:
+                    for item in data_dir.rglob('*'):
+                        if item.is_file():
+                            logger.debug(f"  - {item.relative_to(data_dir)}")
+                except Exception as debug_e:
+                    logger.debug(f"Could not list data directory contents: {debug_e}")
+            
+            return False
         except Exception as e:
             logger.error(f"Error validating transferred bag {dest_bag_path.name}: {str(e)}")
             return False
@@ -323,6 +435,8 @@ def main():
                        help='Exclude these folders from transfer (space-separated list)')
     parser.add_argument('--include-empty', action='store_true',
                        help='Include empty folders in transfer (default: skip empty folders)')
+    parser.add_argument('--batch-size', type=int, default=1,
+                       help='Number of folders to process in each batch (default: 1 for space efficiency)')
     
     args = parser.parse_args()
     
@@ -346,6 +460,7 @@ def main():
     logger.info("Starting automated BagIt transfer process")
     logger.info(f"Source: {source_path_str}")
     logger.info(f"Destination: {destination_path_str}")
+    logger.info(f"Batch size: {args.batch_size} (using small batches for space efficiency)")
     
     try:
         # Validate paths
@@ -387,58 +502,64 @@ def main():
             logger.info("Dry run mode - no actual transfers will be performed")
             return
         
-        # Create temporary directory for bag creation
-        temp_dir = Path(tempfile.mkdtemp(prefix="bagit_transfer_"))
-        logger.info(f"Using temporary directory: {temp_dir}")
-        
         successful_transfers = 0
         failed_transfers = 0
         
-        try:
-            # Process regular folders
-            for folder in folders_to_transfer:
-                logger.info(f"\n--- Processing folder: {folder.name} ---")
-                
-                # Create bag
-                bag_path = create_bag_from_folder(folder, temp_dir, config, logger)
-                
-                if bag_path:
-                    # Transfer bag
-                    if transfer_bag(bag_path, destination_path, logger):
-                        successful_transfers += 1
-                    else:
-                        failed_transfers += 1
-                else:
-                    failed_transfers += 1
-                
-                logger.info("--- Completed processing: %s ---\n", folder.name)
+        # Process regular folders in batches
+        if folders_to_transfer:
+            batch_size = args.batch_size if args.batch_size != 1 else config.getint('BAGIT_OPTIONS', 'batch_size', fallback=1)
+            total_batches = (len(folders_to_transfer) + batch_size - 1) // batch_size
+            logger.info(f"\nProcessing {len(folders_to_transfer)} regular folders in {total_batches} batches of {batch_size}")
             
-            # Process existing bags
-            for bag_folder in existing_bags:
-                logger.info(f"\n--- Re-bagging existing bag: {bag_folder.name} ---")
+            for i in range(0, len(folders_to_transfer), batch_size):
+                batch = folders_to_transfer[i:i + batch_size]
+                batch_num = (i // batch_size) + 1
                 
-                # Re-bag the existing bag
-                bag_path = rebag_existing_bag(bag_folder, temp_dir, config, logger)
+                # Create temporary directory for this batch
+                temp_dir = Path(tempfile.mkdtemp(prefix=f"bagit_batch_{batch_num}_"))
+                logger.info(f"Using temporary directory for batch {batch_num}: {temp_dir}")
                 
-                if bag_path:
-                    # Transfer bag
-                    if transfer_bag(bag_path, destination_path, logger):
-                        successful_transfers += 1
-                    else:
-                        failed_transfers += 1
-                else:
-                    failed_transfers += 1
-                
-                logger.info(f"--- Completed re-bagging: {bag_folder.name} ---\n")
+                try:
+                    batch_successful, batch_failed = process_batch(
+                        batch, temp_dir, destination_path, config, logger, batch_num, total_batches
+                    )
+                    successful_transfers += batch_successful
+                    failed_transfers += batch_failed
+                    
+                finally:
+                    # Clean up temporary directory after each batch
+                    logger.info(f"Cleaning up temporary directory for batch {batch_num}: {temp_dir}")
+                    shutil.rmtree(temp_dir, ignore_errors=True)
         
-        finally:
-            # Clean up temporary directory
-            logger.info(f"Cleaning up temporary directory: {temp_dir}")
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        # Process existing bags in batches
+        if existing_bags:
+            batch_size = args.batch_size if args.batch_size != 1 else config.getint('BAGIT_OPTIONS', 'batch_size', fallback=1)
+            total_batches = (len(existing_bags) + batch_size - 1) // batch_size
+            logger.info(f"\nRe-bagging {len(existing_bags)} existing bags in {total_batches} batches of {batch_size}")
+            
+            for i in range(0, len(existing_bags), batch_size):
+                batch = existing_bags[i:i + batch_size]
+                batch_num = (i // batch_size) + 1
+                
+                # Create temporary directory for this batch
+                temp_dir = Path(tempfile.mkdtemp(prefix=f"bagit_rebag_batch_{batch_num}_"))
+                logger.info(f"Using temporary directory for re-bagging batch {batch_num}: {temp_dir}")
+                
+                try:
+                    batch_successful, batch_failed = process_existing_bags_batch(
+                        batch, temp_dir, destination_path, config, logger, batch_num, total_batches
+                    )
+                    successful_transfers += batch_successful
+                    failed_transfers += batch_failed
+                    
+                finally:
+                    # Clean up temporary directory after each batch
+                    logger.info(f"Cleaning up temporary directory for re-bagging batch {batch_num}: {temp_dir}")
+                    shutil.rmtree(temp_dir, ignore_errors=True)
         
         # Summary
         total_processed = len(folders_to_transfer) + len(existing_bags)
-        logger.info("\n=== Transfer Summary ===")
+        logger.info(f"\n=== Transfer Summary ===")
         logger.info(f"Regular folders processed: {len(folders_to_transfer)}")
         logger.info(f"Existing bags re-bagged: {len(existing_bags)}")
         logger.info(f"Total items processed: {total_processed}")
