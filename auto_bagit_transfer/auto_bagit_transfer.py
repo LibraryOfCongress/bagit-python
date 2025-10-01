@@ -559,7 +559,7 @@ def main():
         
         # Summary
         total_processed = len(folders_to_transfer) + len(existing_bags)
-        logger.info(f"\n=== Transfer Summary ===")
+        logger.info("=== Transfer Summary ===")
         logger.info(f"Regular folders processed: {len(folders_to_transfer)}")
         logger.info(f"Existing bags re-bagged: {len(existing_bags)}")
         logger.info(f"Total items processed: {total_processed}")
