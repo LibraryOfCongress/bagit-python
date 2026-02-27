@@ -236,7 +236,11 @@ def make_bag(
                     break
                 except PermissionError as e:
                     if hasattr(e, "winerror") and e.winerror == 5:
-                        LOGGER.warning(_("PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."))
+                        LOGGER.warning(
+                            _(
+                                "PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."
+                            )
+                        )
                         time.sleep(10)
                     else:
                         raise
@@ -1124,12 +1128,12 @@ def _calc_hashes(args):
     full_path = os.path.join(base_path, rel_path)
 
     # Create a clone of the default empty hash objects:
-    f_hashers = dict((alg, hashlib.new(alg)) for alg in hashes if alg in algorithms)
+    f_hashers = {alg: hashlib.new(alg) for alg in hashes if alg in algorithms}
 
     try:
         f_hashes = _calculate_file_hashes(full_path, f_hashers)
     except BagValidationError as e:
-        f_hashes = dict((alg, str(e)) for alg in f_hashers.keys())
+        f_hashes = {alg: str(e) for alg in f_hashers}
 
     return rel_path, f_hashes, hashes
 

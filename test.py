@@ -1157,10 +1157,9 @@ class TestCLI(SelfCleaningTestCase):
         os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
         testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
@@ -1172,10 +1171,9 @@ class TestCLI(SelfCleaningTestCase):
         bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", "--fast", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(
@@ -1206,10 +1204,9 @@ class TestCLI(SelfCleaningTestCase):
 
         testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
@@ -1221,10 +1218,9 @@ class TestCLI(SelfCleaningTestCase):
         bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", "--completeness-only", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual(
@@ -1242,10 +1238,9 @@ class TestCLI(SelfCleaningTestCase):
 
         testargs = ["bagit.py", "--validate", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn("Bag validation failed", captured.records[-1].getMessage())
@@ -1254,10 +1249,9 @@ class TestCLI(SelfCleaningTestCase):
         bagit.make_bag(self.tmpdir)
         testargs = ["bagit.py", "--validate", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 0)
         self.assertEqual("%s is valid" % self.tmpdir, captured.records[-1].getMessage())
@@ -1267,10 +1261,9 @@ class TestCLI(SelfCleaningTestCase):
 
         testargs = ["bagit.py", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         self.assertEqual(cm.exception.code, 1)
         self.assertIn(
@@ -1281,10 +1274,9 @@ class TestCLI(SelfCleaningTestCase):
     def test_create_bag(self):
         testargs = ["bagit.py", self.tmpdir]
 
-        with self.assertLogs() as captured:
-            with self.assertRaises(SystemExit) as cm:
-                with mock.patch.object(sys, "argv", testargs):
-                    bagit.main()
+        with self.assertLogs() as captured, self.assertRaises(SystemExit) as cm:
+            with mock.patch.object(sys, "argv", testargs):
+                bagit.main()
 
         for rec in captured.records:
             print(rec.getMessage())
