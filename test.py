@@ -641,44 +641,62 @@ class TestBag(SelfCleaningTestCase):
             bagit.make_bag(self.tmpdir, checksum=["sha256"])
 
         self.assertEqual(
-            "Missing permissions to move all files and directories",
+            "Cannot read the source directory %s. Read permissions are "
+            "required to find files" % self.tmpdir,
             str(error_catcher.exception),
         )
 
     def test_make_bag_with_unreadable_subdirectory(self):
         # We'll set this write-only to exercise the second permission check in make_bag:
-        os.chmod(j(self.tmpdir, "loc"), 0o200)
+        dir_path = j(self.tmpdir, "loc")
+        os.chmod(dir_path, 0o200)
 
         with self.assertRaises(bagit.BagError) as error_catcher:
             bagit.make_bag(self.tmpdir, checksum=["sha256"])
 
         self.assertEqual(
-            "Read permissions are required to calculate file fixities",
+            "Cannot read the sub-directory %s. Read permissions are required "
+            "to find files" % dir_path,
             str(error_catcher.exception),
         )
 
     def test_make_bag_with_unwritable_source(self):
-        path_suffixes = ("", "loc")
-
-        for path_suffix in reversed(path_suffixes):
-            os.chmod(j(self.tmpdir, path_suffix), 0o500)
+        # 500 is write + execute
+        os.chmod(self.tmpdir, 0o500)
 
         with self.assertRaises(bagit.BagError) as error_catcher:
             bagit.make_bag(self.tmpdir, checksum=["sha256"])
 
         self.assertEqual(
-            "Missing permissions to move all files and directories",
+            "Cannot write to the source directory %s. Write permissions "
+            "are required to move files within the bag" % self.tmpdir,
+            str(error_catcher.exception),
+        )
+
+    def test_make_bag_with_unwritable_subdirectory(self):
+        # 400 is read-only
+        dir_path = j(self.tmpdir, "loc")
+        os.chmod(dir_path, 0o400)
+
+        with self.assertRaises(bagit.BagError) as error_catcher:
+            bagit.make_bag(self.tmpdir, checksum=["sha256"])
+
+        self.assertEqual(
+            "Cannot write to the sub-directory %s. Write permissions are "
+            "required to move files within the bag" % dir_path,
             str(error_catcher.exception),
         )
 
     def test_make_bag_with_unreadable_file(self):
-        os.chmod(j(self.tmpdir, "loc", "2478433644_2839c5e8b8_o_d.jpg"), 0)
+        file_path = j(self.tmpdir, "loc", "2478433644_2839c5e8b8_o_d.jpg")
+        os.chmod(file_path, 0)
 
         with self.assertRaises(bagit.BagError) as error_catcher:
             bagit.make_bag(self.tmpdir, checksum=["sha256"])
 
         self.assertEqual(
-            "Read permissions are required to calculate file fixities",
+            "Cannot read the file %s. Read permissions are required to "
+            "calculate file fixities" % file_path,
             str(error_catcher.exception),
         )
 
@@ -834,13 +852,15 @@ Tag-File-Character-Encoding: UTF-8
     def test_save_bag_with_unwritable_file(self):
         bag = bagit.make_bag(self.tmpdir, checksum=["sha256"])
 
-        os.chmod(os.path.join(self.tmpdir, "bag-info.txt"), 0)
+        file_path = j(self.tmpdir, "bag-info.txt")
+        os.chmod(file_path, 0)
 
         with self.assertRaises(bagit.BagError) as error_catcher:
             bag.save()
 
         self.assertEqual(
-            "Read permissions are required to calculate file fixities",
+            "Cannot read the file %s. Read permissions are required to "
+            "calculate file fixities" % file_path,
             str(error_catcher.exception),
         )
 
