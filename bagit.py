@@ -1489,10 +1489,7 @@ def _make_parser():
 
     checksum_args = parser.add_argument_group(
         _("Checksum Algorithms"),
-        _(
-            "Select the manifest algorithms to be used when creating bags"
-            " (default=%s)"
-        )
+        _("Select the manifest algorithms to be used when creating bags (default=%s)")
         % ", ".join(DEFAULT_CHECKSUMS),
     )
 
