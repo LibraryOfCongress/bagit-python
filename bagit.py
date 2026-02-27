@@ -946,7 +946,7 @@ class Bag(object):
         real_path = os.path.normpath(real_path)
         bag_path = os.path.realpath(self.path)
         bag_path = os.path.normpath(bag_path)
-        common = os.path.commonprefix((bag_path, real_path))
+        common = os.path.commonpath((bag_path, real_path))
         return not (common == bag_path)
 
 
