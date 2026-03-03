@@ -32,6 +32,34 @@ Homepage = "https://libraryofcongress.github.io/bagit-python/"
 [tool.ruff]
 target-version = "py39"
 
+lint.select = [
+    "A",     # flake8-builtins
+    "ASYNC", # flake8-async
+    "B",     # flake8-bugbear
+    "BLE",   # flake8-blind-except
+    "C4",    # flake8-comprehensions
+    "ERA",   # eradicate
+    "EXE",   # flake8-executable
+    "F",     # Pyflakes
+    "G",     # flake8-logging-format
+    "ICN",   # flake8-import-conventions
+    "INP",   # flake8-no-pep420
+    "INT",   # flake8-gettext
+    "ISC",   # flake8-implicit-str-concat
+    "N",     # pep8-naming
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "PYI",   # flake8-pyi
+    "RET",   # flake8-return
+    "RSE",   # flake8-raise
+    "RUF",   # Ruff-specific rules
+    "TCH",   # flake8-type-checking
+    "TID",   # flake8-tidy-imports
+    "UP",    # pyupgrade
+    "W",     # pycodestyle
+]
+
+
 [tool.isort]
 line_length = 110
 default_section = "THIRDPARTY"
