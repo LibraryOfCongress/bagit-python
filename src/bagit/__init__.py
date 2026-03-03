@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import argparse
 import codecs
@@ -208,74 +207,73 @@ def make_bag(
             raise BagError(
                 _("Read permissions are required to calculate file fixities")
             )
-        else:
-            LOGGER.info(_("Creating data directory"))
+        LOGGER.info(_("Creating data directory"))
 
-            # FIXME: if we calculate full paths we won't need to deal with changing directories
-            os.chdir(bag_dir)
-            cwd = os.getcwd()
-            temp_data = tempfile.mkdtemp(dir=cwd)
+        # FIXME: if we calculate full paths we won't need to deal with changing directories
+        os.chdir(bag_dir)
+        cwd = os.getcwd()
+        temp_data = tempfile.mkdtemp(dir=cwd)
 
-            for f in os.listdir("."):
-                if os.path.abspath(f) == temp_data:
-                    continue
-                new_f = os.path.join(temp_data, f)
-                LOGGER.info(
-                    _("Moving %(source)s to %(destination)s"),
-                    {"source": f, "destination": new_f},
-                )
-                os.rename(f, new_f)
-
+        for f in os.listdir("."):
+            if os.path.abspath(f) == temp_data:
+                continue
+            new_f = os.path.join(temp_data, f)
             LOGGER.info(
                 _("Moving %(source)s to %(destination)s"),
-                {"source": temp_data, "destination": "data"},
+                {"source": f, "destination": new_f},
             )
-            while True:
-                try:
-                    os.rename(temp_data, "data")
-                    break
-                except PermissionError as e:
-                    if hasattr(e, "winerror") and e.winerror == 5:
-                        LOGGER.warning(
-                            _(
-                                "PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."
-                            )
+            os.rename(f, new_f)
+
+        LOGGER.info(
+            _("Moving %(source)s to %(destination)s"),
+            {"source": temp_data, "destination": "data"},
+        )
+        while True:
+            try:
+                os.rename(temp_data, "data")
+                break
+            except PermissionError as e:
+                if hasattr(e, "winerror") and e.winerror == 5:
+                    LOGGER.warning(
+                        _(
+                            "PermissionError [WinError 5] when renaming temp folder. Retrying in 10 seconds..."
                         )
-                        time.sleep(10)
-                    else:
-                        raise
+                    )
+                    time.sleep(10)
+                else:
+                    raise
 
-            # permissions for the payload directory should match those of the
-            # original directory
-            os.chmod("data", os.stat(cwd).st_mode)
+        # permissions for the payload directory should match those of the
+        # original directory
+        os.chmod("data", os.stat(cwd).st_mode)
 
-            total_bytes, total_files = make_manifests(
-                "data", processes, algorithms=checksums, encoding=encoding
+        total_bytes, total_files = make_manifests(
+            "data", processes, algorithms=checksums, encoding=encoding
+        )
+
+        LOGGER.info(_("Creating bagit.txt"))
+        txt = """BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"""
+        with open_text_file("bagit.txt", "w") as bagit_file:
+            bagit_file.write(txt)
+
+        LOGGER.info(_("Creating bag-info.txt"))
+        if bag_info is None:
+            bag_info = {}
+
+        # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
+        if "Bagging-Date" not in bag_info:
+            bag_info["Bagging-Date"] = date.strftime(date.today(), "%Y-%m-%d")
+        if "Bag-Software-Agent" not in bag_info:
+            bag_info["Bag-Software-Agent"] = "bagit.py v%s <%s>" % (
+                VERSION,
+                PROJECT_URL,
             )
 
-            LOGGER.info(_("Creating bagit.txt"))
-            txt = """BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n"""
-            with open_text_file("bagit.txt", "w") as bagit_file:
-                bagit_file.write(txt)
+        bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
+        _make_tag_file("bag-info.txt", bag_info)
 
-            LOGGER.info(_("Creating bag-info.txt"))
-            if bag_info is None:
-                bag_info = {}
-
-            # allow 'Bagging-Date' and 'Bag-Software-Agent' to be overidden
-            if "Bagging-Date" not in bag_info:
-                bag_info["Bagging-Date"] = date.strftime(date.today(), "%Y-%m-%d")
-            if "Bag-Software-Agent" not in bag_info:
-                bag_info["Bag-Software-Agent"] = "bagit.py v%s <%s>" % (
-                    VERSION,
-                    PROJECT_URL,
-                )
-
-            bag_info["Payload-Oxum"] = "%s.%s" % (total_bytes, total_files)
-            _make_tag_file("bag-info.txt", bag_info)
-
-            for c in checksums:
-                _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
+        for c in checksums:
+            _make_tagmanifest_file(c, bag_dir, encoding="utf-8")
     except Exception:
         LOGGER.exception(_("An error occurred creating a bag in %s"), bag_dir)
         raise
@@ -285,14 +283,14 @@ def make_bag(
     return Bag(bag_dir)
 
 
-class Bag(object):
+class Bag:
     """A representation of a bag."""
 
     valid_files = ["bagit.txt", "fetch.txt"]
     valid_directories = ["data"]
 
     def __init__(self, path):
-        super(Bag, self).__init__()
+        super().__init__()
         self.tags = {}
         self.info = {}
         #: Dictionary of manifest entries and the checksum values for each
@@ -723,8 +721,7 @@ class Bag(object):
                             )
                             if self.version_info >= (1,):
                                 raise BagError(msg % warning_ctx)
-                            else:
-                                LOGGER.warning(msg, warning_ctx)
+                            LOGGER.warning(msg, warning_ctx)
                         else:
                             raise BagError(
                                 _(
@@ -960,7 +957,7 @@ class BagError(Exception):
 
 class BagValidationError(BagError):
     def __init__(self, message, details=None):
-        super(BagValidationError, self).__init__()
+        super().__init__()
 
         if details is None:
             details = []
@@ -977,14 +974,14 @@ class BagValidationError(BagError):
 
 class ManifestErrorDetail(BagError):
     def __init__(self, path):
-        super(ManifestErrorDetail, self).__init__()
+        super().__init__()
 
         self.path = path
 
 
 class ChecksumMismatch(ManifestErrorDetail):
     def __init__(self, path, algorithm=None, expected=None, found=None):
-        super(ChecksumMismatch, self).__init__(path)
+        super().__init__(path)
 
         self.path = path
         self.algorithm = algorithm
@@ -1021,7 +1018,7 @@ class FileNormalizationConflict(BagError):
     """
 
     def __init__(self, file_a, file_b):
-        super(FileNormalizationConflict, self).__init__()
+        super().__init__()
 
         self.file_a = file_a
         self.file_b = file_b
@@ -1079,8 +1076,7 @@ def build_unicode_normalized_lookup_dict(filenames):
         normalized_filename = normalize_unicode(filename)
         if normalized_filename in output:
             raise FileNormalizationConflict(filename, output[normalized_filename])
-        else:
-            output[normalized_filename] = filename
+        output[normalized_filename] = filename
 
     return output
 
@@ -1153,7 +1149,7 @@ def _calculate_file_hashes(full_path, f_hashers):
                     break
                 for i in f_hashers.values():
                     i.update(block)
-    except (OSError, IOError) as e:
+    except OSError as e:
         raise BagValidationError(
             _("Could not read %(filename)s: %(error)s")
             % {"filename": full_path, "error": str(e)}
