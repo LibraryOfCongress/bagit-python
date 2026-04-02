@@ -1,10 +1,13 @@
 name: "PyPI releases"
+permissions: {}
 
 on: release
 
 jobs:
     build_sdist:
         name: Build Python source distribution
+        permissions:
+            contents: read
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
@@ -19,14 +22,14 @@ jobs:
     pypi-publish:
         name: Upload release to PyPI
         if: github.event_name == 'release' && github.event.action == 'published'
+        permissions:
+            id-token: write
         needs:
             - build_sdist
         runs-on: ubuntu-latest
         environment:
             name: pypi
             url: https://pypi.org/p/bagit
-        permissions:
-            id-token: write
         steps:
             - uses: actions/download-artifact@v4
               with:
