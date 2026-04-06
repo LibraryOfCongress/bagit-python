@@ -131,25 +131,9 @@ DEFAULT_CHECKSUMS = ["sha256", "sha512"]
 #: Block size used when reading files for hashing:
 HASH_BLOCK_SIZE = 512 * 1024
 
-
-def open_text_file(filename, mode="r", encoding="utf-8", errors="strict"):
-    # Open the underlying file in binary mode so the codec wrapper keeps codecs.open() behavior without its deprecation.
-    binary_mode = mode.replace("t", "")
-    if "b" not in binary_mode:
-        binary_mode += "b"
-
-    stream = open(filename, binary_mode)
-    if "r" in mode and all(flag not in mode for flag in ("w", "a", "+")):
-        wrapped = codecs.getreader(encoding)(stream, errors=errors)
-    else:
-        wrapped = codecs.getwriter(encoding)(stream, errors=errors)
-
-    wrapped.encoding = codecs.lookup(encoding).name.upper()
-    return wrapped
-
-
 #: Convenience function used everywhere we want to open a file to read text
 #: rather than undecoded bytes:
+open_text_file = partial(open, encoding="utf-8", errors="strict")
 
 # This is the same as decoding the byte values in codecs.BOM:
 UNICODE_BYTE_ORDER_MARK = "\ufeff"
