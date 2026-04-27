@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:0.11.5-python3.14-trixie
+FROM ghcr.io/astral-sh/uv:0.11.7-python3.14-trixie
 RUN useradd --user-group bagit-tester && \
     install -d -o bagit-tester /bagit
 WORKDIR /bagit
