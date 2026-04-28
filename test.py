@@ -1,6 +1,4 @@
-# encoding: utf-8
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import codecs
 import datetime
@@ -38,7 +36,7 @@ class SelfCleaningTestCase(unittest.TestCase):
     """TestCase subclass which cleans up self.tmpdir after each test"""
 
     def setUp(self):
-        super(SelfCleaningTestCase, self).setUp()
+        super().setUp()
 
         self.starting_directory = (
             os.getcwd()
@@ -62,7 +60,7 @@ class SelfCleaningTestCase(unittest.TestCase):
 
             shutil.rmtree(self.tmpdir)
 
-        super(SelfCleaningTestCase, self).tearDown()
+        super().tearDown()
 
 
 @mock.patch(
@@ -267,7 +265,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
     def test_bom_in_bagit_txt(self):
         bag = bagit.make_bag(self.tmpdir)
         BOM = codecs.BOM_UTF8.decode("utf-8")
-        with open(j(self.tmpdir, "bagit.txt"), "r") as bf:
+        with open(j(self.tmpdir, "bagit.txt")) as bf:
             bagfile = BOM + bf.read()
         with open(j(self.tmpdir, "bagit.txt"), "w") as bf:
             bf.write(bagfile)
@@ -332,7 +330,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         hasher = hashlib.new("md5")
         contents = slurp_text_file(j(self.tmpdir, "manifest-md5.txt")).encode("utf-8")
         hasher.update(contents)
-        with open(j(self.tmpdir, "tagmanifest-md5.txt"), "r") as tagmanifest:
+        with open(j(self.tmpdir, "tagmanifest-md5.txt")) as tagmanifest:
             tagman_contents = tagmanifest.read()
             tagman_contents = tagman_contents.replace(
                 bag.entries["manifest-md5.txt"]["md5"], hasher.hexdigest()
@@ -424,7 +422,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         self.assertRaises(bagit.BagValidationError, self.validate, bag)
 
         hasher = hashlib.new("md5")
-        with open(j(tagdir, "tagfolder", "tagfile"), "r") as tf:
+        with open(j(tagdir, "tagfolder", "tagfile")) as tf:
             contents = tf.read().encode("utf-8")
         hasher.update(contents)
         with open(j(self.tmpdir, "tagmanifest-md5.txt"), "w") as tagman:
@@ -454,7 +452,7 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
 
 class TestMultiprocessValidation(TestSingleProcessValidation):
     def validate(self, bag, *args, **kwargs):
-        return super(TestMultiprocessValidation, self).validate(
+        return super().validate(
             bag, *args, processes=2, **kwargs
         )
 
@@ -1014,7 +1012,7 @@ Tag-File-Character-Encoding: UTF-8
 
 class TestFetch(SelfCleaningTestCase):
     def setUp(self):
-        super(TestFetch, self).setUp()
+        super().setUp()
 
         # All of these tests will involve fetch.txt usage with an existing bag
         # so we'll simply create one:
