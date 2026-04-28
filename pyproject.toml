@@ -43,7 +43,7 @@ addopts = "-v"
 
 [tool.coverage.run]
 branch = true
-include = "src"
+include = ["src/*"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -61,5 +61,6 @@ include = [
 dev = [
     "coverage>=7.8.2",
     "pytest>=8.4.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.11.12",
 ]
