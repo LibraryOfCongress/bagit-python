@@ -896,12 +896,12 @@ class Bag(object):
             if processes == 1:
                 hash_results = [_calc_hashes(i) for i in args]
             else:
-                pool = multiprocessing.Pool(
-                    processes if processes else None, initializer=worker_init
+                hash_results = _multiprocessing_pool_map(
+                    _calc_hashes,
+                    args,
+                    processes if processes else None,
+                    initializer=worker_init,
                 )
-                hash_results = pool.map(_calc_hashes, args)
-                pool.close()
-                pool.join()
 
         # Any unhandled exceptions are probably fatal
         except:
@@ -1035,6 +1035,25 @@ class FileNormalizationConflict(BagError):
 def posix_multiprocessing_worker_initializer():
     """Ignore SIGINT in multiprocessing workers on POSIX systems"""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
+def _multiprocessing_pool_map(func, iterable, processes, initializer=None):
+    """Run ``Pool.map()`` and always clean up the pool.
+
+    This ensures worker processes are closed or terminated, then joined, under
+    all conditions.
+    """
+    pool = multiprocessing.Pool(processes=processes, initializer=initializer)
+    try:
+        results = pool.map(func, iterable)
+    except BaseException:
+        pool.terminate()
+        raise
+    else:
+        pool.close()
+        return results
+    finally:
+        pool.join()
 
 
 # The Unicode normalization form used here doesn't matter – all we care about
@@ -1245,10 +1264,9 @@ def make_manifests(data_dir, processes, algorithms=DEFAULT_CHECKSUMS, encoding="
     manifest_line_generator = partial(generate_manifest_lines, algorithms=algorithms)
 
     if processes > 1:
-        pool = multiprocessing.Pool(processes=processes)
-        checksums = pool.map(manifest_line_generator, _walk(data_dir))
-        pool.close()
-        pool.join()
+        checksums = _multiprocessing_pool_map(
+            manifest_line_generator, _walk(data_dir), processes=processes
+        )
     else:
         checksums = [manifest_line_generator(i) for i in _walk(data_dir)]
 

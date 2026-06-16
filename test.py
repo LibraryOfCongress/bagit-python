@@ -13,10 +13,9 @@ import sys
 import tempfile
 import unicodedata
 import unittest
-from os.path import join as j
-
-from unittest import mock
 from io import StringIO
+from os.path import join as j
+from unittest import mock
 
 import bagit
 
@@ -459,6 +458,23 @@ class TestMultiprocessValidation(TestSingleProcessValidation):
         )
 
     @mock.patch("bagit.multiprocessing.Pool")
+    def test_validate_multiprocessing_terminates_and_joins_pool_on_failure(self, pool):
+        pool.return_value.map.side_effect = RuntimeError("boom")
+        bag = bagit.make_bag(self.tmpdir)
+
+        with self.assertRaises(RuntimeError):
+            self.validate(bag)
+
+        self.assertEqual(
+            pool.return_value.mock_calls,
+            [
+                mock.call.map(mock.ANY, mock.ANY),
+                mock.call.terminate(),
+                mock.call.join(),
+            ],
+        )
+
+    @mock.patch("bagit.multiprocessing.Pool")
     def test_validate_pool_error(self, pool):
         # Simulate the Pool constructor raising a RuntimeError.
         pool.side_effect = RuntimeError
@@ -744,6 +760,21 @@ Tag-File-Character-Encoding: UTF-8
     def test_make_bag_multiprocessing(self):
         bagit.make_bag(self.tmpdir, processes=2)
         self.assertTrue(os.path.isdir(j(self.tmpdir, "data")))
+
+    @mock.patch("bagit.multiprocessing.Pool")
+    def test_make_bag_multiprocessing_terminates_and_joins_pool_on_failure(self, pool):
+        pool.return_value.map.side_effect = RuntimeError("boom")
+        with self.assertRaises(RuntimeError):
+            bagit.make_bag(self.tmpdir, processes=2)
+
+        self.assertEqual(
+            pool.return_value.mock_calls,
+            [
+                mock.call.map(mock.ANY, mock.ANY),
+                mock.call.terminate(),
+                mock.call.join(),
+            ],
+        )
 
     def test_multiple_meta_values(self):
         baginfo = {"Multival-Meta": [7, 4, 8, 6, 8]}
