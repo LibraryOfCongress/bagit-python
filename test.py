@@ -1042,6 +1042,248 @@ Tag-File-Character-Encoding: UTF-8
 
         self.assertEqual("Unsupported encoding: WTF-8", str(error_catcher.exception))
 
+    def test_update_payload_added_file(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
+        with open(j(self.tmpdir, "data", "newfile"), "w") as nf:
+            nf.write("newfile")
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertFalse(bag.is_valid())
+
+        bag.update_payload()
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
+    def test_update_payload_deleted_file(self):
+        bag = bagit.make_bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
+        os.remove(j(self.tmpdir, "data", "loc", "2478433644_2839c5e8b8_o_d.jpg"))
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertFalse(bag.is_valid())
+
+        bag.update_payload()
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
+    def test_payload_oxum(self):
+        bag = bagit.make_bag(self.tmpdir, checksums=["md5"])
+        self.assertEqual(bag.payload_oxum(), (991765, 5))
+
+    def test_payload_oxum_after_payload_change(self):
+        bagit.make_bag(self.tmpdir, checksums=["md5"])
+
+        with open(j(self.tmpdir, "data", "newfile"), "w") as nf:
+            nf.write("newfile")
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertEqual(bag.payload_oxum(), (991772, 6))
+
+    def test_add_payload(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        extra = os.path.join(self.tmpdir, "extra.txt")
+
+        with open(extra, "w") as f:
+            f.write("hello world")
+
+        bag.add_payload(extra)
+
+        bag = bagit.Bag(self.tmpdir)
+
+        self.assertTrue(
+            os.path.isfile(
+                os.path.join(self.tmpdir, "data", "extra.txt")
+            )
+        )
+        self.assertTrue(bag.is_valid())
+
+    def test_add_payload_updates_oxum(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        old_bytes, old_files = bag.payload_oxum()
+
+        extra = os.path.join(self.tmpdir, "extra.txt")
+
+        with open(extra, "w") as f:
+            f.write("hello")
+
+        bag.add_payload(extra)
+
+        bag = bagit.Bag(self.tmpdir)
+
+        new_bytes, new_files = bag.payload_oxum()
+
+        self.assertEqual(new_files, old_files + 1)
+        self.assertEqual(new_bytes, old_bytes + 5)
+
+        self.assertTrue(bag.is_valid())
+
+    def test_add_payload_missing_file(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        with self.assertRaises(ValueError):
+            bag.add_payload("/does/not/exist")
+
+    def test_remove_payload(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        payload_file = "data/README"
+        full_path = j(self.tmpdir, payload_file)
+
+        self.assertTrue(os.path.isfile(full_path))
+
+        bag.remove_payload(payload_file)
+
+        bag = bagit.Bag(self.tmpdir)
+
+        self.assertFalse(os.path.exists(full_path))
+        self.assertTrue(bag.is_valid())
+
+    def test_remove_payload_updates_oxum(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        old_bytes, old_files = bag.payload_oxum()
+        removed_size = os.stat(j(self.tmpdir, "data", "README")).st_size
+
+        bag.remove_payload("data/README")
+
+        bag = bagit.Bag(self.tmpdir)
+
+        new_bytes, new_files = bag.payload_oxum()
+
+        self.assertEqual(new_files, old_files - 1)
+        self.assertEqual(new_bytes, old_bytes - removed_size)
+
+    def test_remove_payload_rejects_non_payload_path(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        with self.assertRaises(ValueError):
+            bag.remove_payload("bag-info.txt")
+
+    def test_add_payload_with_destination(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        extra = os.path.join(self.tmpdir, "extra.txt")
+        with open(extra, "w") as f:
+            f.write("hello")
+
+        bag.add_payload(extra, "masters/extra.txt")
+
+        self.assertTrue(os.path.isfile(j(self.tmpdir, "data", "masters", "extra.txt")))
+
+        bag = bagit.Bag(self.tmpdir)
+        self.assertTrue(bag.is_valid())
+
+    def test_add_payload_rejects_unsafe_destination(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        extra = os.path.join(self.tmpdir, "extra.txt")
+        with open(extra, "w") as f:
+            f.write("hello")
+
+        unsafe_destinations = [
+            "../extra.txt",
+            "subdir/../../extra.txt",
+            os.path.abspath(os.path.join(self.tmpdir, "..", "extra.txt")),
+            "~/.ssh/id_rsa",
+        ]
+
+        if os.name == "nt":
+            unsafe_destinations.extend(
+                [
+                    r"..\extra.txt",
+                    r"subdir\..\..\extra.txt",
+                    r"C:\Windows\system32\cmd.exe",
+                    r"\\server\share\file.txt",
+                ]
+            )
+
+        for dest in unsafe_destinations:
+            with self.subTest(dest=dest):
+                with self.assertRaises(ValueError):
+                    bag.add_payload(extra, "../extra.txt")
+
+    def test_remove_payload_directory_recursive(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        payload_dir = j(self.tmpdir, "data", "extra")
+        os.makedirs(payload_dir)
+
+        with open(j(payload_dir, "one.txt"), "w") as f:
+            f.write("one")
+
+        with open(j(payload_dir, "two.txt"), "w") as f:
+            f.write("two")
+
+        bag.update_payload()
+        self.assertTrue(bag.is_valid())
+
+        bag.remove_payload("data/extra", recursive=True)
+
+        bag = bagit.Bag(self.tmpdir)
+
+        self.assertFalse(os.path.exists(payload_dir))
+        self.assertTrue(bag.is_valid())
+
+    def test_remove_payload_directory_requires_recursive(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        payload_dir = j(self.tmpdir, "data", "extra")
+        os.makedirs(payload_dir)
+
+        with self.assertRaises(ValueError):
+            bag.remove_payload("data/extra")
+
+    def test_add_payload_directory(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        src_dir = tempfile.mkdtemp()
+        try:
+            with open(j(src_dir, "one.txt"), "w") as f:
+                f.write("one")
+
+            os.mkdir(j(src_dir, "nested"))
+
+            with open(j(src_dir, "nested", "two.txt"), "w") as f:
+                f.write("two")
+
+            bag.add_payload(src_dir)
+
+            dest_dir = j(self.tmpdir, "data", os.path.basename(src_dir))
+
+            self.assertTrue(os.path.isdir(dest_dir))
+            self.assertTrue(os.path.isfile(j(dest_dir, "one.txt")))
+            self.assertTrue(os.path.isfile(j(dest_dir, "nested", "two.txt")))
+
+            bag = bagit.Bag(self.tmpdir)
+            self.assertTrue(bag.is_valid())
+        finally:
+            shutil.rmtree(src_dir)
+
+    def test_add_payload_directory_with_destination(self):
+        bag = bagit.make_bag(self.tmpdir)
+
+        src_dir = tempfile.mkdtemp()
+        try:
+            with open(j(src_dir, "one.txt"), "w") as f:
+                f.write("one")
+
+            bag.add_payload(src_dir, "imports/sip")
+
+            self.assertTrue(os.path.isdir(j(self.tmpdir, "data", "imports", "sip")))
+            self.assertTrue(os.path.isfile(j(self.tmpdir, "data", "imports", "sip", "one.txt")))
+
+            bag = bagit.Bag(self.tmpdir)
+            self.assertTrue(bag.is_valid())
+        finally:
+            shutil.rmtree(src_dir)
+
 
 class TestFetch(SelfCleaningTestCase):
     def setUp(self):

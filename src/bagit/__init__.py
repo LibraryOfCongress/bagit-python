@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import re
 import signal
+import shutil
 import sys
 import tempfile
 import time
@@ -537,6 +538,77 @@ class Bag(object):
 
         os.chdir(old_dir)
 
+
+    def update_payload(self, processes=1):
+        """
+        Rebuild payload manifests and tag manifests after payload changes.
+        """
+        self.save(processes=processes, manifests=True)
+
+
+    def add_payload(self, src, dest=None, processes=1):
+        """
+        Copy a file into the payload directory and rebuild manifests.
+        """
+        if not os.path.isfile(src) and not os.path.isdir(src):
+            raise ValueError("Payload source must be a file or directory: %s" % src)
+
+        if dest is None:
+            dest = os.path.basename(src)
+
+        dest = os.path.normpath(dest)
+
+        if os.path.isabs(dest) or dest.startswith("..") or os.path.expanduser(dest) != dest:
+            raise ValueError("Payload destination is unsafe: %s" % dest)
+
+        payload_dest = os.path.join("data", dest)
+
+        if self._path_is_dangerous(payload_dest):
+            raise ValueError("Payload destination is unsafe: %s" % dest)
+
+        dst = os.path.join(self.path, payload_dest)
+
+        if os.path.isfile(src):
+            dst_dir = os.path.dirname(dst)
+            if not os.path.isdir(dst_dir):
+                os.makedirs(dst_dir)
+
+            shutil.copy2(src, dst)
+
+        elif os.path.isdir(src):
+            if os.path.exists(dst):
+                raise ValueError("Payload destination already exists: %s" % dest)
+
+            shutil.copytree(src, dst)
+
+        self.update_payload(processes=processes)
+
+
+    def remove_payload(self, path, processes=1, recursive=False):
+        """
+        Remove a payload file and rebuild manifests.
+        """
+        payload_path = os.path.normpath(path)
+
+        if self._path_is_dangerous(payload_path):
+            raise ValueError("Payload path is unsafe: %s" % path)
+
+        if not payload_path.startswith("data" + os.sep):
+            raise ValueError("Payload path must start with data/: %s" % path)
+
+        full_path = os.path.join(self.path, payload_path)
+
+        if os.path.isfile(full_path):
+            os.remove(full_path)
+        elif os.path.isdir(full_path):
+            if not recursive:
+                raise ValueError("Payload path is a directory: %s" % path)
+            shutil.rmtree(full_path)
+        else:
+            raise ValueError("Payload path does not exist: %s" % path)
+
+        self.update_payload(processes=processes)
+
     def tagfile_entries(self):
         return dict(
             (key, value)
@@ -808,6 +880,17 @@ class Bag(object):
 
         self._validate_entries(processes)
 
+    def payload_oxum(self):
+        total_bytes = 0
+        total_files = 0
+
+        for payload_file in self.payload_files():
+            payload_file = os.path.join(self.path, payload_file)
+            total_bytes += os.stat(payload_file).st_size
+            total_files += 1
+
+        return total_bytes, total_files
+
     def _validate_oxum(self):
         oxum = self.info.get("Payload-Oxum")
 
@@ -827,13 +910,8 @@ class Bag(object):
 
         oxum_byte_count = int(oxum_byte_count)
         oxum_file_count = int(oxum_file_count)
-        total_bytes = 0
-        total_files = 0
 
-        for payload_file in self.payload_files():
-            payload_file = os.path.join(self.path, payload_file)
-            total_bytes += os.stat(payload_file).st_size
-            total_files += 1
+        total_bytes, total_files = self.payload_oxum()
 
         if oxum_file_count != total_files or oxum_byte_count != total_bytes:
             raise BagValidationError(
@@ -1601,7 +1679,7 @@ def main():
                 else:
                     LOGGER.info(_("%s is valid"), bag_dir)
             except BagError as e:
-                LOGGER.error(
+                LOGGER.exception(
                     _("%(bag)s is invalid: %(error)s"), {"bag": bag_dir, "error": e}
                 )
                 rc = 1
@@ -1616,7 +1694,7 @@ def main():
                     checksums=args.checksums,
                 )
             except Exception as exc:
-                LOGGER.error(
+                LOGGER.exception(
                     _("Failed to create bag in %(bag_directory)s: %(error)s"),
                     {"bag_directory": bag_dir, "error": exc},
                     exc_info=True,
