@@ -96,6 +96,31 @@ class TestSingleProcessValidation(SelfCleaningTestCase):
         # check valid with three manifests
         self.assertTrue(self.validate(bag, fast=True))
 
+    def test_make_bag_shake_raises_bagerror(self):
+        # SHAKE algorithms have a variable-length digest and cannot be used for
+        # manifests; make_bag should reject them cleanly instead of crashing
+        # with a TypeError later on. See issue #158.
+        for alg in ("shake_128", "shake_256"):
+            self.assertRaises(
+                bagit.BagError, bagit.make_bag, self.tmpdir, checksums=[alg]
+            )
+
+    def test_make_bag_shake_mixed_with_valid_raises_bagerror(self):
+        # A SHAKE algorithm mixed in with a usable one should still be rejected
+        # rather than crashing in the tagmanifest path.
+        self.assertRaises(
+            bagit.BagError,
+            bagit.make_bag,
+            self.tmpdir,
+            checksums=["sha256", "shake_128"],
+        )
+
+    def test_shake_not_offered_as_checksum_algorithm(self):
+        # Variable-length algorithms must not be advertised, so they are never
+        # auto-discovered as a manifest type or exposed as a CLI flag.
+        self.assertNotIn("shake_128", bagit.CHECKSUM_ALGOS)
+        self.assertNotIn("shake_256", bagit.CHECKSUM_ALGOS)
+
     def test_validate_flipped_bit(self):
         bag = bagit.make_bag(self.tmpdir)
         readme = j(self.tmpdir, "data", "README")
