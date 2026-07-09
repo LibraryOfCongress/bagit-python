@@ -26,7 +26,7 @@ if not os.path.isdir("bench-data"):
     ftp.retrlines("NLST", files.append)
 
     for file in files:
-        print(("fetching %s" % file))
+        print("fetching %s" % file)
         fh = open(os.path.join("bench-data", file), "wb")
         ftp.retrbinary("RETR %s" % file, fh.write)
         fh.close()
@@ -49,7 +49,7 @@ bagit.make_bag('bench-data', processes=%s)
 for p in range(1, 9):
     t = timeit.Timer(statement % p)
     print(
-        ("create w/ %s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10)))
+        "create w/ %s processes: %.2f seconds " % (p, (10 * t.timeit(number=10) / 10))
     )
 
 
@@ -71,10 +71,10 @@ bag.validate(processes=%s)
 for p in range(1, 9):
     t = timeit.Timer(statement % p)
     print(
-        (
+
             "validate w/ %s processes: %.2f seconds "
             % (p, (10 * t.timeit(number=10) / 10))
-        )
+
     )
 
 shutil.rmtree("bench-data-bag")
