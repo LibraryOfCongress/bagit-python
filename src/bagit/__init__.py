@@ -1423,11 +1423,9 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
             for hasher in hashers.values():
                 hasher.update(block)
 
-    decoded_filename = _decode_filename(filename)
-
     # We'll generate a list of results in roughly manifest format but prefixed with the algorithm:
     results = [
-        (alg, hasher.hexdigest(), decoded_filename, total_bytes)
+        (alg, hasher.hexdigest(), filename, total_bytes)
         for alg, hasher in hashers.items()
     ]
 
@@ -1435,6 +1433,9 @@ def generate_manifest_lines(filename, algorithms=DEFAULT_CHECKSUMS):
 
 
 def _encode_filename(s):
+    # needs to be first to not escape the % added by escaping \n and \r
+    s = s.replace("%", "%25")
+
     s = s.replace("\r", "%0D")
     s = s.replace("\n", "%0A")
     return s
@@ -1443,6 +1444,8 @@ def _encode_filename(s):
 def _decode_filename(s):
     s = re.sub(r"%0D", "\r", s, flags=re.IGNORECASE)
     s = re.sub(r"%0A", "\n", s, flags=re.IGNORECASE)
+    # needs to be last to not potentially introduce matches for \n / \r
+    s = s.replace("%25", "%")
     return s
 
 

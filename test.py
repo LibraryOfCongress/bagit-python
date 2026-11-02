@@ -827,10 +827,31 @@ Tag-File-Character-Encoding: UTF-8
         os.remove(j(self.tmpdir, "tagmanifest-md5.txt"))
         self.assertTrue(bag.is_valid())
 
-    def test_carriage_return_manifest(self):
-        with open(j(self.tmpdir, "newline\r"), "w") as whatever:
-            whatever.write("ugh")
+    def test_special_characters_in_filename(self):
+        names = [
+            "carriage-return\r",
+            "newline\n",
+            "percent%",
+            "escapes%0A%0D%25", # has all the escape sequences already in the name
+        ]
+
+        for name in names:
+            with open(j(self.tmpdir, name), "w") as f:
+                f.write("ugh")
+
         bag = bagit.make_bag(self.tmpdir)
+        bag_names = slurp_text_file(next(bag.manifest_files()))
+
+        escaped_names = [
+            "carriage-return%0D",
+            "newline%0A",
+            "percent%25",
+            "escapes%250A%250D%2525",
+        ]
+
+        for escaped_name in escaped_names:
+            self.assertIn(f"data/{escaped_name}", bag_names)
+
         self.assertTrue(bag.is_valid())
 
     def test_payload_permissions(self):
